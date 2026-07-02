@@ -1,0 +1,32 @@
+# The loop, on autopilot: every push to main re-verifies the LIVE app with
+# TestSprite and fails the build when the checker disagrees. (Hackathon S3
+# CI/CD wiring — see LOOP.md for the loop this gate keeps honest.)
+name: testsprite-gate
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  TESTSPRITE_API_KEY: ${{ secrets.TESTSPRITE_API_KEY }}
+  BE_PROJECT_ID: 83edef2d-3534-491d-9529-929416c41499
+  FE_SMOKE_TEST_ID: 767706ae-35da-47cb-a1f0-6e5ec92dbe54
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm i -g @testsprite/testsprite-cli
+      - name: Wait for Vercel to serve the new build
+        run: sleep 45
+      - name: Backend suite against the live API
+        run: |
+          testsprite test run --all --project "$BE_PROJECT_ID" --wait --timeout 600 --output json
+      - name: Frontend smoke (summon flow) against the live app
+        run: |
+          testsprite test run "$FE_SMOKE_TEST_ID" --wait --timeout 900 --output json
