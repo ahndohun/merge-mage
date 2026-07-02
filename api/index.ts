@@ -113,7 +113,7 @@ type NodeRes = {
 }
 
 export default async function handler(req: NodeReq, res: NodeRes): Promise<void> {
-  const host = (req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost") as string
+  const host = (req.headers["x-forwarded-host"] ?? req.headers["host"] ?? "localhost") as string
   const url = `https://${host}${req.url ?? "/"}`
   const method = req.method ?? "GET"
   const headers = new Headers()
@@ -127,7 +127,8 @@ export default async function handler(req: NodeReq, res: NodeRes): Promise<void>
     body = typeof req.body === "string" ? req.body : JSON.stringify(req.body)
     headers.set("content-type", "application/json")
   }
-  const webResponse = await app.fetch(new Request(url, { method, headers, body }))
+  const init: RequestInit = body === undefined ? { method, headers } : { method, headers, body }
+  const webResponse = await app.fetch(new Request(url, init))
   res.statusCode = webResponse.status
   webResponse.headers.forEach((value, key) => {
     if (key.toLowerCase() !== "content-length") res.setHeader(key, value)
