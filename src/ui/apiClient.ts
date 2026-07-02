@@ -110,19 +110,30 @@ async function requestJson(path: string, init: RequestInit): Promise<ApiResult<u
 }
 
 function parseLeaderboard(data: unknown): readonly LeaderboardEntry[] {
-  const source = isRecord(data) && Array.isArray(data["entries"]) ? data["entries"] : data
+  // The API wraps rows as { items: [{ nickname, bestStage, prestigeCount }] }.
+  const source = isRecord(data)
+    ? Array.isArray(data["items"])
+      ? data["items"]
+      : Array.isArray(data["entries"])
+        ? data["entries"]
+        : data
+    : data
 
   if (!Array.isArray(source)) {
     return []
   }
 
   return source.flatMap((item, index) => {
-    if (!isRecord(item) || typeof item["nickname"] !== "string" || typeof item["stage"] !== "number") {
+    if (!isRecord(item) || typeof item["nickname"] !== "string") {
+      return []
+    }
+    const stage = typeof item["bestStage"] === "number" ? item["bestStage"] : item["stage"]
+    if (typeof stage !== "number") {
       return []
     }
 
     const rank = typeof item["rank"] === "number" ? item["rank"] : index + 1
-    return [{ rank, nickname: item["nickname"], stage: item["stage"] }]
+    return [{ rank, nickname: item["nickname"], stage }]
   })
 }
 

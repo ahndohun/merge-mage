@@ -11,6 +11,14 @@ export type SaveToken = {
 }
 
 export function loadInitialState(): EngineState {
+  // ?fresh=1 starts a brand-new run: E2E tests need isolation from state the
+  // previous test left in this browser profile, and players get a reset URL.
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("fresh")) {
+    getStorage()?.removeItem(SAVE_STATE_KEY)
+    getStorage()?.removeItem(SAVE_TOKEN_KEY)
+    return createInitialState(createSeed())
+  }
+
   const raw = getStorage()?.getItem(SAVE_STATE_KEY)
   if (raw !== undefined && raw !== null) {
     try {

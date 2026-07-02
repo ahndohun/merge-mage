@@ -7,7 +7,7 @@
   "planSteps": [
     {
       "type": "action",
-      "description": "Navigate to the game and open the SKILLS tab from the bottom navigation"
+      "description": "Navigate to the game with the URL path /?fresh=1 (this starts a brand-new save) and wait for the game HUD showing GOLD to load"
     },
     {
       "type": "assertion",
