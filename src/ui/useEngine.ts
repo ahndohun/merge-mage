@@ -20,6 +20,7 @@ import { useToasts, type ToastMessage } from "./useToasts"
 import {
   fetchLeaderboard,
   postLeaderboard,
+  postSave,
   type LeaderboardEntry,
   type OfflineClaim,
 } from "./apiClient"
@@ -200,14 +201,25 @@ export function useEngine(): UseEngineResult {
 
   const submitLeaderboard = useCallback(() => {
     setLeaderboardStatus("loading")
-    void postLeaderboard({ nickname: nicknameRef.current, stage: stateRef.current.stage }).then((result) => {
-      if (result.kind === "ok") {
-        setLeaderboard(result.data)
-        setLeaderboardStatus("ready")
-        return
-      }
-      setLeaderboardStatus(result.kind)
-    })
+    const token = saveTokenRef.current.token
+    // The server derives bestStage from the stored save, so persist the
+    // current state first — a brand-new token has no save yet (404 otherwise).
+    void postSave({ token, nickname: nicknameRef.current, state: stateRef.current })
+      .then(() => postLeaderboard({ token, nickname: nicknameRef.current }))
+      .then((result) => {
+        if (result.kind !== "ok") {
+          setLeaderboardStatus(result.kind)
+          return
+        }
+        return fetchLeaderboard().then((list) => {
+          if (list.kind === "ok") {
+            setLeaderboard(list.data)
+            setLeaderboardStatus("ready")
+            return
+          }
+          setLeaderboardStatus(list.kind)
+        })
+      })
   }, [])
 
   const closeOfflineClaim = useCallback(() => {

@@ -29,9 +29,11 @@ export async function fetchLeaderboard(): Promise<ApiResult<readonly Leaderboard
 }
 
 export async function postLeaderboard(input: {
+  readonly token: string
   readonly nickname: string
-  readonly stage: number
-}): Promise<ApiResult<readonly LeaderboardEntry[]>> {
+}): Promise<ApiResult<number>> {
+  // Server computes bestStage from the stored save — it rejects client stages,
+  // so a save must exist before this call (submit flow saves first).
   const result = await requestJson("/api/leaderboard", {
     method: "POST",
     body: JSON.stringify(input),
@@ -41,7 +43,8 @@ export async function postLeaderboard(input: {
     return result
   }
 
-  return { kind: "ok", data: parseLeaderboard(result.data).slice(0, 100) }
+  const bestStage = isRecord(result.data) && typeof result.data["bestStage"] === "number" ? result.data["bestStage"] : 0
+  return { kind: "ok", data: bestStage }
 }
 
 export async function postSave(input: {

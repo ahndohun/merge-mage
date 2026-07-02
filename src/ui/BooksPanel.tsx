@@ -92,7 +92,7 @@ function EquipSlot(props: {
         ) : (
           <>
             <TomeIcon element={props.book.element} />
-            <span className="level-badge">{props.book.level}</span>
+            <span className="level-badge">Lv{props.book.level}</span>
           </>
         )}
         <span className="slot-meta">{props.book === null ? "SLOT" : props.book.element.toUpperCase()}</span>
@@ -164,7 +164,7 @@ function InventoryCell(props: {
       ) : (
         <>
           <TomeIcon element={props.book.element} />
-          <span className="level-badge">{props.book.level}</span>
+          <span className="level-badge">Lv{props.book.level}</span>
           <span className="slot-meta">{props.book.element.toUpperCase()}</span>
         </>
       )}
