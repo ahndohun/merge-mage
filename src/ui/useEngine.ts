@@ -17,6 +17,7 @@ import { canMerge, isExpectedEngineError } from "./engineActionHelpers"
 import { ensureSaveToken, loadInitialState, loadNickname, saveNickname } from "./engineStorage"
 import { useAutoEngineActions, useEngineClock, useOfflineClaim, useSaveCadence, useVisibilityPause } from "./useEngineEffects"
 import { useToasts, type ToastMessage } from "./useToasts"
+import { useSaveIndicator, type SaveIndicatorState } from "./useSaveIndicator"
 import {
   fetchLeaderboard,
   postLeaderboard,
@@ -40,6 +41,7 @@ export type UseEngineResult = {
   readonly leaderboard: readonly LeaderboardEntry[]
   readonly nickname: string
   readonly offlineClaim: OfflineClaim | null
+  readonly saveIndicator: SaveIndicatorState
   readonly summon: () => boolean
   readonly mergeBooks: (leftId: string, rightId: string) => boolean
   readonly equipBook: (bookId: string, slotIdx: number) => boolean
@@ -71,6 +73,7 @@ export function useEngine(): UseEngineResult {
   const [leaderboard, setLeaderboard] = useState<readonly LeaderboardEntry[]>([])
   const [nickname, setNicknameState] = useState(loadNickname)
   const [offlineClaim, setOfflineClaim] = useState<OfflineClaim | null>(null)
+  const saveIndicator = useSaveIndicator()
   const { toasts, addToast } = useToasts()
   const stateRef = useRef(state)
   const autoMergeRef = useRef(autoMerge)
@@ -120,9 +123,7 @@ export function useEngine(): UseEngineResult {
     [addToast, commitState],
   )
 
-  const summon = useCallback(() => {
-    return applyReducer({ reducer: summonBook, floorToast: true })
-  }, [applyReducer])
+  const summon = useCallback(() => applyReducer({ reducer: summonBook, floorToast: true }), [applyReducer])
 
   const mergeBooks = useCallback(
     (leftId: string, rightId: string) => {
@@ -135,40 +136,28 @@ export function useEngine(): UseEngineResult {
   )
 
   const equipBook = useCallback(
-    (bookId: string, slotIdx: number) => {
-      return applyReducer({ reducer: (current) => equipBookReducer(current, bookId, slotIdx) })
-    },
+    (bookId: string, slotIdx: number) => applyReducer({ reducer: (current) => equipBookReducer(current, bookId, slotIdx) }),
     [applyReducer],
   )
 
   const unequipBook = useCallback(
-    (slotIdx: number) => {
-      return applyReducer({ reducer: (current) => unequipBookReducer(current, slotIdx) })
-    },
+    (slotIdx: number) => applyReducer({ reducer: (current) => unequipBookReducer(current, slotIdx) }),
     [applyReducer],
   )
 
   const upgradeSlot = useCallback(
-    (slotIdx: number) => {
-      return applyReducer({ reducer: (current) => upgradeSlotReducer(current, slotIdx) })
-    },
+    (slotIdx: number) => applyReducer({ reducer: (current) => upgradeSlotReducer(current, slotIdx) }),
     [applyReducer],
   )
 
   const allocateSkill = useCallback(
-    (skill: SkillName) => {
-      return applyReducer({ reducer: (current) => allocateSkillReducer(current, skill) })
-    },
+    (skill: SkillName) => applyReducer({ reducer: (current) => allocateSkillReducer(current, skill) }),
     [applyReducer],
   )
 
-  const resetSkills = useCallback(() => {
-    return applyReducer({ reducer: resetSkillsReducer })
-  }, [applyReducer])
+  const resetSkills = useCallback(() => applyReducer({ reducer: resetSkillsReducer }), [applyReducer])
 
-  const prestige = useCallback(() => {
-    return applyReducer({ reducer: prestigeReducer, successToast: "Rebirth complete." })
-  }, [applyReducer])
+  const prestige = useCallback(() => applyReducer({ reducer: prestigeReducer, successToast: "Rebirth complete." }), [applyReducer])
 
   const setAutoMerge = useCallback((enabled: boolean) => {
     autoMergeRef.current = enabled
@@ -233,7 +222,16 @@ export function useEngine(): UseEngineResult {
   useEngineClock({ stateRef, accumulatorRef, lastFrameRef, rafRef, commitState })
   useVisibilityPause(lastFrameRef)
   useAutoEngineActions({ autoBuyRef, autoMergeRef, stateRef, summon, mergeBooks })
-  useSaveCadence({ stateRef, saveTokenRef, nicknameRef, saveIssueRef, saveFailureCountRef, addToast })
+  useSaveCadence({
+    stateRef,
+    saveTokenRef,
+    nicknameRef,
+    saveIssueRef,
+    saveFailureCountRef,
+    addToast,
+    onCloudSaveOk: saveIndicator.flashCloudSaved,
+    onCloudSaveOffline: saveIndicator.markCloudOffline,
+  })
   useOfflineClaim({ saveTokenRef, stateRef, commitState, setOfflineClaim })
 
   useEffect(() => {
@@ -257,6 +255,7 @@ export function useEngine(): UseEngineResult {
     leaderboard,
     nickname,
     offlineClaim,
+    saveIndicator: saveIndicator.state,
     summon,
     mergeBooks,
     equipBook,

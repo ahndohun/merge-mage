@@ -15,6 +15,7 @@ import { BOSS_ENRAGE_MS, BOSS_WAVE_NUMBER, BattleLayout, isBossWave } from "./Ba
 import { BattleBanner } from "./BattleBanner"
 import { mirrorBattleState } from "./BattleDataMirror"
 import { drawBattleFrame } from "./BattleFrame"
+import { BattleLoadingView } from "./BattleLoadingView"
 import { BattleMobView } from "./BattleMobView"
 import { BattleWizardView } from "./BattleWizardView"
 
@@ -42,6 +43,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   preload(): void {
+    registerUtilityTextures(this)
+    new BattleLoadingView(this)
     preloadBattleAssets(this)
   }
 
@@ -88,8 +91,14 @@ export class BattleScene extends Phaser.Scene {
     this.audio?.syncMusic(state)
 
     if (waveChanged) {
+      const stageChanged = this.lastStage > 0 && state.stage !== this.lastStage
       this.resetWave(state)
-      this.banner?.show(`STAGE ${state.stage} — WAVE ${state.wave}/${BOSS_WAVE_NUMBER}`, 0xfff0a8)
+      if (stageChanged) {
+        this.effects?.stageFlash()
+        this.banner?.showSlide(`STAGE ${state.stage}`, 0xe6b450)
+      } else {
+        this.banner?.show(`STAGE ${state.stage} — WAVE ${state.wave}/${BOSS_WAVE_NUMBER}`, 0xfff0a8)
+      }
       this.lastStage = state.stage
       this.lastWave = state.wave
       return
@@ -112,7 +121,7 @@ export class BattleScene extends Phaser.Scene {
       case "kill":
         return
       case "waveClear":
-        this.banner?.show(`STAGE ${event.stage} — WAVE ${event.wave} CLEAR`, 0xfff0a8)
+        this.banner?.pop("WAVE CLEAR", 0xe6b450)
         return
       case "bossSpawn":
         this.playBossEntrance()
@@ -124,7 +133,7 @@ export class BattleScene extends Phaser.Scene {
         this.playBossFail(event.stage)
         return
       case "levelUp":
-        this.banner?.show(`WIZARD LV ${event.wizardLevel} +${event.skillPoints}`, 0x6dd7ff)
+        this.effects?.levelUp({ x: BattleLayout.wizardX, y: BattleLayout.wizardY })
         return
       case "slow":
         this.slowFactor = event.factor
@@ -212,7 +221,11 @@ export class BattleScene extends Phaser.Scene {
     const element = mob.getElement()
 
     if (effects !== null) {
-      effects.death(point, element)
+      if (mob.isBoss()) {
+        effects.bossDeath(point, element)
+      } else {
+        effects.death(point, element)
+      }
     }
 
     this.audio?.playGold()
@@ -239,6 +252,7 @@ export class BattleScene extends Phaser.Scene {
   private syncBossEnrage(): void {
     const state = this.currentState
     if (state === null || !isBossWave(state.wave)) {
+      this.effects?.setBossEnragePulse(false)
       return
     }
 
@@ -246,6 +260,7 @@ export class BattleScene extends Phaser.Scene {
     if (boss !== undefined) {
       boss.syncBars(state.bossElapsedMs / BOSS_ENRAGE_MS)
     }
+    this.effects?.setBossEnragePulse(BOSS_ENRAGE_MS - state.bossElapsedMs <= 5_000)
   }
 
   private cleanup(): void {

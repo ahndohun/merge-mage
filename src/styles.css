@@ -78,3 +78,51 @@ canvas {
   margin: auto;
   pointer-events: none;
 }
+
+.preboot-splash {
+  position: absolute;
+  z-index: 10;
+  display: grid;
+  width: min(100vw, 390px);
+  height: min(100dvh, 844px);
+  place-items: center;
+  background: #100e14;
+  color: #e8e0d8;
+  pointer-events: auto;
+}
+
+.preboot-copy {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+}
+
+.preboot-title {
+  color: #e6b450;
+  font-family: "DungeonFont", monospace;
+  font-size: 30px;
+  line-height: 1;
+  text-shadow:
+    2px 0 #08070a,
+    0 2px #08070a,
+    2px 2px #08070a;
+}
+
+.preboot-loading {
+  color: #9a8fa8;
+  font-family: "DungeonFont", monospace;
+  font-size: 10px;
+  line-height: 1;
+  animation: splashPulse 900ms steps(2, end) infinite;
+}
+
+@keyframes splashPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}

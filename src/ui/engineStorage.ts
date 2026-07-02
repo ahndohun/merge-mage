@@ -48,6 +48,13 @@ export function saveNickname(nickname: string): void {
   getStorage()?.setItem(NICKNAME_KEY, nickname)
 }
 
+export function clearSavedRun(): void {
+  const storage = getStorage()
+  storage?.removeItem(SAVE_STATE_KEY)
+  storage?.removeItem(SAVE_TOKEN_KEY)
+  storage?.removeItem(NICKNAME_KEY)
+}
+
 export function ensureSaveToken(): SaveToken {
   const storage = getStorage()
   const existing = storage?.getItem(SAVE_TOKEN_KEY)

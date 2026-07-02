@@ -1,16 +1,47 @@
+import { useEffect, useRef, useState } from "react"
 import { WIZARD_XP_PER_LEVEL } from "../engine/constants"
 import type { EngineState } from "../engine/types"
 import { formatNumber } from "./formatNumber"
+import type { SaveIndicatorState } from "./useSaveIndicator"
 
 type HudOverlayProps = {
   readonly state: EngineState
   readonly muted: boolean
   readonly onToggleMute: () => void
+  readonly onNewGame: () => void
+  readonly saveIndicator: SaveIndicatorState
 }
 
 export function HudOverlay(props: HudOverlayProps) {
   const xpRequired = WIZARD_XP_PER_LEVEL * props.state.wizardLevel
   const xpProgress = Math.min(100, (props.state.wizardXp / xpRequired) * 100)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [newGameArmed, setNewGameArmed] = useState(false)
+  const disarmTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (disarmTimerRef.current !== null) {
+        window.clearTimeout(disarmTimerRef.current)
+      }
+    }
+  }, [])
+
+  const armNewGame = () => {
+    if (newGameArmed) {
+      props.onNewGame()
+      return
+    }
+
+    setNewGameArmed(true)
+    if (disarmTimerRef.current !== null) {
+      window.clearTimeout(disarmTimerRef.current)
+    }
+    disarmTimerRef.current = window.setTimeout(() => {
+      disarmTimerRef.current = null
+      setNewGameArmed(false)
+    }, 3_000)
+  }
 
   return (
     <header className="hud-strip" aria-label="Merge Mage HUD">
@@ -34,16 +65,67 @@ export function HudOverlay(props: HudOverlayProps) {
           <div className="xp-fill" style={{ width: `${xpProgress}%` }} />
         </div>
       </div>
-      <button
-        aria-label={props.muted ? "Unmute sound" : "Mute sound"}
-        aria-pressed={props.muted}
-        className={`hud-mute-btn${props.muted ? " is-muted" : ""}`}
-        data-testid="mute-toggle"
-        onClick={props.onToggleMute}
-        type="button"
-      >
-        {props.muted ? "SND OFF" : "SND ON"}
-      </button>
+      <div className="hud-actions">
+        <div
+          aria-live="polite"
+          className={`save-chip is-${props.saveIndicator}`}
+          data-testid="save-indicator"
+        >
+          {getSaveIndicatorLabel(props.saveIndicator)}
+        </div>
+        <button
+          aria-controls="settings-popover"
+          aria-expanded={settingsOpen}
+          aria-label="Open settings"
+          className="settings-btn"
+          data-testid="settings-btn"
+          onClick={() => setSettingsOpen((open) => !open)}
+          type="button"
+        >
+          <span aria-hidden="true" className="settings-glyph" />
+        </button>
+        {settingsOpen ? (
+          <div className="settings-popover" id="settings-popover" role="dialog" aria-label="Settings">
+            <button
+              aria-pressed={!props.muted}
+              className={`settings-sound${props.muted ? " is-muted" : ""}`}
+              data-testid="settings-sound"
+              onClick={props.onToggleMute}
+              type="button"
+            >
+              SOUND {props.muted ? "OFF" : "ON"}
+            </button>
+            <button
+              className={`settings-new-game${newGameArmed ? " is-armed" : ""}`}
+              data-testid="settings-new-game"
+              onClick={armNewGame}
+              type="button"
+            >
+              {newGameArmed ? "TAP AGAIN TO WIPE" : "NEW GAME"}
+            </button>
+            <a
+              className="settings-credits"
+              data-testid="settings-credits"
+              href="https://github.com/ahndohun/merge-mage/blob/main/CREDITS.md"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Credits
+            </a>
+          </div>
+        ) : null}
+      </div>
     </header>
   )
+}
+
+function getSaveIndicatorLabel(state: SaveIndicatorState): string {
+  switch (state) {
+    case "saved":
+      return "SAVED"
+    case "offline":
+      return "OFFLINE"
+    case "idle":
+      return ""
+  }
 }

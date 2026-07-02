@@ -64,7 +64,7 @@ export class BattleMobView {
     this.visualY = request.isBoss ? BattleLayout.bossY : getLaneY(request.index)
 
     const texture = request.isBoss ? TextureKeys.boss(request.bossKind, "idle", 0) : TextureKeys.mob(request.mobKind, "idle", 0)
-    this.sprite.setTexture(texture).setAlpha(1).setScale(request.isBoss ? 2 : 2).clearTint()
+    this.sprite.setTexture(texture).setAlpha(1).setScale(request.isBoss ? BattleLayout.bossScale : BattleLayout.mobScale).clearTint()
     this.container.setAlpha(1).setScale(1).setVisible(true)
     this.syncHp(request.hp)
     this.syncBars(0)
@@ -87,7 +87,7 @@ export class BattleMobView {
   getImpactPoint(): { readonly x: number; readonly y: number } {
     return {
       x: this.container.x,
-      y: this.container.y - (this.boss ? 34 : 18),
+      y: this.container.y - Math.round(this.sprite.displayHeight * (this.boss ? 0.52 : 0.48)),
     }
   }
 
@@ -101,19 +101,21 @@ export class BattleMobView {
 
   syncHp(hp: number): void {
     const ratio = Phaser.Math.Clamp(hp / this.maxHp, 0, 1)
-    const width = this.boss ? BattleLayout.bossHpBarWidth : BattleLayout.hpBarWidth
+    const width = this.getSpriteBarWidth()
     const height = this.boss ? BattleLayout.bossHpBarHeight : BattleLayout.hpBarHeight
-    const barY = this.boss ? -42 : -25
+    const barY = this.getHpBarY()
 
     this.hpBack.setPosition(-width / 2, barY).setDisplaySize(width, height)
     this.hpFill.setPosition(-width / 2, barY).setDisplaySize(Math.max(1, Math.floor(width * ratio)), height)
   }
 
   syncBars(enrageRatio: number): void {
-    this.enrageBack.setVisible(this.boss).setPosition(-BattleLayout.bossHpBarWidth / 2, -34)
-    this.enrageFill.setVisible(this.boss).setPosition(-BattleLayout.bossHpBarWidth / 2, -34)
-    this.enrageBack.setDisplaySize(BattleLayout.bossHpBarWidth, 3)
-    this.enrageFill.setDisplaySize(Math.max(1, Math.floor(BattleLayout.bossHpBarWidth * Phaser.Math.Clamp(enrageRatio, 0, 1))), 3)
+    const width = this.getSpriteBarWidth()
+    const barY = this.getHpBarY() + BattleLayout.bossHpBarHeight + 3
+    this.enrageBack.setVisible(this.boss).setPosition(-width / 2, barY)
+    this.enrageFill.setVisible(this.boss).setPosition(-width / 2, barY)
+    this.enrageBack.setDisplaySize(width, 3)
+    this.enrageFill.setDisplaySize(Math.max(1, Math.floor(width * Phaser.Math.Clamp(enrageRatio, 0, 1))), 3)
   }
 
   update(time: number, delta: number, slowFactor: number): void {
@@ -192,6 +194,15 @@ export class BattleMobView {
 
   private updatePosition(): void {
     this.container.setPosition(this.visualX + this.knockback.value + this.entrance.value, this.visualY)
+  }
+
+  private getSpriteBarWidth(): number {
+    return Math.max(8, Math.round(this.sprite.displayWidth))
+  }
+
+  private getHpBarY(): number {
+    const top = -this.sprite.displayHeight * this.sprite.originY
+    return Math.floor(top) - (this.boss ? 7 : 5)
   }
 
   private playMotion(action: ActorAction): void {

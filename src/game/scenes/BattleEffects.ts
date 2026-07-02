@@ -1,6 +1,8 @@
 import Phaser from "phaser"
 import { assertNever, type CastElement, type Element } from "../../engine/types"
 import { AnimationKeys, CastColors, ElementColors, TextureKeys } from "../TextureKeys"
+import { BattleJuiceEffects } from "./BattleJuiceEffects"
+import { BattleScreenEffects } from "./BattleScreenEffects"
 import { DamageTextPool } from "./PixelText"
 
 type Point = {
@@ -21,6 +23,8 @@ export class BattleEffects {
   private readonly projectiles: Phaser.GameObjects.Sprite[]
   private readonly impacts: Phaser.GameObjects.Sprite[]
   private readonly particles: Phaser.GameObjects.Particles.ParticleEmitter
+  private readonly juice: BattleJuiceEffects
+  private readonly screen: BattleScreenEffects
 
   constructor(private readonly scene: Phaser.Scene) {
     this.projectiles = Array.from({ length: 48 }, () =>
@@ -30,6 +34,7 @@ export class BattleEffects {
       scene.add.sprite(0, 0, TextureKeys.vfxFrame("explosion", 1)).setDepth(32).setVisible(false),
     )
     this.damageTexts = new DamageTextPool(scene, 64, 40)
+    this.juice = new BattleJuiceEffects(scene)
     this.particles = scene.add
       .particles(0, 0, TextureKeys.pixel, {
         emitting: false,
@@ -43,9 +48,11 @@ export class BattleEffects {
         reserve: 120,
       })
       .setDepth(29)
+    this.screen = new BattleScreenEffects(scene)
   }
 
   fireProjectile(request: ProjectileRequest): void {
+    this.juice.muzzleFlash(request.from, request.element)
     const projectile = this.borrowSprite(this.projectiles, getProjectileTexture(request.element))
     if (projectile === null) {
       request.onImpact()
@@ -89,7 +96,17 @@ export class BattleEffects {
   death(point: Point, element: Element): void {
     this.particles.setParticleTint(ElementColors[element])
     this.particles.explode(20, point.x, point.y)
+    this.juice.whitePop(point, 3)
     this.goldBurst(point)
+  }
+
+  bossDeath(point: Point, element: Element): void {
+    this.particles.setParticleTint(ElementColors[element])
+    this.particles.explode(56, point.x, point.y)
+    this.playImpact(point, 1.7)
+    this.juice.whitePop(point, 6)
+    this.goldBurst(point, 5)
+    this.playSlowMotion()
   }
 
   showDamage(point: Point, damage: number, critical: boolean): void {
@@ -113,25 +130,49 @@ export class BattleEffects {
       impact.anims.stop()
       impact.setVisible(false)
     })
+    this.juice.clear()
     this.particles.killAll()
+    this.screen.clear()
   }
 
-  private playImpact(point: Point): void {
+  stageFlash(): void {
+    this.screen.stageFlash()
+  }
+
+  setBossEnragePulse(active: boolean): void {
+    this.screen.setBossEnragePulse(active)
+  }
+
+  levelUp(point: Point): void {
+    this.juice.levelUp(point)
+  }
+
+  private playImpact(point: Point, scale = 1): void {
     const impact = this.borrowSprite(this.impacts, TextureKeys.vfxFrame("explosion", 1))
     if (impact === null) {
       return
     }
 
-    impact.setPosition(point.x, point.y).setAlpha(0.92).setScale(1).setVisible(true)
+    impact.setPosition(point.x, point.y).setAlpha(0.92).setScale(scale).setVisible(true)
     impact.once("animationcomplete", () => {
       impact.setVisible(false)
     })
     impact.play(AnimationKeys.impact)
   }
 
-  private goldBurst(point: Point): void {
+  private goldBurst(point: Point, bonusCoins = 0): void {
     this.particles.setParticleTint(0xe6b450)
     this.particles.explode(16, point.x, point.y - 4)
+    this.juice.flyCoins(point, bonusCoins)
+  }
+
+  private playSlowMotion(): void {
+    this.scene.time.timeScale = 0.5
+    this.scene.tweens.setGlobalTimeScale(0.5)
+    this.scene.time.delayedCall(75, () => {
+      this.scene.time.timeScale = 1
+      this.scene.tweens.setGlobalTimeScale(1)
+    })
   }
 
   private borrowSprite(sprites: readonly Phaser.GameObjects.Sprite[], texture: string): Phaser.GameObjects.Sprite | null {

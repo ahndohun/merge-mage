@@ -6,6 +6,7 @@ import { createGame } from "../game/createGame"
 import { assertNever, type Spellbook } from "../engine/types"
 import { getEquipSlotClickDecision, type BookSource } from "./bookInteractions"
 import { ControlsPanel } from "./ControlsPanel"
+import { clearSavedRun } from "./engineStorage"
 import { HudOverlay } from "./HudOverlay"
 import { OfflineClaimModal } from "./OfflineClaimModal"
 import { renderTab, type TabId } from "./renderTab"
@@ -169,7 +170,14 @@ export function GameShell() {
     setSoundMuted(nextMuted)
     writeAudioMutedPreference(nextMuted)
   }
+
+  const handleNewGame = () => {
+    clearSavedRun()
+    window.location.reload()
+  }
+
   const contextHint = getContextHint({ state: engine.state, summonCost: engine.summonCost })
+  const gameReady = activeSceneKey !== "booting"
 
   return (
     <main
@@ -180,11 +188,26 @@ export function GameShell() {
       data-inventory-count={engine.state.books.length}
       data-stage={engine.state.stage}
       data-summon-level={engine.summonLevel}
+      data-save-status={engine.saveIndicator}
       data-wave={engine.state.wave}
     >
       <div ref={hostRef} className="phaser-host" />
+      {gameReady ? null : (
+        <div className="preboot-splash" aria-live="polite">
+          <div className="preboot-copy">
+            <div className="preboot-title">MERGE MAGE</div>
+            <div className="preboot-loading">loading...</div>
+          </div>
+        </div>
+      )}
       <div className="ui-overlay" aria-label="Merge Mage overlay">
-        <HudOverlay muted={soundMuted} onToggleMute={toggleSoundMuted} state={engine.state} />
+        <HudOverlay
+          muted={soundMuted}
+          onNewGame={handleNewGame}
+          onToggleMute={toggleSoundMuted}
+          saveIndicator={engine.saveIndicator}
+          state={engine.state}
+        />
         <div className="bottom-overlay">
           <div className="tab-content">
             {renderTab(
