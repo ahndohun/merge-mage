@@ -138,3 +138,7 @@ After each feature: deploy (`vercel --yes --prod`), run TestSprite tests against
 - `src/engine/` stays pure TS (no phaser/react imports), deterministic, unit-tested.
 - Game state mirrors to DOM via `data-*` attributes for E2E testability.
 - API functions live in `api/index.ts` (Hono, Node adapter v1).
+
+## TestSprite project IDs
+- Frontend "Merge Mage": `cc32b9b9-ea01-408d-a2df-6e2a724b7142` (target https://merge-mage.vercel.app)
+- Backend "Merge Mage API": `83edef2d-3534-491d-9529-929416c41499`
