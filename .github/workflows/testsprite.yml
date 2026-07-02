@@ -6,7 +6,16 @@ name: testsprite-gate
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "LOOP.md"
+      - "README.md"
+      - "docs/**"
+      - "CREDITS.md"
   workflow_dispatch:
+
+concurrency:
+  group: testsprite-gate
+  cancel-in-progress: true
 
 env:
   TESTSPRITE_API_KEY: ${{ secrets.TESTSPRITE_API_KEY }}
@@ -26,7 +35,11 @@ jobs:
         run: sleep 45
       - name: Backend suite against the live API
         run: |
-          testsprite test run --all --project "$BE_PROJECT_ID" --wait --timeout 600 --output json
+          testsprite test run --all --project "$BE_PROJECT_ID" --wait --timeout 600 --output json || {
+            echo "retrying once after rate-limit backoff"; sleep 75;
+            testsprite test run --all --project "$BE_PROJECT_ID" --wait --timeout 600 --output json; }
       - name: Frontend smoke (summon flow) against the live app
         run: |
-          testsprite test run "$FE_SMOKE_TEST_ID" --wait --timeout 900 --output json
+          testsprite test run "$FE_SMOKE_TEST_ID" --wait --timeout 900 --output json || {
+            echo "retrying once after rate-limit backoff"; sleep 75;
+            testsprite test run "$FE_SMOKE_TEST_ID" --wait --timeout 900 --output json; }
