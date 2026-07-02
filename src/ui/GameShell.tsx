@@ -43,13 +43,16 @@ export function GameShell() {
       setActiveSceneKey(scene.scene.key)
     })
 
-    const game = createGame(host)
-    gameRef.current = game
+    // StrictMode runs this effect twice in dev; destroying a Phaser game
+    // mid-asset-load corrupts the loader (scene stuck in "booting"). The game
+    // is an app-lifetime singleton, so create once and never destroy on the
+    // double-invoke.
+    if (gameRef.current === null) {
+      gameRef.current = createGame(host)
+    }
 
     return () => {
       unsubscribe()
-      game.destroy(true)
-      gameRef.current = null
     }
   }, [])
 
