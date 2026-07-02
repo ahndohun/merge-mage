@@ -1,0 +1,29 @@
+{
+  "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
+  "type": "frontend",
+  "name": "Summoning a spellbook deducts gold and adds a book to the inventory grid",
+  "description": "With a fresh game (100 gold), pressing Summon spends the shown cost and a level-1 book appears in the inventory.",
+  "priority": "p0",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the game homepage and wait for the game HUD showing GOLD to load"
+    },
+    {
+      "type": "action",
+      "description": "Note the current GOLD value in the HUD and the cost shown on the SUMMON button"
+    },
+    {
+      "type": "action",
+      "description": "Click the SUMMON button once"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the GOLD value in the HUD decreased by the summon cost that was displayed"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify exactly one inventory cell in the books grid now shows a book labeled LV 1 with an element name"
+    }
+  ]
+}

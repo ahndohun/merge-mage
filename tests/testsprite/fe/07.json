@@ -1,0 +1,25 @@
+{
+  "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
+  "type": "frontend",
+  "name": "Leaderboard tab loads rankings and accepts a nickname",
+  "description": "RANKS tab fetches the leaderboard and lets the player set a nickname.",
+  "priority": "p2",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the game and open the RANKS tab"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the leaderboard area renders either a list of entries or an explicit empty state, not an error"
+    },
+    {
+      "type": "action",
+      "description": "Enter a nickname of 2-16 letters into the nickname input and submit it"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the UI confirms the nickname was saved or the leaderboard shows the submitted nickname"
+    }
+  ]
+}

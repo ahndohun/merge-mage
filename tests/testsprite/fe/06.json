@@ -1,0 +1,17 @@
+{
+  "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
+  "type": "frontend",
+  "name": "Rebirth is locked before reaching stage 10",
+  "description": "The rebirth action must be disabled or refused for a fresh save below stage 10.",
+  "priority": "p1",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the game with a fresh session and open the REBIRTH tab"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the rebirth confirm control is disabled or clearly marked as requiring stage 10, and activating it does not reset the game"
+    }
+  ]
+}

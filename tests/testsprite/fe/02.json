@@ -1,0 +1,29 @@
+{
+  "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
+  "type": "frontend",
+  "name": "Merging two same-level books produces one book of the next level",
+  "description": "Two level-1 books tap-merged become a single level-2 book and the inventory count shrinks by one.",
+  "priority": "p0",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the game and wait for the HUD"
+    },
+    {
+      "type": "action",
+      "description": "Click the SUMMON button twice so at least two LV 1 books exist in the inventory grid"
+    },
+    {
+      "type": "action",
+      "description": "Tap the first inventory book to select it, then tap the second book of the same level"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify a single book labeled LV 2 now exists where the merge happened"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the total number of filled inventory cells decreased by one"
+    }
+  ]
+}

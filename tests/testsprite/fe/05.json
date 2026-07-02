@@ -1,0 +1,29 @@
+{
+  "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
+  "type": "frontend",
+  "name": "Skill points allocate and reset from the Skills tab",
+  "description": "Allocating a point updates the skill count; Reset returns all points.",
+  "priority": "p1",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the game and open the SKILLS tab from the bottom navigation"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify four skills are listed"
+    },
+    {
+      "type": "action",
+      "description": "If a plus/allocate button is enabled on any skill, click it once and note the skill's point count; if no points are available, verify the allocate buttons are disabled and stop here"
+    },
+    {
+      "type": "action",
+      "description": "Click the reset button if a point was allocated"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the skill point count returned to its value before allocation"
+    }
+  ]
+}
