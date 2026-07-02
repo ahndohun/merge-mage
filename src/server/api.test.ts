@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { createInitialState } from "../src/engine/state"
-import { leaderboardBodySchema, saveBodySchema } from "./index"
+import { createInitialState } from "../engine/state"
+import { leaderboardBodySchema, saveBodySchema } from "../../api/index"
 
 const token = "merge_mage_test_token_12345"
 

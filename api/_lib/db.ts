@@ -1,6 +1,6 @@
-import { OFFLINE_CAP_MS } from "../src/engine/constants"
-import { computeOfflineGold } from "../src/engine/offline"
-import type { EngineState } from "../src/engine/types"
+import { OFFLINE_CAP_MS } from "../../src/engine/constants"
+import { computeOfflineGold } from "../../src/engine/offline"
+import type { EngineState } from "../../src/engine/types"
 import { CorruptSaveError, DatabaseConfigError } from "./errors"
 import { jsonState, MAX_GOLD, parseSavedState } from "./schemas"
 
