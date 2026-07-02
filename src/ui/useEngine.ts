@@ -39,14 +39,14 @@ export type UseEngineResult = {
   readonly leaderboard: readonly LeaderboardEntry[]
   readonly nickname: string
   readonly offlineClaim: OfflineClaim | null
-  readonly summon: () => void
-  readonly mergeBooks: (leftId: string, rightId: string) => void
-  readonly equipBook: (bookId: string, slotIdx: number) => void
-  readonly unequipBook: (slotIdx: number) => void
-  readonly upgradeSlot: (slotIdx: number) => void
-  readonly allocateSkill: (skill: SkillName) => void
-  readonly resetSkills: () => void
-  readonly prestige: () => void
+  readonly summon: () => boolean
+  readonly mergeBooks: (leftId: string, rightId: string) => boolean
+  readonly equipBook: (bookId: string, slotIdx: number) => boolean
+  readonly unequipBook: (slotIdx: number) => boolean
+  readonly upgradeSlot: (slotIdx: number) => boolean
+  readonly allocateSkill: (skill: SkillName) => boolean
+  readonly resetSkills: () => boolean
+  readonly prestige: () => boolean
   readonly setAutoMerge: (enabled: boolean) => void
   readonly setAutoBuy: (enabled: boolean) => void
   readonly setNickname: (nickname: string) => void
@@ -80,6 +80,7 @@ export function useEngine(): UseEngineResult {
   const rafRef = useRef<number | null>(null)
   const saveTokenRef = useRef(ensureSaveToken())
   const saveIssueRef = useRef<string | null>(null)
+  const saveFailureCountRef = useRef(0)
 
   const commitState = useCallback((nextState: EngineState, nextEvents: readonly EngineEvent[]) => {
     stateRef.current = nextState
@@ -107,9 +108,10 @@ export function useEngine(): UseEngineResult {
         if (input.successToast !== undefined) {
           addToast(input.successToast, "notice")
         }
+        return true
       } catch (error) {
         if (isExpectedEngineError(error)) {
-          return
+          return false
         }
         throw error
       }
@@ -118,53 +120,53 @@ export function useEngine(): UseEngineResult {
   )
 
   const summon = useCallback(() => {
-    applyReducer({ reducer: summonBook, floorToast: true })
+    return applyReducer({ reducer: summonBook, floorToast: true })
   }, [applyReducer])
 
   const mergeBooks = useCallback(
     (leftId: string, rightId: string) => {
       if (!canMerge(stateRef.current, leftId, rightId)) {
-        return
+        return false
       }
-      applyReducer({ reducer: (current) => mergeBooksReducer(current, leftId, rightId), floorToast: true })
+      return applyReducer({ reducer: (current) => mergeBooksReducer(current, leftId, rightId), floorToast: true })
     },
     [applyReducer],
   )
 
   const equipBook = useCallback(
     (bookId: string, slotIdx: number) => {
-      applyReducer({ reducer: (current) => equipBookReducer(current, bookId, slotIdx) })
+      return applyReducer({ reducer: (current) => equipBookReducer(current, bookId, slotIdx) })
     },
     [applyReducer],
   )
 
   const unequipBook = useCallback(
     (slotIdx: number) => {
-      applyReducer({ reducer: (current) => unequipBookReducer(current, slotIdx) })
+      return applyReducer({ reducer: (current) => unequipBookReducer(current, slotIdx) })
     },
     [applyReducer],
   )
 
   const upgradeSlot = useCallback(
     (slotIdx: number) => {
-      applyReducer({ reducer: (current) => upgradeSlotReducer(current, slotIdx) })
+      return applyReducer({ reducer: (current) => upgradeSlotReducer(current, slotIdx) })
     },
     [applyReducer],
   )
 
   const allocateSkill = useCallback(
     (skill: SkillName) => {
-      applyReducer({ reducer: (current) => allocateSkillReducer(current, skill) })
+      return applyReducer({ reducer: (current) => allocateSkillReducer(current, skill) })
     },
     [applyReducer],
   )
 
   const resetSkills = useCallback(() => {
-    applyReducer({ reducer: resetSkillsReducer })
+    return applyReducer({ reducer: resetSkillsReducer })
   }, [applyReducer])
 
   const prestige = useCallback(() => {
-    applyReducer({ reducer: prestigeReducer, successToast: "Rebirth complete." })
+    return applyReducer({ reducer: prestigeReducer, successToast: "Rebirth complete." })
   }, [applyReducer])
 
   const setAutoMerge = useCallback((enabled: boolean) => {
@@ -219,7 +221,7 @@ export function useEngine(): UseEngineResult {
   useEngineClock({ stateRef, accumulatorRef, lastFrameRef, rafRef, commitState })
   useVisibilityPause(lastFrameRef)
   useAutoEngineActions({ autoBuyRef, autoMergeRef, stateRef, summon, mergeBooks })
-  useSaveCadence({ stateRef, saveTokenRef, nicknameRef, saveIssueRef, addToast })
+  useSaveCadence({ stateRef, saveTokenRef, nicknameRef, saveIssueRef, saveFailureCountRef, addToast })
   useOfflineClaim({ saveTokenRef, stateRef, commitState, setOfflineClaim })
 
   useEffect(() => {

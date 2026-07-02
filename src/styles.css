@@ -1,22 +1,48 @@
+@font-face {
+  font-family: "DungeonFont";
+  src: url("/assets/fonts/DungeonFont.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
-  font-family: monospace;
-  background: var(--surface-base, #05060a);
+  font-family: "DungeonFont", monospace;
+  background: #100e14;
+  font-synthesis: none;
+  letter-spacing: 0;
+  text-rendering: optimizeSpeed;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  min-height: 100dvh;
+}
+
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100dvh;
   overflow: hidden;
+  background: #100e14;
 }
 
-#root {
-  min-height: 100dvh;
+button,
+input {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+button {
+  appearance: none;
+}
+
+img,
+canvas {
+  image-rendering: pixelated;
 }
 
 .game-shell {
@@ -24,32 +50,31 @@ body {
   display: grid;
   min-height: 100dvh;
   place-items: center;
-  background: var(--surface-base, #05060a);
+  background: #100e14;
+  color: #e8e0d8;
 }
 
 .phaser-host {
   width: min(100vw, 390px);
   height: min(100dvh, 844px);
+  overflow: hidden;
+  border: 2px solid #4a3f63;
+  background: #1a1721;
+  box-shadow:
+    0 0 0 2px #100e14,
+    4px 4px 0 #08070a;
+}
+
+.phaser-host canvas {
+  display: block;
 }
 
 .ui-overlay {
   position: absolute;
   inset: 0;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.hud-bar {
-  display: flex;
+  display: grid;
   width: min(100vw, 390px);
-  height: var(--hud-height, 48px);
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-3, 12px);
-  color: var(--text-primary, #f7f7ff);
-  background: var(--surface-hud, rgb(0 0 0 / 35%));
-  font-size: 12px;
-  font-weight: 600;
-  pointer-events: auto;
+  height: min(100dvh, 844px);
+  margin: auto;
+  pointer-events: none;
 }

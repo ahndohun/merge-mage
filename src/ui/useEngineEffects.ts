@@ -101,6 +101,7 @@ export function useSaveCadence(input: {
   readonly saveTokenRef: MutableRef<SaveToken>
   readonly nicknameRef: MutableRef<string>
   readonly saveIssueRef: MutableRef<string | null>
+  readonly saveFailureCountRef: MutableRef<number>
   readonly addToast: (text: string, kind: ToastMessage["kind"]) => void
 }): void {
   useEffect(() => {
@@ -113,6 +114,18 @@ export function useSaveCadence(input: {
       }).then((result) => {
         if (result.kind === "ok") {
           input.saveIssueRef.current = null
+          input.saveFailureCountRef.current = 0
+          return
+        }
+
+        if (import.meta.env.DEV) {
+          input.saveIssueRef.current = null
+          input.saveFailureCountRef.current = 0
+          return
+        }
+
+        input.saveFailureCountRef.current += 1
+        if (input.saveFailureCountRef.current < 3) {
           return
         }
 
@@ -133,7 +146,7 @@ export function useSaveCadence(input: {
       window.removeEventListener("pagehide", save)
       window.removeEventListener("beforeunload", save)
     }
-  }, [input.addToast, input.nicknameRef, input.saveIssueRef, input.saveTokenRef, input.stateRef])
+  }, [input.addToast, input.nicknameRef, input.saveFailureCountRef, input.saveIssueRef, input.saveTokenRef, input.stateRef])
 }
 
 export function useOfflineClaim(input: {

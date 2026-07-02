@@ -5,5 +5,7 @@ export function getSummonLevel(highestLevel: number): number {
 }
 
 export function getSummonCost(summonLevel: number): number {
-  return SUMMON_COST_BASE * SUMMON_COST_GROWTH ** summonLevel
+  // Integral gold at the source: the displayed cost and the charged cost must
+  // be the same number (TestSprite round-1 catch: button said 24, charge was 24.4).
+  return Math.ceil(SUMMON_COST_BASE * SUMMON_COST_GROWTH ** summonLevel)
 }

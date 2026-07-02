@@ -4,6 +4,8 @@ import { formatNumber } from "./formatNumber"
 
 type HudOverlayProps = {
   readonly state: EngineState
+  readonly muted: boolean
+  readonly onToggleMute: () => void
 }
 
 export function HudOverlay(props: HudOverlayProps) {
@@ -32,6 +34,16 @@ export function HudOverlay(props: HudOverlayProps) {
           <div className="xp-fill" style={{ width: `${xpProgress}%` }} />
         </div>
       </div>
+      <button
+        aria-label={props.muted ? "Unmute sound" : "Mute sound"}
+        aria-pressed={props.muted}
+        className={`hud-mute-btn${props.muted ? " is-muted" : ""}`}
+        data-testid="mute-toggle"
+        onClick={props.onToggleMute}
+        type="button"
+      >
+        {props.muted ? "SND OFF" : "SND ON"}
+      </button>
     </header>
   )
 }

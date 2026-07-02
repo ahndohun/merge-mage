@@ -1,6 +1,6 @@
 import Phaser from "phaser"
 import type { Element } from "../../engine/types"
-import { ElementColors, TextureKeys } from "../TextureKeys"
+import { AnimationKeys, ElementColors, type ActorAction, type BossKind, type MobKind, TextureKeys } from "../TextureKeys"
 import { BattleLayout, getLaneY } from "./BattleLayout"
 
 type MobSpawn = {
@@ -8,6 +8,8 @@ type MobSpawn = {
   readonly index: number
   readonly isBoss: boolean
   readonly element: Element
+  readonly mobKind: MobKind
+  readonly bossKind: BossKind
 }
 
 type Knockback = {
@@ -16,7 +18,7 @@ type Knockback = {
 
 export class BattleMobView {
   readonly container: Phaser.GameObjects.Container
-  readonly sprite: Phaser.GameObjects.Image
+  readonly sprite: Phaser.GameObjects.Sprite
 
   private readonly hpBack: Phaser.GameObjects.Image
   private readonly hpFill: Phaser.GameObjects.Image
@@ -32,10 +34,13 @@ export class BattleMobView {
   private boss = false
   private dying = false
   private flashUntil = 0
+  private mobKind: MobKind = "imp"
+  private bossKind: BossKind = "big_demon"
+  private currentMotion: ActorAction | null = null
 
   constructor(scene: Phaser.Scene) {
     this.container = scene.add.container(0, 0).setDepth(20).setVisible(false)
-    this.sprite = scene.add.image(0, 0, TextureKeys.mob.fire).setOrigin(0.5, 0.75)
+    this.sprite = scene.add.sprite(0, 0, TextureKeys.mob("imp", "idle", 0)).setOrigin(0.5, 0.75)
     this.hpBack = makePixel(scene, 0x1d1b24, 0.95, 21)
     this.hpFill = makePixel(scene, 0x49e071, 1, 22)
     this.enrageBack = makePixel(scene, 0x13060a, 0.95, 21)
@@ -47,6 +52,9 @@ export class BattleMobView {
   spawn(request: MobSpawn): void {
     this.boss = request.isBoss
     this.activeElement = request.element
+    this.mobKind = request.mobKind
+    this.bossKind = request.bossKind
+    this.currentMotion = null
     this.maxHp = Math.max(1, request.hp)
     this.dying = false
     this.flashUntil = 0
@@ -55,11 +63,12 @@ export class BattleMobView {
     this.visualX = request.isBoss ? BattleLayout.bossX : BattleLayout.mobStartX + Math.floor(request.index / 5) * 18
     this.visualY = request.isBoss ? BattleLayout.bossY : getLaneY(request.index)
 
-    const texture = request.isBoss ? TextureKeys.boss : TextureKeys.mob[request.element]
-    this.sprite.setTexture(texture).setAlpha(1).setScale(request.isBoss ? 1.15 : 1).clearTint()
-    this.container.setAlpha(1).setVisible(true)
+    const texture = request.isBoss ? TextureKeys.boss(request.bossKind, "idle", 0) : TextureKeys.mob(request.mobKind, "idle", 0)
+    this.sprite.setTexture(texture).setAlpha(1).setScale(request.isBoss ? 2 : 2).clearTint()
+    this.container.setAlpha(1).setScale(1).setVisible(true)
     this.syncHp(request.hp)
     this.syncBars(0)
+    this.playMotion("run")
     this.updatePosition()
   }
 
@@ -68,6 +77,7 @@ export class BattleMobView {
     this.container.setAlpha(1)
     this.enrageBack.setVisible(false)
     this.enrageFill.setVisible(false)
+    this.sprite.anims.stop()
   }
 
   isActive(): boolean {
@@ -77,7 +87,7 @@ export class BattleMobView {
   getImpactPoint(): { readonly x: number; readonly y: number } {
     return {
       x: this.container.x,
-      y: this.container.y - (this.boss ? 24 : 12),
+      y: this.container.y - (this.boss ? 34 : 18),
     }
   }
 
@@ -96,14 +106,14 @@ export class BattleMobView {
     const barY = this.boss ? -42 : -25
 
     this.hpBack.setPosition(-width / 2, barY).setDisplaySize(width, height)
-    this.hpFill.setPosition(-width / 2, barY).setDisplaySize(Math.max(1, width * ratio), height)
+    this.hpFill.setPosition(-width / 2, barY).setDisplaySize(Math.max(1, Math.floor(width * ratio)), height)
   }
 
   syncBars(enrageRatio: number): void {
     this.enrageBack.setVisible(this.boss).setPosition(-BattleLayout.bossHpBarWidth / 2, -34)
     this.enrageFill.setVisible(this.boss).setPosition(-BattleLayout.bossHpBarWidth / 2, -34)
     this.enrageBack.setDisplaySize(BattleLayout.bossHpBarWidth, 3)
-    this.enrageFill.setDisplaySize(Math.max(1, BattleLayout.bossHpBarWidth * Phaser.Math.Clamp(enrageRatio, 0, 1)), 3)
+    this.enrageFill.setDisplaySize(Math.max(1, Math.floor(BattleLayout.bossHpBarWidth * Phaser.Math.Clamp(enrageRatio, 0, 1))), 3)
   }
 
   update(time: number, delta: number, slowFactor: number): void {
@@ -112,7 +122,9 @@ export class BattleMobView {
     }
 
     const speed = (this.boss ? BattleLayout.mobSpeed * 0.58 : BattleLayout.mobSpeed) * slowFactor
+    const previousX = this.visualX
     this.visualX = Math.max(BattleLayout.mobMinX, this.visualX - speed * (delta / 1_000))
+    this.playMotion(this.visualX < previousX ? "run" : "idle")
 
     if (this.flashUntil > 0 && time >= this.flashUntil) {
       this.flashUntil = 0
@@ -162,12 +174,12 @@ export class BattleMobView {
     }
 
     this.dying = true
+    this.sprite.anims.stop()
     this.sprite.setTint(ElementColors[this.activeElement]).setTintMode(Phaser.TintModes.ADD)
     scene.tweens.add({
       targets: this.container,
       y: this.container.y - 12,
       alpha: 0,
-      scale: 1.18,
       duration: 260,
       ease: "Cubic.easeOut",
       onComplete: () => {
@@ -180,6 +192,16 @@ export class BattleMobView {
 
   private updatePosition(): void {
     this.container.setPosition(this.visualX + this.knockback.value + this.entrance.value, this.visualY)
+  }
+
+  private playMotion(action: ActorAction): void {
+    if (this.currentMotion === action) {
+      return
+    }
+
+    this.currentMotion = action
+    const key = this.boss ? AnimationKeys.boss(this.bossKind, action) : AnimationKeys.mob(this.mobKind, action)
+    this.sprite.play(key, true)
   }
 }
 

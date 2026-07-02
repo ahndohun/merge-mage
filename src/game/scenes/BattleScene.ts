@@ -1,20 +1,28 @@
 import Phaser from "phaser"
 import { EventBus, type Unsubscribe } from "../../bridge/EventBus"
-import type { Element, EngineEvent, EngineState } from "../../engine/types"
+import { assertNever, type Element, type EngineEvent, type EngineState } from "../../engine/types"
 import { EngineEventBridge } from "../GameEventBridge"
-import { ElementColors, TextureKeys, registerPlaceholderTextures } from "../TextureKeys"
+import {
+  createBattleAnimations,
+  getBossKindForStage,
+  getMobKindForStage,
+  preloadBattleAssets,
+} from "../TextureKeys"
+import { registerUtilityTextures } from "../UtilityTextures"
+import { BattleAudio } from "./BattleAudio"
 import { BattleEffects } from "./BattleEffects"
 import { BOSS_ENRAGE_MS, BOSS_WAVE_NUMBER, BattleLayout, isBossWave } from "./BattleLayout"
 import { BattleBanner } from "./BattleBanner"
 import { mirrorBattleState } from "./BattleDataMirror"
 import { drawBattleFrame } from "./BattleFrame"
 import { BattleMobView } from "./BattleMobView"
+import { BattleWizardView } from "./BattleWizardView"
 
 const ELEMENT_CYCLE: readonly Element[] = ["fire", "frost", "holy"]
 const MOB_POOL_SIZE = 36
 
 export class BattleScene extends Phaser.Scene {
-  private wizard: Phaser.GameObjects.Image | null = null
+  private wizard: BattleWizardView | null = null
   private banner: BattleBanner | null = null
   private effects: BattleEffects | null = null
   private unsubscribeState: Unsubscribe | null = null
@@ -24,6 +32,7 @@ export class BattleScene extends Phaser.Scene {
   private lastWave = 0
   private slowUntil = 0
   private slowFactor = 1
+  private audio: BattleAudio | null = null
 
   private readonly activeMobs: BattleMobView[] = []
   private readonly mobPool: BattleMobView[] = []
@@ -32,27 +41,21 @@ export class BattleScene extends Phaser.Scene {
     super("BattleScene")
   }
 
+  preload(): void {
+    preloadBattleAssets(this)
+  }
+
   create(): void {
     EngineEventBridge.install()
-    registerPlaceholderTextures(this)
+    registerUtilityTextures(this)
+    createBattleAnimations(this)
     this.cameras.main.setBackgroundColor("#05060a")
     drawBattleFrame(this)
 
-    this.wizard = this.add
-      .image(BattleLayout.wizardX, BattleLayout.wizardY, TextureKeys.wizard)
-      .setDepth(18)
-      .setScale(1.7)
-    this.tweens.add({
-      targets: this.wizard,
-      y: BattleLayout.wizardY - 3,
-      duration: 820,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    })
-
+    this.wizard = new BattleWizardView(this)
     this.effects = new BattleEffects(this)
     this.banner = new BattleBanner(this)
+    this.audio = new BattleAudio(this)
     this.prewarmMobs()
     this.banner.show(`STAGE 1 — WAVE 1/${BOSS_WAVE_NUMBER}`, 0xfff0a8)
     this.unsubscribeState = EngineEventBridge.onState((state) => this.handleState(state))
@@ -82,6 +85,7 @@ export class BattleScene extends Phaser.Scene {
     const waveChanged = state.stage !== this.lastStage || state.wave !== this.lastWave
     this.currentState = state
     mirrorBattleState(state)
+    this.audio?.syncMusic(state)
 
     if (waveChanged) {
       this.resetWave(state)
@@ -127,7 +131,7 @@ export class BattleScene extends Phaser.Scene {
         this.slowUntil = this.time.now + event.durationMs
         return
       default:
-        return event
+        return assertNever(event)
     }
   }
 
@@ -156,20 +160,22 @@ export class BattleScene extends Phaser.Scene {
     state.enemiesHp.forEach((hp, index) => {
       let mob = this.activeMobs[index]
       if (mob === undefined) {
-        mob = this.spawnMob(hp, index, isBossWave(state.wave))
+        mob = this.spawnMob(hp, index, isBossWave(state.wave), state.stage)
       }
 
       mob.syncHp(hp)
     })
   }
 
-  private spawnMob(hp: number, index: number, isBoss: boolean): BattleMobView {
+  private spawnMob(hp: number, index: number, isBoss: boolean, stage: number): BattleMobView {
     const mob = this.mobPool.pop() ?? new BattleMobView(this)
     mob.spawn({
       hp,
       index,
       isBoss,
       element: getElementForIndex(index),
+      mobKind: getMobKindForStage(stage),
+      bossKind: getBossKindForStage(stage),
     })
     this.activeMobs.push(mob)
     return mob
@@ -184,16 +190,19 @@ export class BattleScene extends Phaser.Scene {
     }
 
     const targetPoint = target.getImpactPoint()
-    effects.fireProjectile({
-      from: { x: BattleLayout.castX, y: BattleLayout.castY },
-      to: targetPoint,
-      element: event.element,
-      onImpact: () => {
-        target.flashHit(this)
-        effects.impact(event.element, targetPoint)
-        effects.showDamage(targetPoint, event.damage, event.critical)
-        this.flashWizard(event.element)
-      },
+    wizard.playCast(() => {
+      effects.fireProjectile({
+        from: { x: BattleLayout.castX, y: BattleLayout.castY },
+        to: targetPoint,
+        element: event.element,
+        onImpact: () => {
+          target.flashHit(this)
+          effects.impact(event.element, targetPoint)
+          effects.showDamage(targetPoint, event.damage, event.critical)
+          this.audio?.playMobHit(target.isBoss())
+          wizard.flash(event.element)
+        },
+      })
     })
   }
 
@@ -206,6 +215,7 @@ export class BattleScene extends Phaser.Scene {
       effects.death(point, element)
     }
 
+    this.audio?.playGold()
     mob.playDeath(this, () => {
       this.mobPool.push(mob)
     })
@@ -221,36 +231,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private playBossFail(stage: number): void {
-    const wizard = this.wizard
-    if (wizard !== null) {
-      wizard.setTint(0xff425c).setTintMode(Phaser.TintModes.FILL)
-      this.tweens.add({
-        targets: wizard,
-        x: BattleLayout.wizardX - 18,
-        alpha: 0.45,
-        duration: 120,
-        yoyo: true,
-        ease: "Quad.easeOut",
-        onComplete: () => {
-          wizard.setPosition(BattleLayout.wizardX, BattleLayout.wizardY).setAlpha(1).clearTint()
-        },
-      })
-    }
-
+    this.wizard?.playFail()
     this.cameras.main.shake(150, 0.004)
     this.banner?.show(`STAGE ${stage} — WAVE RESET`, 0xff6a6a)
-  }
-
-  private flashWizard(element: Element): void {
-    const wizard = this.wizard
-    if (wizard === null) {
-      return
-    }
-
-    wizard.setTint(ElementColors[element]).setTintMode(Phaser.TintModes.ADD)
-    this.time.delayedCall(90, () => {
-      wizard.clearTint()
-    })
   }
 
   private syncBossEnrage(): void {
@@ -270,6 +253,8 @@ export class BattleScene extends Phaser.Scene {
     this.unsubscribeEvents?.()
     this.unsubscribeState = null
     this.unsubscribeEvents = null
+    this.audio?.destroy()
+    this.audio = null
     this.effects?.clear()
     this.activeMobs.splice(0).forEach((mob) => mob.hide())
     this.mobPool.splice(0)

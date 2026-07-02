@@ -41,11 +41,12 @@ describe("merge spellbooks", () => {
 })
 
 describe("summon cost", () => {
-  it("uses base times growth raised to the summon level", () => {
+  it("charges the ceil of base times growth so the displayed cost equals the charge", () => {
     const summonLevel = 4
 
     const cost = getSummonCost(summonLevel)
 
-    expect(cost).toBeCloseTo(SUMMON_COST_BASE * SUMMON_COST_GROWTH ** summonLevel)
+    expect(cost).toBe(Math.ceil(SUMMON_COST_BASE * SUMMON_COST_GROWTH ** summonLevel))
+    expect(Number.isInteger(cost)).toBe(true)
   })
 })

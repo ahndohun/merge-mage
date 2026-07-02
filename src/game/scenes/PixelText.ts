@@ -93,7 +93,6 @@ export class DamageTextPool {
       targets: line.container,
       y: request.y - 30,
       alpha: 0,
-      scale: request.critical ? 1.25 : 1,
       duration: request.critical ? 720 : 560,
       ease: "Cubic.easeOut",
       onComplete: () => {

@@ -1,4 +1,3 @@
-import { handle } from "@hono/node-server/vercel"
 import { Hono, type Context } from "hono"
 import type { ZodError } from "zod"
 import { claimOffline, getLeaderboard, getSavedGame, saveGame, upsertLeaderboard } from "./_lib/db.js"
@@ -6,12 +5,6 @@ import { CorruptSaveError, DatabaseConfigError, InvalidJsonError } from "./_lib/
 import { leaderboardBodySchema, saveBodySchema, tokenBodySchema, tokenSchema } from "./_lib/schemas.js"
 
 export { engineStateSchema, leaderboardBodySchema, saveBodySchema, tokenBodySchema, tokenSchema } from "./_lib/schemas.js"
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-} as const
 
 const app = new Hono().basePath("/api")
 
@@ -103,4 +96,41 @@ function errorEnvelope(error: string, details?: unknown) {
   return details === undefined ? { error } : { error, details }
 }
 
-export default handle(app)
+// Vercel's Node helpers consume the request stream before Hono can read it,
+// which left every POST hanging until the runtime timeout (TestSprite round-1
+// catch). Rebuild a web-standard Request from the helper-parsed body instead
+// of relying on an adapter.
+type NodeReq = {
+  method?: string
+  url?: string
+  headers: Record<string, string | string[] | undefined>
+  body?: unknown
+}
+type NodeRes = {
+  statusCode: number
+  setHeader(name: string, value: string): void
+  end(chunk: Buffer): void
+}
+
+export default async function handler(req: NodeReq, res: NodeRes): Promise<void> {
+  const host = (req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost") as string
+  const url = `https://${host}${req.url ?? "/"}`
+  const method = req.method ?? "GET"
+  const headers = new Headers()
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (typeof value === "string") headers.set(key, value)
+    else if (Array.isArray(value)) headers.set(key, value.join(", "))
+  }
+  headers.delete("content-length")
+  let body: string | undefined
+  if (method !== "GET" && method !== "HEAD" && req.body !== undefined && req.body !== null) {
+    body = typeof req.body === "string" ? req.body : JSON.stringify(req.body)
+    headers.set("content-type", "application/json")
+  }
+  const webResponse = await app.fetch(new Request(url, { method, headers, body }))
+  res.statusCode = webResponse.status
+  webResponse.headers.forEach((value, key) => {
+    if (key.toLowerCase() !== "content-length") res.setHeader(key, value)
+  })
+  res.end(Buffer.from(await webResponse.arrayBuffer()))
+}

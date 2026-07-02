@@ -1,12 +1,8 @@
 import { INVENTORY_LIMIT } from "../engine/constants"
 import { getSlotUpgradeCost } from "../engine/actions"
 import type { EngineState, Spellbook } from "../engine/types"
+import { canUpgradeSlotWhileSelected, type BookSource } from "./bookInteractions"
 import { formatNumber } from "./formatNumber"
-
-export type BookSource = {
-  readonly kind: "inventory" | "equipped"
-  readonly bookId: string
-}
 
 type BooksPanelProps = {
   readonly state: EngineState
@@ -16,7 +12,7 @@ type BooksPanelProps = {
   readonly onBookClick: (source: BookSource, book: Spellbook) => void
   readonly onEquipDrop: (slotIdx: number) => void
   readonly onEquipClick: (slotIdx: number, source: BookSource | null) => void
-  readonly onUpgradeSlot: (slotIdx: number) => void
+  readonly onUpgradeSlot: (slotIdx: number) => boolean
 }
 
 export function BooksPanel(props: BooksPanelProps) {
@@ -67,11 +63,12 @@ function EquipSlot(props: {
   readonly onBookPointerDown: (source: BookSource) => void
   readonly onEquipDrop: (slotIdx: number) => void
   readonly onEquipClick: (slotIdx: number, source: BookSource | null) => void
-  readonly onUpgradeSlot: (slotIdx: number) => void
+  readonly onUpgradeSlot: (slotIdx: number) => boolean
 }) {
   const upgradeCost = getSlotUpgradeCost(props.tier)
   const elementClass = props.book === null ? "empty" : props.book.element
   const selected = props.book !== null && props.selected?.bookId === props.book.id
+  const canUpgrade = canUpgradeSlotWhileSelected(props.selected) && props.gold >= upgradeCost
 
   return (
     <div
@@ -89,15 +86,37 @@ function EquipSlot(props: {
       role="button"
       tabIndex={0}
     >
-      <span className="slot-title">{props.book === null ? "EMPTY" : `LV ${props.book.level}`}</span>
-      <span className="slot-meta">{props.book === null ? "SLOT" : props.book.element.toUpperCase()}</span>
+      <div className="slot-face">
+        {props.book === null ? (
+          <span className="slot-empty-plus">+</span>
+        ) : (
+          <>
+            <TomeIcon element={props.book.element} />
+            <span className="level-badge">{props.book.level}</span>
+          </>
+        )}
+        <span className="slot-meta">{props.book === null ? "SLOT" : props.book.element.toUpperCase()}</span>
+      </div>
       <button
-        className="btn btn-mini"
+        aria-disabled={!canUpgrade}
+        className={`btn btn-mini slot-upgrade${props.selected !== null ? " is-selection-locked" : ""}`}
         data-testid={`slot-upgrade-${props.index}`}
-        disabled={props.gold < upgradeCost}
+        disabled={!canUpgrade}
+        onPointerDown={(event) => {
+          if (props.selected === null) {
+            event.stopPropagation()
+          }
+        }}
+        onPointerUp={(event) => {
+          if (props.selected === null) {
+            event.stopPropagation()
+          }
+        }}
         onClick={(event) => {
           event.stopPropagation()
-          props.onUpgradeSlot(props.index)
+          if (canUpgrade) {
+            props.onUpgradeSlot(props.index)
+          }
         }}
         type="button"
       >
@@ -141,13 +160,18 @@ function InventoryCell(props: {
       tabIndex={0}
     >
       {props.book === null ? (
-        <span className="slot-title">-</span>
+        <span className="slot-empty-plus">+</span>
       ) : (
         <>
-          <span className="slot-title">LV {props.book.level}</span>
+          <TomeIcon element={props.book.element} />
+          <span className="level-badge">{props.book.level}</span>
           <span className="slot-meta">{props.book.element.toUpperCase()}</span>
         </>
       )}
     </div>
   )
+}
+
+function TomeIcon(props: { readonly element: Spellbook["element"] }) {
+  return <img alt="" aria-hidden="true" className="tome-icon" draggable={false} src={`/assets/tomes/${props.element}.png`} />
 }

@@ -1,26 +1,23 @@
 import { useEffect, useRef, useState } from "react"
 import type Phaser from "phaser"
 import { EventBus } from "../bridge/EventBus"
+import { emitGameSfx, readAudioMutedPreference, writeAudioMutedPreference } from "../game/GameAudio"
 import { createGame } from "../game/createGame"
-import type { Spellbook } from "../engine/types"
-import { BooksPanel, type BookSource } from "./BooksPanel"
+import { assertNever, type Spellbook } from "../engine/types"
+import { getEquipSlotClickDecision, type BookSource } from "./bookInteractions"
 import { ControlsPanel } from "./ControlsPanel"
 import { HudOverlay } from "./HudOverlay"
 import { OfflineClaimModal } from "./OfflineClaimModal"
-import { RanksPanel } from "./RanksPanel"
-import { RebirthPanel } from "./RebirthPanel"
-import { SkillsPanel } from "./SkillsPanel"
+import { renderTab, type TabId } from "./renderTab"
 import { Toasts } from "./Toasts"
 import { useEngine } from "./useEngine"
 
-const TABS = [
+const TABS: readonly { readonly id: TabId; readonly label: string; readonly testId: string }[] = [
   { id: "books", label: "BOOKS", testId: "tab-books" },
   { id: "skills", label: "SKILLS", testId: "tab-skills" },
   { id: "rebirth", label: "REBIRTH", testId: "tab-rebirth" },
   { id: "ranks", label: "RANKS", testId: "tab-ranks" },
 ] as const
-
-type TabId = (typeof TABS)[number]["id"]
 
 export function GameShell() {
   const hostRef = useRef<HTMLDivElement | null>(null)
@@ -32,6 +29,7 @@ export function GameShell() {
   const [activeTab, setActiveTab] = useState<TabId>("books")
   const [selected, setSelected] = useState<BookSource | null>(null)
   const [, setDragging] = useState<BookSource | null>(null)
+  const [soundMuted, setSoundMuted] = useState(readAudioMutedPreference)
   const engine = useEngine()
 
   useEffect(() => {
@@ -92,7 +90,9 @@ export function GameShell() {
       return
     }
 
-    engine.mergeBooks(source.bookId, targetBook.id)
+    if (engine.mergeBooks(source.bookId, targetBook.id)) {
+      emitGameSfx("merge")
+    }
     clearHeldBook()
   }
 
@@ -108,7 +108,9 @@ export function GameShell() {
       return
     }
 
-    engine.mergeBooks(selectedSource.bookId, targetBook.id)
+    if (engine.mergeBooks(selectedSource.bookId, targetBook.id)) {
+      emitGameSfx("merge")
+    }
     clearHeldBook()
   }
 
@@ -119,24 +121,49 @@ export function GameShell() {
     }
 
     suppressClickRef.current = true
-    engine.equipBook(source.bookId, slotIdx)
+    if (engine.equipBook(source.bookId, slotIdx)) {
+      emitGameSfx("confirm")
+    }
     clearHeldBook()
   }
 
   const handleEquipClick = (slotIdx: number, source: BookSource | null) => {
-    if (suppressClickRef.current) {
-      suppressClickRef.current = false
-      return
-    }
+    const decision = getEquipSlotClickDecision({
+      suppressedClick: suppressClickRef.current,
+      selected: selectedRef.current,
+      slotSource: source,
+    })
 
-    const selectedSource = selectedRef.current
-    if (selectedSource === null) {
-      setSelectedSource(source)
-      return
+    switch (decision.kind) {
+      case "consume-suppressed-click":
+        suppressClickRef.current = false
+        return
+      case "select-slot-book":
+        setSelectedSource(decision.source)
+        return
+      case "equip-selected-book":
+        if (engine.equipBook(decision.source.bookId, slotIdx)) {
+          emitGameSfx("confirm")
+        }
+        clearHeldBook()
+        return
+      default:
+        return assertNever(decision)
     }
+  }
 
-    engine.equipBook(selectedSource.bookId, slotIdx)
-    clearHeldBook()
+  const handleUpgradeSlot = (slotIdx: number): boolean => {
+    const upgraded = engine.upgradeSlot(slotIdx)
+    if (upgraded) {
+      emitGameSfx("confirm")
+    }
+    return upgraded
+  }
+
+  const toggleSoundMuted = () => {
+    const nextMuted = !soundMuted
+    setSoundMuted(nextMuted)
+    writeAudioMutedPreference(nextMuted)
   }
 
   return (
@@ -152,16 +179,38 @@ export function GameShell() {
     >
       <div ref={hostRef} className="phaser-host" />
       <div className="ui-overlay" aria-label="Merge Mage overlay">
-        <HudOverlay state={engine.state} />
+        <HudOverlay muted={soundMuted} onToggleMute={toggleSoundMuted} state={engine.state} />
         <div className="bottom-overlay">
-          <div className="tab-content">{renderTab(activeTab, engine, selected, handleBookPointerDown, handleBookDrop, handleBookClick, handleEquipDrop, handleEquipClick)}</div>
+          <div className="tab-content">
+            {renderTab(
+              activeTab,
+              engine,
+              selected,
+              handleBookPointerDown,
+              handleBookDrop,
+              handleBookClick,
+              handleEquipDrop,
+              handleEquipClick,
+              handleUpgradeSlot,
+            )}
+          </div>
           <ControlsPanel
             autoBuy={engine.autoBuy}
             autoMerge={engine.autoMerge}
             canSummon={engine.canSummon}
-            onAutoBuy={engine.setAutoBuy}
-            onAutoMerge={engine.setAutoMerge}
-            onSummon={engine.summon}
+            onAutoBuy={(enabled) => {
+              engine.setAutoBuy(enabled)
+              emitGameSfx("confirm")
+            }}
+            onAutoMerge={(enabled) => {
+              engine.setAutoMerge(enabled)
+              emitGameSfx("confirm")
+            }}
+            onSummon={() => {
+              if (engine.summon()) {
+                emitGameSfx("confirm")
+              }
+            }}
             summonCost={engine.summonCost}
             summonLevel={engine.summonLevel}
           />
@@ -172,7 +221,10 @@ export function GameShell() {
                 className={`tab-btn${activeTab === tab.id ? " is-active" : ""}`}
                 data-testid={tab.testId}
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  emitGameSfx("confirm")
+                }}
                 type="button"
               >
                 {tab.label}
@@ -185,48 +237,4 @@ export function GameShell() {
       </div>
     </main>
   )
-}
-
-function renderTab(
-  activeTab: TabId,
-  engine: ReturnType<typeof useEngine>,
-  selected: BookSource | null,
-  onBookPointerDown: (source: BookSource) => void,
-  onBookDrop: (book: Spellbook) => void,
-  onBookClick: (source: BookSource, book: Spellbook) => void,
-  onEquipDrop: (slotIdx: number) => void,
-  onEquipClick: (slotIdx: number, source: BookSource | null) => void,
-) {
-  switch (activeTab) {
-    case "books":
-      return (
-        <BooksPanel
-          onBookClick={onBookClick}
-          onBookDrop={onBookDrop}
-          onBookPointerDown={onBookPointerDown}
-          onEquipClick={onEquipClick}
-          onEquipDrop={onEquipDrop}
-          onUpgradeSlot={engine.upgradeSlot}
-          selected={selected}
-          state={engine.state}
-        />
-      )
-    case "skills":
-      return <SkillsPanel onAllocateSkill={engine.allocateSkill} onResetSkills={engine.resetSkills} state={engine.state} />
-    case "rebirth":
-      return <RebirthPanel onPrestige={engine.prestige} state={engine.state} />
-    case "ranks":
-      return (
-        <RanksPanel
-          entries={engine.leaderboard}
-          nickname={engine.nickname}
-          onNickname={engine.setNickname}
-          onRefresh={engine.refreshLeaderboard}
-          onSubmit={engine.submitLeaderboard}
-          status={engine.leaderboardStatus}
-        />
-      )
-    default:
-      return activeTab
-  }
 }
