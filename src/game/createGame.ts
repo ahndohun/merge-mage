@@ -12,6 +12,8 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     height: GAME_HEIGHT,
     parent,
     backgroundColor: "#0b0d13",
+    pixelArt: true,
+    roundPixels: true,
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
