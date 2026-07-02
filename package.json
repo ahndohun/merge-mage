@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.6",
     "hono": "4.12.27",
     "phaser": "4.2.0",
     "react": "19.2.7",
