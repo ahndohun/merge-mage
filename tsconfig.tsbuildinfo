@@ -1,0 +1,1 @@
+{"root":["./api/index.ts","./src/main.tsx","./src/bridge/eventbus.ts","./src/engine/constants.ts","./src/engine/engine.test.ts","./src/engine/merge.ts","./src/engine/rng.ts","./src/engine/summon.ts","./src/engine/types.ts","./src/game/creategame.ts","./src/game/scenes/battlescene.ts","./src/ui/gameshell.tsx","./src/ui/hudoverlay.tsx","./vite.config.ts"],"version":"6.0.3"}

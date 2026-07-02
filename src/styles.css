@@ -1,0 +1,55 @@
+:root {
+  color-scheme: dark;
+  font-family: monospace;
+  background: var(--surface-base, #05060a);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+.game-shell {
+  position: relative;
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  background: var(--surface-base, #05060a);
+}
+
+.phaser-host {
+  width: min(100vw, 390px);
+  height: min(100dvh, 844px);
+}
+
+.ui-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.hud-bar {
+  display: flex;
+  width: min(100vw, 390px);
+  height: var(--hud-height, 48px);
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-3, 12px);
+  color: var(--text-primary, #f7f7ff);
+  background: var(--surface-hud, rgb(0 0 0 / 35%));
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: auto;
+}
