@@ -15,11 +15,11 @@
     },
     {
       "type": "action",
-      "description": "Enter a nickname of 2-16 letters into the nickname input and submit it"
+      "description": "Enter exactly the nickname E2EBOT into the nickname input and submit it"
     },
     {
       "type": "assertion",
-      "description": "Verify the UI confirms the nickname was saved or the leaderboard shows the submitted nickname"
+      "description": "Verify the UI confirms the nickname was saved or the leaderboard shows E2EBOT"
     }
   ]
 }
