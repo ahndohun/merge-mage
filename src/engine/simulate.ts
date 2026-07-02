@@ -43,26 +43,27 @@ export function runBalanceSimulation(options: SimulationOptions): SimulationResu
   const seed = options.seed ?? 1
   const totalTicks = Math.floor((options.minutes * 60 * 1_000) / TICK_MS)
   const rowIntervalTicks = Math.floor((10 * 60 * 1_000) / TICK_MS)
+  const policyIntervalTicks = 10
   let state = createInitialState(seed)
   let rows: readonly SimulationRow[] = []
   let lastProgressMinute = 0
   let lastStage = state.stage
 
-  for (let tick = 1; tick <= totalTicks; tick += 1) {
-    if (tick % 10 === 1) {
-      state = applyGreedyPolicy(state)
-    }
+  for (let tick = 1; tick <= totalTicks; tick += policyIntervalTicks) {
+    state = applyGreedyPolicy(state)
 
-    const simulated = simulateTicks(state, 1)
+    const ticksThisStep = Math.min(policyIntervalTicks, totalTicks - tick + 1)
+    const simulated = simulateTicks(state, ticksThisStep)
     state = simulated.state
+    const currentTick = tick + ticksThisStep - 1
 
     if (state.stage > lastStage) {
       lastStage = state.stage
-      lastProgressMinute = Math.floor((tick * TICK_MS) / 60_000)
+      lastProgressMinute = Math.floor((currentTick * TICK_MS) / 60_000)
     }
 
-    if (tick % rowIntervalTicks === 0) {
-      const minute = Math.floor((tick * TICK_MS) / 60_000)
+    if (currentTick % rowIntervalTicks === 0) {
+      const minute = Math.floor((currentTick * TICK_MS) / 60_000)
       rows = [
         ...rows,
         {

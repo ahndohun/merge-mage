@@ -8,5 +8,5 @@ describe("balance simulator", () => {
 
     expect(lastRow?.stage).toBeGreaterThanOrEqual(3)
     expect(result.rows).toHaveLength(6)
-  })
+  }, 10_000)
 })

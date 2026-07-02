@@ -15,7 +15,7 @@ export function getContextHint(input: HintInput): string | null {
   }
 
   if (hasSameLevelPair(allBooks)) {
-    return "Merge two same-level books: tap one, then the other"
+    return "Tap a book, then another of the same level — works in slots too"
   }
 
   if (input.state.books.length > 0 && hasEmptyEquipSlot(input.state)) {

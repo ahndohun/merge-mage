@@ -1,6 +1,6 @@
 import Phaser from "phaser"
 import { EventBus, type Unsubscribe } from "../../bridge/EventBus"
-import { assertNever, type Element, type EngineEvent, type EngineState } from "../../engine/types"
+import { assertNever, type EngineEvent, type EngineState } from "../../engine/types"
 import { EngineEventBridge } from "../GameEventBridge"
 import {
   createBattleAnimations,
@@ -11,15 +11,15 @@ import {
 import { registerUtilityTextures } from "../UtilityTextures"
 import { BattleAudio } from "./BattleAudio"
 import { BattleEffects } from "./BattleEffects"
-import { BOSS_ENRAGE_MS, BOSS_WAVE_NUMBER, BattleLayout, isBossWave } from "./BattleLayout"
+import { BOSS_ENRAGE_MS, BOSS_WAVE_NUMBER, BattleLayout, getElementForIndex, getWaveIndicator, isBossWave } from "./BattleLayout"
 import { BattleBanner } from "./BattleBanner"
 import { mirrorBattleState } from "./BattleDataMirror"
 import { drawBattleFrame } from "./BattleFrame"
 import { BattleLoadingView } from "./BattleLoadingView"
 import { BattleMobView } from "./BattleMobView"
 import { BattleWizardView } from "./BattleWizardView"
+import { BattleWaveIndicator } from "./BattleWaveIndicator"
 
-const ELEMENT_CYCLE: readonly Element[] = ["fire", "frost", "holy"]
 const MOB_POOL_SIZE = 36
 
 export class BattleScene extends Phaser.Scene {
@@ -34,6 +34,7 @@ export class BattleScene extends Phaser.Scene {
   private slowUntil = 0
   private slowFactor = 1
   private audio: BattleAudio | null = null
+  private waveIndicator: BattleWaveIndicator | null = null
 
   private readonly activeMobs: BattleMobView[] = []
   private readonly mobPool: BattleMobView[] = []
@@ -59,6 +60,8 @@ export class BattleScene extends Phaser.Scene {
     this.effects = new BattleEffects(this)
     this.banner = new BattleBanner(this)
     this.audio = new BattleAudio(this)
+    this.waveIndicator = new BattleWaveIndicator(this)
+    this.waveIndicator.update(1)
     this.prewarmMobs()
     this.banner.show(`STAGE 1 — WAVE 1/${BOSS_WAVE_NUMBER}`, 0xfff0a8)
     this.unsubscribeState = EngineEventBridge.onState((state) => this.handleState(state))
@@ -89,6 +92,7 @@ export class BattleScene extends Phaser.Scene {
     this.currentState = state
     mirrorBattleState(state)
     this.audio?.syncMusic(state)
+    this.waveIndicator?.update(state.wave)
 
     if (waveChanged) {
       const stageChanged = this.lastStage > 0 && state.stage !== this.lastStage
@@ -169,14 +173,14 @@ export class BattleScene extends Phaser.Scene {
     state.enemiesHp.forEach((hp, index) => {
       let mob = this.activeMobs[index]
       if (mob === undefined) {
-        mob = this.spawnMob(hp, index, isBossWave(state.wave), state.stage)
+        mob = this.spawnMob(hp, index, isBossWave(state.wave), state.stage, state.wave)
       }
 
       mob.syncHp(hp)
     })
   }
 
-  private spawnMob(hp: number, index: number, isBoss: boolean, stage: number): BattleMobView {
+  private spawnMob(hp: number, index: number, isBoss: boolean, stage: number, wave: number): BattleMobView {
     const mob = this.mobPool.pop() ?? new BattleMobView(this)
     mob.spawn({
       hp,
@@ -185,6 +189,8 @@ export class BattleScene extends Phaser.Scene {
       element: getElementForIndex(index),
       mobKind: getMobKindForStage(stage),
       bossKind: getBossKindForStage(stage),
+      stage,
+      wave,
     })
     this.activeMobs.push(mob)
     return mob
@@ -201,7 +207,7 @@ export class BattleScene extends Phaser.Scene {
     const targetPoint = target.getImpactPoint()
     wizard.playCast(() => {
       effects.fireProjectile({
-        from: { x: BattleLayout.castX, y: BattleLayout.castY },
+        from: wizard.getStaffTip(),
         to: targetPoint,
         element: event.element,
         onImpact: () => {
@@ -270,18 +276,10 @@ export class BattleScene extends Phaser.Scene {
     this.unsubscribeEvents = null
     this.audio?.destroy()
     this.audio = null
+    this.waveIndicator?.hide()
+    this.waveIndicator = null
     this.effects?.clear()
     this.activeMobs.splice(0).forEach((mob) => mob.hide())
     this.mobPool.splice(0)
   }
-}
-
-function getElementForIndex(index: number): Element {
-  const element = ELEMENT_CYCLE[index % ELEMENT_CYCLE.length]
-
-  if (element === undefined) {
-    return "fire"
-  }
-
-  return element
 }

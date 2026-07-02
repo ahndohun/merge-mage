@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   allocateSkill as allocateSkillReducer,
+  autoMergeBooks as autoMergeBooksReducer,
   equipBook as equipBookReducer,
   mergeBooks as mergeBooksReducer,
   prestige as prestigeReducer,
   resetSkills as resetSkillsReducer,
   summonBook,
+  swapBookPositions as swapBookPositionsReducer,
   unequipBook as unequipBookReducer,
   upgradeSlot as upgradeSlotReducer,
 } from "../engine/actions"
@@ -44,6 +46,8 @@ export type UseEngineResult = {
   readonly saveIndicator: SaveIndicatorState
   readonly summon: () => boolean
   readonly mergeBooks: (leftId: string, rightId: string) => boolean
+  readonly swapBooks: (leftId: string, rightId: string) => boolean
+  readonly autoMergeBooks: () => boolean
   readonly equipBook: (bookId: string, slotIdx: number) => boolean
   readonly unequipBook: (slotIdx: number) => boolean
   readonly upgradeSlot: (slotIdx: number) => boolean
@@ -140,6 +144,16 @@ export function useEngine(): UseEngineResult {
     [applyReducer],
   )
 
+  const swapBooks = useCallback(
+    (leftId: string, rightId: string) => applyReducer({ reducer: (current) => swapBookPositionsReducer(current, leftId, rightId) }),
+    [applyReducer],
+  )
+
+  const autoMergeBooks = useCallback(
+    () => applyReducer({ reducer: autoMergeBooksReducer, floorToast: true }),
+    [applyReducer],
+  )
+
   const unequipBook = useCallback(
     (slotIdx: number) => applyReducer({ reducer: (current) => unequipBookReducer(current, slotIdx) }),
     [applyReducer],
@@ -221,7 +235,7 @@ export function useEngine(): UseEngineResult {
 
   useEngineClock({ stateRef, accumulatorRef, lastFrameRef, rafRef, commitState })
   useVisibilityPause(lastFrameRef)
-  useAutoEngineActions({ autoBuyRef, autoMergeRef, stateRef, summon, mergeBooks })
+  useAutoEngineActions({ autoBuyRef, autoMergeRef, summon, autoMergeBooks })
   useSaveCadence({
     stateRef,
     saveTokenRef,
@@ -258,6 +272,8 @@ export function useEngine(): UseEngineResult {
     saveIndicator: saveIndicator.state,
     summon,
     mergeBooks,
+    swapBooks,
+    autoMergeBooks,
     equipBook,
     unequipBook,
     upgradeSlot,

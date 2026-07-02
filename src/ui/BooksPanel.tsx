@@ -10,16 +10,17 @@ type BooksPanelProps = {
   readonly onBookPointerDown: (source: BookSource) => void
   readonly onBookDrop: (book: Spellbook) => void
   readonly onBookClick: (source: BookSource, book: Spellbook) => void
-  readonly onEquipDrop: (slotIdx: number) => void
+  readonly onEquipDrop: (slotIdx: number, source: BookSource | null) => void
   readonly onEquipClick: (slotIdx: number, source: BookSource | null) => void
   readonly onUpgradeSlot: (slotIdx: number) => boolean
 }
 
 export function BooksPanel(props: BooksPanelProps) {
   const cells = Array.from({ length: INVENTORY_LIMIT }, (_, index) => props.state.books[index] ?? null)
+  const inventoryCollapsed = props.state.books.length === 0 && props.state.equipped.some((book) => book === null)
 
   return (
-    <section className="panel books-panel" aria-label="Books">
+    <section className={`panel books-panel${inventoryCollapsed ? " inventory-collapsed" : ""}`} aria-label="Books">
       <div className="equip-row" aria-label="Equipped books">
         {props.state.equipped.map((book, index) => (
           <EquipSlot
@@ -37,19 +38,25 @@ export function BooksPanel(props: BooksPanelProps) {
         ))}
       </div>
 
-      <div className="merge-grid" aria-label="Inventory">
-        {cells.map((book, index) => (
-          <InventoryCell
-            book={book}
-            index={index}
-            key={`cell-${index}`}
-            selected={props.selected}
-            onBookPointerDown={props.onBookPointerDown}
-            onBookClick={props.onBookClick}
-            onBookDrop={props.onBookDrop}
-          />
-        ))}
-      </div>
+      {inventoryCollapsed ? (
+        <div className="inventory-empty-row" aria-label="Inventory">
+          INVENTORY — empty (summons auto-equip)
+        </div>
+      ) : (
+        <div className="merge-grid" aria-label="Inventory">
+          {cells.map((book, index) => (
+            <InventoryCell
+              book={book}
+              index={index}
+              key={`cell-${index}`}
+              selected={props.selected}
+              onBookPointerDown={props.onBookPointerDown}
+              onBookClick={props.onBookClick}
+              onBookDrop={props.onBookDrop}
+            />
+          ))}
+        </div>
+      )}
     </section>
   )
 }
@@ -61,7 +68,7 @@ function EquipSlot(props: {
   readonly tier: number
   readonly gold: number
   readonly onBookPointerDown: (source: BookSource) => void
-  readonly onEquipDrop: (slotIdx: number) => void
+  readonly onEquipDrop: (slotIdx: number, source: BookSource | null) => void
   readonly onEquipClick: (slotIdx: number, source: BookSource | null) => void
   readonly onUpgradeSlot: (slotIdx: number) => boolean
 }) {
@@ -82,7 +89,9 @@ function EquipSlot(props: {
           props.onBookPointerDown({ kind: "equipped", bookId: props.book.id })
         }
       }}
-      onPointerUp={() => props.onEquipDrop(props.index)}
+      onPointerUp={() =>
+        props.onEquipDrop(props.index, props.book === null ? null : { kind: "equipped", bookId: props.book.id })
+      }
       role="button"
       tabIndex={0}
     >

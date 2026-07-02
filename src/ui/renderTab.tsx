@@ -15,7 +15,7 @@ export function renderTab(
   onBookPointerDown: (source: BookSource) => void,
   onBookDrop: (book: Spellbook) => void,
   onBookClick: (source: BookSource, book: Spellbook) => void,
-  onEquipDrop: (slotIdx: number) => void,
+  onEquipDrop: (slotIdx: number, source: BookSource | null) => void,
   onEquipClick: (slotIdx: number, source: BookSource | null) => void,
   onUpgradeSlot: (slotIdx: number) => boolean,
 ) {

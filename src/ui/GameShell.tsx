@@ -14,12 +14,7 @@ import { getContextHint } from "./hints"
 import { Toasts } from "./Toasts"
 import { useEngine } from "./useEngine"
 
-const TABS: readonly { readonly id: TabId; readonly label: string; readonly testId: string }[] = [
-  { id: "books", label: "BOOKS", testId: "tab-books" },
-  { id: "skills", label: "SKILLS", testId: "tab-skills" },
-  { id: "rebirth", label: "REBIRTH", testId: "tab-rebirth" },
-  { id: "ranks", label: "RANKS", testId: "tab-ranks" },
-] as const
+const TABS: readonly { readonly id: TabId; readonly label: string; readonly testId: string }[] = [{ id: "books", label: "BOOKS", testId: "tab-books" }, { id: "skills", label: "SKILLS", testId: "tab-skills" }, { id: "rebirth", label: "REBIRTH", testId: "tab-rebirth" }, { id: "ranks", label: "RANKS", testId: "tab-ranks" }]
 
 export function GameShell() {
   const hostRef = useRef<HTMLDivElement | null>(null)
@@ -69,8 +64,28 @@ export function GameShell() {
   }
 
   const clearHeldBook = () => {
-    setSelectedSource(null)
-    setDraggingSource(null)
+    setSelectedSource(null); setDraggingSource(null)
+  }
+
+  const applyBookTargetAction = (source: BookSource, target: BookSource, mergeSfx: boolean) => {
+    if (source.bookId === target.bookId) {
+      setSelectedSource(target)
+      setDraggingSource(null)
+      return
+    }
+
+    if (engine.mergeBooks(target.bookId, source.bookId)) {
+      if (mergeSfx) {
+        emitGameSfx("merge")
+      }
+      clearHeldBook()
+      return
+    }
+
+    if (engine.swapBooks(source.bookId, target.bookId)) {
+      emitGameSfx("confirm")
+    }
+    clearHeldBook()
   }
 
   const handleBookPointerDown = (source: BookSource) => {
@@ -82,7 +97,7 @@ export function GameShell() {
   }
 
   const handleBookDrop = (targetBook: Spellbook) => {
-    const source = draggingRef.current ?? selectedRef.current
+    const source = draggingRef.current
     if (source === null) {
       return
     }
@@ -90,15 +105,7 @@ export function GameShell() {
     suppressClickRef.current = true
     setDraggingSource(null)
 
-    if (source.bookId === targetBook.id) {
-      setSelectedSource(source)
-      return
-    }
-
-    if (engine.mergeBooks(source.bookId, targetBook.id)) {
-      emitGameSfx("merge")
-    }
-    clearHeldBook()
+    applyBookTargetAction(source, { kind: "inventory", bookId: targetBook.id }, true)
   }
 
   const handleBookClick = (source: BookSource, targetBook: Spellbook) => {
@@ -113,19 +120,23 @@ export function GameShell() {
       return
     }
 
-    if (engine.mergeBooks(selectedSource.bookId, targetBook.id)) {
-      emitGameSfx("merge")
-    }
-    clearHeldBook()
+    applyBookTargetAction(selectedSource, { kind: "inventory", bookId: targetBook.id }, true)
   }
 
-  const handleEquipDrop = (slotIdx: number) => {
-    const source = draggingRef.current ?? selectedRef.current
+  const handleEquipDrop = (slotIdx: number, target: BookSource | null) => {
+    const source = draggingRef.current
     if (source === null) {
       return
     }
 
     suppressClickRef.current = true
+
+    if (target !== null) {
+      applyBookTargetAction(source, target, true)
+      return
+    }
+
+    setDraggingSource(null)
     if (engine.equipBook(source.bookId, slotIdx)) {
       emitGameSfx("confirm")
     }
@@ -152,6 +163,9 @@ export function GameShell() {
         }
         clearHeldBook()
         return
+      case "target-slot-book":
+        applyBookTargetAction(decision.source, decision.target, true)
+        return
       default:
         return assertNever(decision)
     }
@@ -172,12 +186,10 @@ export function GameShell() {
   }
 
   const handleNewGame = () => {
-    clearSavedRun()
-    window.location.reload()
+    clearSavedRun(); window.location.reload()
   }
 
   const contextHint = getContextHint({ state: engine.state, summonCost: engine.summonCost })
-  const gameReady = activeSceneKey !== "booting"
 
   return (
     <main
@@ -192,7 +204,7 @@ export function GameShell() {
       data-wave={engine.state.wave}
     >
       <div ref={hostRef} className="phaser-host" />
-      {gameReady ? null : (
+      {activeSceneKey !== "booting" ? null : (
         <div className="preboot-splash" aria-live="polite">
           <div className="preboot-copy">
             <div className="preboot-title">MERGE MAGE</div>

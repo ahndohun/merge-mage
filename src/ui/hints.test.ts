@@ -21,7 +21,7 @@ describe("getContextHint", () => {
       equipped: [book("equipped", 2, "holy"), null, null, null, null, null],
     } satisfies EngineState
 
-    expect(getContextHint({ state, summonCost: 20 })).toBe("Merge two same-level books: tap one, then the other")
+    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap a book, then another of the same level — works in slots too")
   })
 
   it("points inventory books toward empty equipment slots before boss or rebirth hints", () => {

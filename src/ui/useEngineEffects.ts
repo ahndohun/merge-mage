@@ -4,7 +4,6 @@ import { TICK_MS } from "../engine/constants"
 import type { EngineEvent, EngineState } from "../engine/types"
 import { postOfflineClaim, postSave, type OfflineClaim } from "./apiClient"
 import { advanceFixedStepDriver } from "./engineDriver"
-import { mergeFirstInventoryPair } from "./engineActionHelpers"
 import { saveLocalState, type SaveToken } from "./engineStorage"
 import type { ToastMessage } from "./useToasts"
 
@@ -78,9 +77,8 @@ export function useVisibilityPause(lastFrameRef: MutableRef<number | null>): voi
 export function useAutoEngineActions(input: {
   readonly autoBuyRef: MutableRef<boolean>
   readonly autoMergeRef: MutableRef<boolean>
-  readonly stateRef: MutableRef<EngineState>
   readonly summon: () => void
-  readonly mergeBooks: (leftId: string, rightId: string) => void
+  readonly autoMergeBooks: () => void
 }): void {
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -88,12 +86,12 @@ export function useAutoEngineActions(input: {
         input.summon()
       }
       if (input.autoMergeRef.current) {
-        mergeFirstInventoryPair(input.stateRef.current, input.mergeBooks)
+        input.autoMergeBooks()
       }
     }, AUTO_INTERVAL_MS)
 
     return () => window.clearInterval(intervalId)
-  }, [input.autoBuyRef, input.autoMergeRef, input.mergeBooks, input.stateRef, input.summon])
+  }, [input.autoBuyRef, input.autoMergeBooks, input.autoMergeRef, input.summon])
 }
 
 export function useSaveCadence(input: {

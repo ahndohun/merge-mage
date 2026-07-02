@@ -15,6 +15,14 @@ import {
   SkillPointError,
   SlotIndexError,
 } from "./errors.js"
+import {
+  findBookLocation,
+  findHighestLevelMergePair,
+  refillEmptySlotsFromInventory,
+  refillSlotsFromInventory,
+  swapBookLocations,
+  toSlotIndex,
+} from "./bookSlots.js"
 import { mergeSpellbooks } from "./merge.js"
 import { nextRandomState } from "./rng.js"
 import { getSummonCost, getSummonLevel } from "./summon.js"
@@ -27,7 +35,7 @@ import {
   sumHp,
   zeroTimers,
 } from "./state.js"
-import { assertNever, type Element, type EngineState, type SkillName, type SlotIndex, type Spellbook } from "./types.js"
+import { assertNever, type Element, type EngineState, type SkillName, type Spellbook } from "./types.js"
 
 export {
   BookNotFoundError,
@@ -38,10 +46,6 @@ export {
   SkillPointError,
   SlotIndexError,
 } from "./errors.js"
-
-type BookLocation =
-  | { readonly kind: "inventory"; readonly index: number; readonly book: Spellbook }
-  | { readonly kind: "equipped"; readonly slot: SlotIndex; readonly book: Spellbook }
 
 export function summonBook(state: EngineState): EngineState {
   const emptySlot = SLOT_INDEXES.find((slot) => state.equipped[slot] === null)
@@ -76,10 +80,11 @@ export function mergeBooks(state: EngineState, idA: string, idB: string): Engine
     throw new BookNotFoundError(idB)
   }
 
-  const left = findBook(state, idA)
-  const right = findBook(state, idB)
+  const left = findBookLocation(state, idA)
+  const right = findBookLocation(state, idB)
   const roll = nextRandomState(state.rngState)
-  const merged = mergeSpellbooks(left.book, right.book, () => roll.value)
+  const mergedBase = mergeSpellbooks(left.book, right.book, () => roll.value)
+  const merged: Spellbook = { ...mergedBase, id: `book-${state.nextBookId}` }
   const books = state.books.flatMap((item) => {
     if (item.id === idA) {
       return [merged]
@@ -101,18 +106,21 @@ export function mergeBooks(state: EngineState, idA: string, idB: string): Engine
     return next
   }, state.equipped)
 
-  return {
+  const next = {
     ...state,
     books,
     equipped,
     highestLevelEver: Math.max(state.highestLevelEver, merged.level),
     rngState: roll.state,
+    nextBookId: state.nextBookId + 1,
   }
+
+  return right.kind === "equipped" ? refillSlotsFromInventory(next, [right.slot]) : next
 }
 
 export function equipBook(state: EngineState, bookId: string, slotIdx: number): EngineState {
   const targetSlot = toSlotIndex(slotIdx)
-  const source = findBook(state, bookId)
+  const source = findBookLocation(state, bookId)
 
   if (source.kind === "equipped" && source.slot === targetSlot) {
     return state
@@ -145,15 +153,36 @@ export function unequipBook(state: EngineState, slotIdx: number): EngineState {
   if (equipped === null) {
     throw new EmptySlotError(slot)
   }
-  if (state.books.length >= INVENTORY_LIMIT) {
-    throw new InventoryFullError(INVENTORY_LIMIT)
-  }
 
-  return {
+  return refillSlotsFromInventory({
     ...state,
     books: [...state.books, equipped],
     equipped: setEquippedSlot(state.equipped, slot, null),
+  }, [slot])
+}
+
+export function swapBookPositions(state: EngineState, idA: string, idB: string): EngineState {
+  if (idA === idB) {
+    throw new BookNotFoundError(idB)
   }
+
+  return swapBookLocations(state, idA, idB)
+}
+
+export function refillEmptySlots(state: EngineState): EngineState {
+  return refillEmptySlotsFromInventory(state)
+}
+
+export function autoMergeBooks(state: EngineState): EngineState {
+  let current = state
+  let pair = findHighestLevelMergePair(current)
+
+  while (pair !== null) {
+    current = mergeBooks(current, pair.targetId, pair.consumedId)
+    pair = findHighestLevelMergePair(current)
+  }
+
+  return current
 }
 
 export function upgradeSlot(state: EngineState, slotIdx: number): EngineState {
@@ -244,40 +273,4 @@ function pickElement(value: number): Element {
     return "frost"
   }
   return "holy"
-}
-
-function findBook(state: EngineState, bookId: string): BookLocation {
-  const inventoryIndex = state.books.findIndex((item) => item.id === bookId)
-  const inventoryBook = state.books.find((item) => item.id === bookId)
-  if (inventoryBook !== undefined) {
-    return { kind: "inventory", index: inventoryIndex, book: inventoryBook }
-  }
-
-  for (const slot of SLOT_INDEXES) {
-    const equipped = state.equipped[slot]
-    if (equipped?.id === bookId) {
-      return { kind: "equipped", slot, book: equipped }
-    }
-  }
-
-  throw new BookNotFoundError(bookId)
-}
-
-function toSlotIndex(slotIdx: number): SlotIndex {
-  switch (slotIdx) {
-    case 0:
-      return 0
-    case 1:
-      return 1
-    case 2:
-      return 2
-    case 3:
-      return 3
-    case 4:
-      return 4
-    case 5:
-      return 5
-    default:
-      throw new SlotIndexError(slotIdx)
-  }
 }

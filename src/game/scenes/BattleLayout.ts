@@ -1,3 +1,5 @@
+import type { Element } from "../../engine/types"
+
 export const BOSS_WAVE_NUMBER = 10
 export const BOSS_ENRAGE_MS = 30_000
 
@@ -25,6 +27,36 @@ export const BattleLayout = {
 } as const
 
 const LANES = [174, 210, 246, 282, 318] as const
+const ELEMENT_CYCLE: readonly Element[] = ["fire", "frost", "holy"]
+const MOB_COLUMN_WIDTH = 12
+const MOB_COLUMN_RANDOM_MAX = 4
+const MOB_Y_JITTER = 7
+
+type Point = {
+  readonly x: number
+  readonly y: number
+}
+
+type StaffTipInput = {
+  readonly x: number
+  readonly y: number
+  readonly displayWidth: number
+  readonly displayHeight: number
+  readonly originX: number
+  readonly originY: number
+}
+
+type MobSpawnInput = {
+  readonly index: number
+  readonly stage: number
+  readonly wave: number
+  readonly isBoss: boolean
+}
+
+type WaveIndicator = {
+  readonly text: string
+  readonly tint: number
+}
 
 export function getLaneY(index: number): number {
   const lane = LANES[index % LANES.length]
@@ -38,4 +70,49 @@ export function getLaneY(index: number): number {
 
 export function isBossWave(wave: number): boolean {
   return wave === BOSS_WAVE_NUMBER
+}
+
+export function getElementForIndex(index: number): Element {
+  const element = ELEMENT_CYCLE[index % ELEMENT_CYCLE.length]
+  return element ?? "fire"
+}
+
+export function getStaffTipPoint(input: StaffTipInput): Point {
+  const centerX = input.x + input.displayWidth * (0.5 - input.originX)
+  const centerY = input.y + input.displayHeight * (0.5 - input.originY)
+
+  return {
+    x: Math.round(centerX + input.displayWidth * 0.52),
+    y: Math.round(centerY - input.displayHeight * 0.48),
+  }
+}
+
+export function getMobSpawnPoint(input: MobSpawnInput): Point {
+  if (input.isBoss) {
+    return { x: BattleLayout.bossX, y: BattleLayout.bossY }
+  }
+
+  const columns = 2 + (hashInt(input.stage, input.wave, 91) % 2)
+  const column = hashInt(input.stage, input.wave, input.index) % columns
+  const xJitter = hashInt(input.wave, input.index, input.stage) % (MOB_COLUMN_RANDOM_MAX + 1)
+  const yJitter = (hashInt(input.index, input.stage, input.wave) % (MOB_Y_JITTER * 2 + 1)) - MOB_Y_JITTER
+
+  return {
+    x: BattleLayout.mobStartX + column * MOB_COLUMN_WIDTH + xJitter,
+    y: getLaneY(input.index) + yJitter,
+  }
+}
+
+export function getWaveIndicator(wave: number): WaveIndicator {
+  if (isBossWave(wave)) {
+    return { text: "BOSS", tint: 0xc4344a }
+  }
+
+  return { text: `W ${wave}/${BOSS_WAVE_NUMBER}`, tint: 0xfff0a8 }
+}
+
+function hashInt(left: number, middle: number, right: number): number {
+  let value = Math.imul(left + 31, 73856093) ^ Math.imul(middle + 17, 19349663) ^ Math.imul(right + 13, 83492791)
+  value ^= value >>> 16
+  return Math.abs(value)
 }

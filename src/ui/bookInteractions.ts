@@ -7,6 +7,7 @@ export type EquipSlotClickDecision =
   | { readonly kind: "consume-suppressed-click" }
   | { readonly kind: "select-slot-book"; readonly source: BookSource | null }
   | { readonly kind: "equip-selected-book"; readonly source: BookSource }
+  | { readonly kind: "target-slot-book"; readonly source: BookSource; readonly target: BookSource }
 
 export function getEquipSlotClickDecision(input: {
   readonly suppressedClick: boolean
@@ -21,7 +22,11 @@ export function getEquipSlotClickDecision(input: {
     return { kind: "select-slot-book", source: input.slotSource }
   }
 
-  return { kind: "equip-selected-book", source: input.selected }
+  if (input.slotSource === null) {
+    return { kind: "equip-selected-book", source: input.selected }
+  }
+
+  return { kind: "target-slot-book", source: input.selected, target: input.slotSource }
 }
 
 export function canUpgradeSlotWhileSelected(selected: BookSource | null): boolean {

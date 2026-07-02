@@ -1,7 +1,12 @@
 import Phaser from "phaser"
 import type { CastElement } from "../../engine/types"
 import { AnimationKeys, CastColors, TextureKeys } from "../TextureKeys"
-import { BattleLayout } from "./BattleLayout"
+import { BattleLayout, getStaffTipPoint } from "./BattleLayout"
+
+type Point = {
+  readonly x: number
+  readonly y: number
+}
 
 export class BattleWizardView {
   readonly sprite: Phaser.GameObjects.Sprite
@@ -47,6 +52,17 @@ export class BattleWizardView {
       this.sprite.play(AnimationKeys.wizard.idle, true)
     })
     this.sprite.play(AnimationKeys.wizard.cast)
+  }
+
+  getStaffTip(): Point {
+    return getStaffTipPoint({
+      x: this.sprite.x,
+      y: this.sprite.y,
+      displayWidth: this.sprite.displayWidth,
+      displayHeight: this.sprite.displayHeight,
+      originX: this.sprite.originX,
+      originY: this.sprite.originY,
+    })
   }
 
   playHit(): void {
