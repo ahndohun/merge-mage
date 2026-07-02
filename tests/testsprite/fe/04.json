@@ -11,15 +11,23 @@
     },
     {
       "type": "action",
-      "description": "Click the AUTO BUY toggle button"
+      "description": "Note the current GOLD value and that the equip slots row shows empty slots"
     },
     {
       "type": "action",
-      "description": "Wait about 5 seconds without clicking anything else"
+      "description": "Click the AUTO BUY toggle button once"
+    },
+    {
+      "type": "action",
+      "description": "Wait about 6 seconds without clicking anything else"
     },
     {
       "type": "assertion",
-      "description": "Verify at least one new book appeared in the inventory grid without manually pressing SUMMON"
+      "description": "Verify GOLD decreased during the wait without any manual SUMMON clicks"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify at least one new book appeared \u2014 either in an equip slot (books auto-equip into empty slots) or in the inventory grid"
     }
   ]
 }

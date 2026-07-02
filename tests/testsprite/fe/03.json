@@ -1,8 +1,8 @@
 {
   "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
   "type": "frontend",
-  "name": "Equipping a book fills an equip slot and removes it from the inventory",
-  "description": "Selecting an inventory book then tapping an empty equip slot moves the book into the slot.",
+  "name": "Summoned books auto-equip and can be moved between slots",
+  "description": "A summon fills the first empty equip slot; tapping the slotted book then another empty slot moves it.",
   "priority": "p0",
   "planSteps": [
     {
@@ -11,23 +11,19 @@
     },
     {
       "type": "action",
-      "description": "Click SUMMON once so at least one book exists in the inventory grid"
-    },
-    {
-      "type": "action",
-      "description": "Note how many inventory cells are filled and that the first equip slot in the row above the grid reads EMPTY or shows a plus sign"
-    },
-    {
-      "type": "action",
-      "description": "Tap the inventory book to select it, then tap the first empty equip slot in the equipped row"
+      "description": "Click SUMMON once"
     },
     {
       "type": "assertion",
-      "description": "Verify the first equip slot now displays a book with a level badge (for example Lv1) instead of the empty state"
+      "description": "Verify the first equip slot now shows a book with a level badge (like Lv1) \u2014 summons auto-equip into empty slots"
+    },
+    {
+      "type": "action",
+      "description": "Tap the book in the first equip slot to select it, then tap a different empty equip slot"
     },
     {
       "type": "assertion",
-      "description": "Verify the number of filled inventory cells decreased by one (the equipped book left the inventory)"
+      "description": "Verify the book moved: the tapped destination slot now shows the book and the original slot is empty again"
     }
   ]
 }
