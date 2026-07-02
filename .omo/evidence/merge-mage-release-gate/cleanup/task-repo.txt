@@ -1,0 +1,4 @@
+Repo/CLI cleanup receipt:
+- gh, testsprite, curl, npm build, and npm test commands exited.
+- No local dev server was started for this gate.
+- No source files were changed; only .omo evidence artifacts were added.

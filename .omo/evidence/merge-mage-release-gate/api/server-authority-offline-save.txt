@@ -1,0 +1,20 @@
+POST https://merge-mage.vercel.app/api/save
+request-headers: {
+  "content-type": "application/json"
+}
+request-body:
+{"token":"api1783021735249offlinexxxxxxxxx","state":{"gold":500,"books":[{"id":"b1","level":3,"element":"fire"}],"equipped":[null,null,null,null,null,null],"highestLevelEver":3,"stage":4,"wave":1,"stageHp":96,"wizardLevel":1,"wizardXp":0,"skillPoints":0,"skills":{"summonBonus":0,"castSpeed":0,"goldGain":0,"critChance":0},"manaCrystals":0,"prestigeCount":0,"lastSeenServerTs":1782978535249,"slotTiers":[0,0,0,0,0,0],"castProgressMs":[0,0,0,0,0,0],"enemiesHp":[19.2,19.2,19.2,19.2,19.2],"bossElapsedMs":0,"frostSlowMs":0,"recentGoldPerSecond":10,"elapsedMs":0,"rngSeed":42,"rngState":42,"nextBookId":1}}
+
+status: 200
+response-headers: {
+  "cache-control": "public, max-age=0, must-revalidate",
+  "content-length": "48",
+  "content-type": "application/json",
+  "date": "Thu, 02 Jul 2026 19:48:55 GMT",
+  "server": "Vercel",
+  "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+  "x-vercel-cache": "MISS",
+  "x-vercel-id": "icn1::iad1::q8fsm-1783021735258-c8a63df6e78b"
+}
+response-body:
+{"ok":true,"savedAt":"2026-07-02T19:48:55.369Z"}

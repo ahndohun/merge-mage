@@ -1,0 +1,14 @@
+## npm test
+
+> merge-mage@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.9 /Users/ahndohun/projects/merge-mage
+
+
+ Test Files  11 passed (11)
+      Tests  46 passed (46)
+   Start at  04:49:41
+   Duration  2.37s (transform 387ms, setup 0ms, import 546ms, tests 2.25s, environment 0ms)
+

@@ -1,0 +1,42 @@
+{
+  "pass": true,
+  "invalidSaveStatuses": {
+    "negativeGold": 400,
+    "absurdStage": 400,
+    "stringNaN": 400,
+    "rawNaN": 400
+  },
+  "leaderboard": {
+    "nickname": "Gate734557",
+    "postStatus": 200,
+    "postBody": {
+      "ok": true,
+      "bestStage": 4
+    },
+    "listedRow": {
+      "nickname": "Gate734557",
+      "bestStage": 4,
+      "prestigeCount": 0
+    }
+  },
+  "offline": {
+    "claimStatus": 200,
+    "claimBody": {
+      "gold": 172800,
+      "cappedHours": 8,
+      "claimedAt": "2026-07-02T19:48:55.596Z"
+    },
+    "expectedGoldAtEightHourCap": 172800
+  },
+  "transcriptFiles": [
+    "server-authority-save-negative-gold.txt",
+    "server-authority-save-absurd-stage.txt",
+    "server-authority-save-string-nan.txt",
+    "server-authority-save-raw-nan.txt",
+    "server-authority-leaderboard-save.txt",
+    "server-authority-leaderboard-post-stage-ignored.txt",
+    "server-authority-leaderboard-get.txt",
+    "server-authority-offline-save.txt",
+    "server-authority-offline-claim-client-clock-ignored.txt"
+  ]
+}

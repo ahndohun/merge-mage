@@ -1,0 +1,71 @@
+## Live URL root
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  1562  100  1562    0     0  36355      0 --:--:-- --:--:-- --:--:-- 37190
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 379
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline
+content-type: text/html; charset=utf-8
+date: Thu, 02 Jul 2026 19:49:37 GMT
+etag: "f7f3c447ac532c2a94244ae07e791938"
+last-modified: Thu, 02 Jul 2026 19:43:17 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+x-vercel-cache: HIT
+x-vercel-id: icn1::ml524-1783021777368-3be955471503
+content-length: 1562
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Merge Mage is a retro idle spellbook battler about summoning tomes, merging power, and pushing through dungeon waves."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Merge Mage — retro idle spellbook battler" />
+    <meta
+      property="og:description"
+      content="Summon pixel tomes, merge spellbook power, and battle through dungeon waves in a retro idle battler."
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:url" content="https://merge-mage.vercel.app" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Merge Mage — retro idle spellbook battler" />
+    <meta
+      name="twitter:description"
+      content="Summon pixel tomes, merge spellbook power, and battle through dungeon waves in a retro idle battler."
+    />
+    <meta name="twitter:image" content="/og.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="preload" href="/assets/fonts/DungeonFont.ttf" as="font" type="font/ttf" crossorigin />
+    <title>Merge Mage — retro idle spellbook battler</title>
+    <script type="module" crossorigin src="/assets/index-DGNKTS51.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-D5WGPAOz.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
+## Live API health
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    43  100    43    0     0    180      0 --:--:-- --:--:-- --:--:--   180
+HTTP/2 200 
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: application/json
+date: Thu, 02 Jul 2026 19:49:37 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+x-vercel-cache: MISS
+x-vercel-id: icn1::iad1::ml524-1783021777418-75e8258f33fb
+content-length: 43
+
+{"ok":true,"ts":"2026-07-02T19:49:37.527Z"}

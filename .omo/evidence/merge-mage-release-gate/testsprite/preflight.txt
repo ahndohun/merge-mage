@@ -1,0 +1,26 @@
+## testsprite --version
+0.2.0
+
+## testsprite auth whoami
+[deprecated] `testsprite auth whoami` is deprecated — use `testsprite auth status`.
+userId: 04484458-c031-705a-8abe-9c707dd14da5
+name:   안도훈
+email:  ahndohun1@gmail.com
+keyId:  key_a8edc3bf9717
+endpoint: https://api.testsprite.com
+env:    production
+scopes: read:projects, read:tests, read:me, write:tests, run:tests, write:projects
+
+## local TestSprite suite count
+tests/testsprite/be/01-save-roundtrip.py
+tests/testsprite/be/02-save-rejects-invalid.py
+tests/testsprite/be/03-leaderboard-server-stage.py
+tests/testsprite/be/04-offline-claim.py
+tests/testsprite/fe/01.json
+tests/testsprite/fe/02.json
+tests/testsprite/fe/03-steps.json
+tests/testsprite/fe/03.json
+tests/testsprite/fe/04.json
+tests/testsprite/fe/05.json
+tests/testsprite/fe/06.json
+tests/testsprite/fe/07.json

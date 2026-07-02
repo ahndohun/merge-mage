@@ -1,0 +1,4 @@
+API cleanup receipt:
+- run-server-authority.mjs used stateless fetch calls only and exited.
+- Public API has no fixture-delete endpoint; generated token/save/leaderboard rows remain as unavoidable public-test residue.
+- Residue tokens use gate/api prefixes and contain no secrets.

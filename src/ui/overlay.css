@@ -177,10 +177,13 @@
 }
 
 .settings-popover {
+  /* Rendered as a sibling of the clipped HUD panel — the panel's clip-path
+     was swallowing (and un-hit-testing) the popover on mobile viewports. */
   position: absolute;
-  top: calc(100% + 4px);
+  top: 54px;
   right: 4px;
   z-index: 12;
+  pointer-events: auto;
   display: grid;
   gap: 5px;
   width: 154px;

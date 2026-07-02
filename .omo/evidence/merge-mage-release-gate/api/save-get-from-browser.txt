@@ -1,0 +1,15 @@
+GET /api/save/gate1783021657993persistxxxxxxxx
+status: 200
+headers: {
+  "age": "0",
+  "cache-control": "public, max-age=0, must-revalidate",
+  "content-length": "611",
+  "content-type": "application/json",
+  "date": "Thu, 02 Jul 2026 19:47:49 GMT",
+  "server": "Vercel",
+  "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+  "x-vercel-cache": "MISS",
+  "x-vercel-id": "icn1::iad1::9xwrk-1783021669089-5bb1d88daa74"
+}
+body:
+{"state":{"gold":993,"books":[],"equipped":[{"id":"book-1","level":1,"element":"frost"},null,null,null,null,null],"highestLevelEver":1,"stage":1,"wave":2,"stageHp":48.2,"wizardLevel":1,"wizardXp":18,"skillPoints":0,"skills":{"summonBonus":0,"castSpeed":0,"goldGain":0,"critChance":0},"manaCrystals":0,"prestigeCount":0,"lastSeenServerTs":1783021668738,"slotTiers":[0,0,0,0,0,0],"castProgressMs":[700,0,0,0,0,0],"enemiesHp":[9.8,12.8,12.8,12.8],"bossElapsedMs":0,"frostSlowMs":1300,"recentGoldPerSecond":0,"elapsedMs":10200,"rngSeed":42,"rngState":1135788988,"nextBookId":2},"savedAt":"2026-07-02T19:47:48.757Z"}

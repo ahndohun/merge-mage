@@ -1,0 +1,1140 @@
+{
+  "pass": true,
+  "saveToken": "gate1783021657993persistxxxxxxxx",
+  "saved": {
+    "label": "saved-before-reload",
+    "url": "https://merge-mage.vercel.app/",
+    "rootData": {
+      "activeScene": "BattleScene",
+      "gold": "993",
+      "inventoryCount": "0",
+      "stage": "1",
+      "summonLevel": "1",
+      "saveStatus": "saved",
+      "wave": "2"
+    },
+    "bodyText": "GOLD\n993\nSTAGE\n1-2\nMANA\n0\nWIZARD 1\nSAVED\nLv1\nFROST\nUP 50\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\nSUMMON L1 25\nAUTO MERGE\nAUTO BUY\nBOOKS\nSKILLS\nREBIRTH\nRANKS",
+    "hint": null,
+    "saveChip": "SAVED",
+    "summonButton": "SUMMON L1 25",
+    "localState": {
+      "gold": 993,
+      "books": [],
+      "equipped": [
+        {
+          "id": "book-1",
+          "level": 1,
+          "element": "frost"
+        },
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "highestLevelEver": 1,
+      "stage": 1,
+      "wave": 2,
+      "stageHp": 48.2,
+      "wizardLevel": 1,
+      "wizardXp": 18,
+      "skillPoints": 0,
+      "skills": {
+        "summonBonus": 0,
+        "castSpeed": 0,
+        "goldGain": 0,
+        "critChance": 0
+      },
+      "manaCrystals": 0,
+      "prestigeCount": 0,
+      "lastSeenServerTs": null,
+      "slotTiers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "castProgressMs": [
+        400,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "enemiesHp": [
+        9.8,
+        12.8,
+        12.8,
+        12.8
+      ],
+      "bossElapsedMs": 0,
+      "frostSlowMs": 1600,
+      "recentGoldPerSecond": 0,
+      "elapsedMs": 9900,
+      "rngSeed": 42,
+      "rngState": 1135788988,
+      "nextBookId": 2
+    },
+    "saveToken": "gate1783021657993persistxxxxxxxx",
+    "audioMuted": null,
+    "controls": [
+      {
+        "tag": "div",
+        "testid": "save-indicator",
+        "text": "SAVED",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "settings-btn",
+        "text": "",
+        "ariaLabel": "Open settings",
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-0",
+        "text": "Lv1FROSTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-0",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-1",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-1",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-2",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-2",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-3",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-3",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-4",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-4",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-5",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-5",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-0",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-1",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-2",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-3",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-4",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-5",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-6",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-7",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-8",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-9",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-10",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-11",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-12",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-13",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-14",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "summon-btn",
+        "text": "SUMMON L1 25",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "auto-merge-toggle",
+        "text": "AUTO MERGE",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "auto-buy-toggle",
+        "text": "AUTO BUY",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "tab-books",
+        "text": "BOOKS",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "true",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "tab-skills",
+        "text": "SKILLS",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "tab-rebirth",
+        "text": "REBIRTH",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "tab-ranks",
+        "text": "RANKS",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      }
+    ],
+    "slots": [
+      {
+        "testid": "equip-slot-0",
+        "text": "Lv1FROSTUP 50",
+        "className": "slot equip-slot element-frost"
+      },
+      {
+        "testid": "equip-slot-1",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-2",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-3",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-4",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-5",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "merge-cell-0",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-1",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-2",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-3",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-4",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-5",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-6",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-7",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-8",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-9",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-10",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-11",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-12",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-13",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-14",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      }
+    ]
+  },
+  "reloaded": {
+    "label": "reloaded-without-fresh",
+    "url": "https://merge-mage.vercel.app/",
+    "rootData": {
+      "activeScene": "BattleScene",
+      "gold": "1000",
+      "inventoryCount": "0",
+      "stage": "1",
+      "summonLevel": "1",
+      "saveStatus": "idle",
+      "wave": "1"
+    },
+    "bodyText": "GOLD\n1K\nSTAGE\n1-1\nMANA\n0\nWIZARD 1\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\nSLOT\nUP 50\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\n+\nTap SUMMON to arm your first spellbook\nSUMMON L1 25\nAUTO MERGE\nAUTO BUY\nBOOKS\nSKILLS\nREBIRTH\nRANKS",
+    "hint": "Tap SUMMON to arm your first spellbook",
+    "saveChip": "",
+    "summonButton": "SUMMON L1 25",
+    "localState": {
+      "gold": 1000,
+      "books": [],
+      "equipped": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "highestLevelEver": 1,
+      "stage": 1,
+      "wave": 1,
+      "stageHp": 10,
+      "wizardLevel": 1,
+      "wizardXp": 0,
+      "skillPoints": 0,
+      "skills": {
+        "summonBonus": 0,
+        "castSpeed": 0,
+        "goldGain": 0,
+        "critChance": 0
+      },
+      "manaCrystals": 0,
+      "prestigeCount": 0,
+      "lastSeenServerTs": null,
+      "slotTiers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "castProgressMs": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "enemiesHp": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "bossElapsedMs": 0,
+      "frostSlowMs": 0,
+      "recentGoldPerSecond": 0,
+      "elapsedMs": 0,
+      "rngSeed": 42,
+      "rngState": 42,
+      "nextBookId": 1
+    },
+    "saveToken": "gate1783021657993persistxxxxxxxx",
+    "audioMuted": null,
+    "controls": [
+      {
+        "tag": "div",
+        "testid": "save-indicator",
+        "text": "",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "settings-btn",
+        "text": "",
+        "ariaLabel": "Open settings",
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-0",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-0",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-1",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-1",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-2",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-2",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-3",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-3",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-4",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-4",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "equip-slot-5",
+        "text": "+SLOTUP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "slot-upgrade-5",
+        "text": "UP 50",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-0",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-1",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-2",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-3",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-4",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-5",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-6",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-7",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-8",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-9",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-10",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-11",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-12",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-13",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "merge-cell-14",
+        "text": "+",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "div",
+        "testid": "hint-strip",
+        "text": "Tap SUMMON to arm your first spellbook",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "summon-btn",
+        "text": "SUMMON L1 25",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": null,
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "auto-merge-toggle",
+        "text": "AUTO MERGE",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "auto-buy-toggle",
+        "text": "AUTO BUY",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "tab-books",
+        "text": "BOOKS",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "true",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "tab-skills",
+        "text": "SKILLS",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "tab-rebirth",
+        "text": "REBIRTH",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      },
+      {
+        "tag": "button",
+        "testid": "tab-ranks",
+        "text": "RANKS",
+        "ariaLabel": null,
+        "disabled": false,
+        "ariaDisabled": null,
+        "ariaPressed": "false",
+        "href": null
+      }
+    ],
+    "slots": [
+      {
+        "testid": "equip-slot-0",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-1",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-2",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-3",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-4",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "equip-slot-5",
+        "text": "+SLOTUP 50",
+        "className": "slot equip-slot element-empty"
+      },
+      {
+        "testid": "merge-cell-0",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-1",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-2",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-3",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-4",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-5",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-6",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-7",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-8",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-9",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-10",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-11",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-12",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-13",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      },
+      {
+        "testid": "merge-cell-14",
+        "text": "+",
+        "className": "slot merge-cell element-empty"
+      }
+    ]
+  },
+  "api": {
+    "status": 200,
+    "headers": {
+      "age": "0",
+      "cache-control": "public, max-age=0, must-revalidate",
+      "content-length": "611",
+      "content-type": "application/json",
+      "date": "Thu, 02 Jul 2026 19:47:49 GMT",
+      "server": "Vercel",
+      "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+      "x-vercel-cache": "MISS",
+      "x-vercel-id": "icn1::iad1::9xwrk-1783021669089-5bb1d88daa74"
+    },
+    "body": "{\"state\":{\"gold\":993,\"books\":[],\"equipped\":[{\"id\":\"book-1\",\"level\":1,\"element\":\"frost\"},null,null,null,null,null],\"highestLevelEver\":1,\"stage\":1,\"wave\":2,\"stageHp\":48.2,\"wizardLevel\":1,\"wizardXp\":18,\"skillPoints\":0,\"skills\":{\"summonBonus\":0,\"castSpeed\":0,\"goldGain\":0,\"critChance\":0},\"manaCrystals\":0,\"prestigeCount\":0,\"lastSeenServerTs\":1783021668738,\"slotTiers\":[0,0,0,0,0,0],\"castProgressMs\":[700,0,0,0,0,0],\"enemiesHp\":[9.8,12.8,12.8,12.8],\"bossElapsedMs\":0,\"frostSlowMs\":1300,\"recentGoldPerSecond\":0,\"elapsedMs\":10200,\"rngSeed\":42,\"rngState\":1135788988,\"nextBookId\":2},\"savedAt\":\"2026-07-02T19:47:48.757Z\"}"
+  },
+  "serverStateSummary": {
+    "gold": 993,
+    "equipped": [
+      {
+        "id": "book-1",
+        "level": 1,
+        "element": "frost"
+      },
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "highestLevelEver": 1
+  }
+}

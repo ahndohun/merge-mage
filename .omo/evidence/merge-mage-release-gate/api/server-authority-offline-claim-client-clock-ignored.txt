@@ -1,0 +1,20 @@
+POST https://merge-mage.vercel.app/api/offline-claim
+request-headers: {
+  "content-type": "application/json"
+}
+request-body:
+{"token":"api1783021735249offlinexxxxxxxxx","clientNow":1814557735470,"clientElapsedMs":31536000000}
+
+status: 200
+response-headers: {
+  "cache-control": "public, max-age=0, must-revalidate",
+  "content-length": "70",
+  "content-type": "application/json",
+  "date": "Thu, 02 Jul 2026 19:48:55 GMT",
+  "server": "Vercel",
+  "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+  "x-vercel-cache": "MISS",
+  "x-vercel-id": "icn1::iad1::q8fsm-1783021735480-4a0c2ab21a94"
+}
+response-body:
+{"gold":172800,"cappedHours":8,"claimedAt":"2026-07-02T19:48:55.596Z"}

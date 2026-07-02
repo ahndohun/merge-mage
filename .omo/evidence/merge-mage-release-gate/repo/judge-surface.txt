@@ -1,0 +1,170 @@
+## git status --short
+?? .omo/
+
+## git log --oneline --decorate -30
+dde686c (HEAD -> main, origin/main) docs: LOOP.md iteration 9 — release build all green
+39395d7 test: summon E2E asserts the user-visible outcome only
+256566b test: no precise gold-delta assertions in FE plans (idle income races)
+295f238 test: plans reflect auto-equip behavior
+169cf5e ci: docs-only pushes skip the gate; rate-limit backoff; cancel overlapping runs
+f4d79fc docs: LOOP.md iteration 8
+69f46f9 feat: release polish — splash/loading, settings, save chip, juice pass
+cf43604 assets: og card + repo screenshot
+2eb15c7 feat: first-session onboarding — innate staff bolt, auto-equip, contextual hints
+2f1f678 docs: LOOP.md iteration 7 — full suite green
+cdfb8cd docs: judge-facing README — live URL, loop story, stack
+a89e9b1 ci: TestSprite gate — every push re-verifies the live app
+a818ac7 fix: leaderboard GET parse seam (items/bestStage) + /?fresh=1 reset affordance
+24c2bb8 fix: round-2 loop catches — leaderboard contract seam, Lv badge legibility, BE target fallback
+aeb4df7 docs: LOOP.md iterations 4-5
+a5a01d4 feat: wave 3 — full pixel-art skin, audio, and boot fixes
+289baeb fix(api): satisfy exactOptionalPropertyTypes in the manual handler
+f4e59e0 fix(api): hand-rolled Vercel handler — helpers consume the body stream, hanging every POST
+bdfd096 test: seed TestSprite suite — 7 FE plans + 4 BE api scripts
+9b6ae11 docs: LOOP.md iteration 3
+e84bc20 fix(api): add explicit .js extensions to relative ESM imports
+10d2bea fix(api): move helpers to api/_lib so Vercel builds a single function
+4eac5f3 feat: wave 2 — full game UI + battle scene + Neon-backed API
+3265482 feat(assets): director-curated pixel asset set + credits
+61275fc feat(engine): full economy/battle engine — reducers, deterministic battle ticks, offline calc, balance simulator (25 tests)
+e0ab23a docs: director-locked art direction v1
+1af02b7 docs: LOOP.md iteration 1 + TestSprite project ids
+cc60a87 chore: TestSprite agent skills + agent operating manual in AGENTS.md
+4c17e7b fix(api): pin @hono/node-server v1 for the /vercel adapter subpath
+8221ec0 fix(api): use Node runtime Hono adapter — edge config was ignored and functions timed out
+
+## LOOP.md
+# Merge Mage Loop Log
+
+| # | date | maker | what ran | what broke | what got fixed |
+| 1 | 2026-07-02 | codex(gpt-5.5) scaffolded Phaser 4.2+Vite 8.1+Hono skeleton | deployed to Vercel, smoke-tested / (game) and /api/health | /api/health hung then 504: Vercel ignored the edge runtime config, edge-style Hono adapter never answered on the Node runtime | switched to @hono/node-server v1 /vercel adapter (v2 dropped the subpath), health now returns {"ok":true} — checker: vercel logs + live smoke (TestSprite suite seeding starts with first real gameplay) |
+| 2 | 2026-07-02 | 3 parallel codex agents built api (Neon save/leaderboard/offline, 36 schema tests), battle scene (pooled projectiles/damage numbers/boss), and React UI+game driver | integrated build+29 unit tests green; manual preview play-through: summon->merge->LV2 verified via DOM state mirror | tap-to-equip broken: tapping an equip slot with a book selected triggers the nested UP(grade) button instead — no equip + accidental 50g spend; dev-mode save toast noisy (404, no /api in vite dev) | queued for wave 3 fix; deploying as-is so the TestSprite suite can be seeded against the live URL first |
+| 3 | 2026-07-02 | orchestrator deployed wave-2 fullstack to Vercel prod | live smoke: /, /api/health, /api/leaderboard, autosave | every API route 500 FUNCTION_INVOCATION_FAILED — (a) Vercel built every api/*.ts (helpers + even the test file) as separate functions, (b) after regrouping to api/_lib, Node ESM rejected extensionless relative imports at runtime | moved helpers to api/_lib (single index.func), codemodded .js extensions onto 18 files' relative imports, verified the built .func loads locally before redeploy — prod now 200s, autosave clean |
+| 4 | 2026-07-02 | TestSprite round 1: 7 FE plans + 4 BE scripts vs live URL | FE 3 passed (merge, skills, rebirth-lock) / 3 failed / 1 blocked; BE 4 failed | checker caught: (a) summon button showed 24 gold but charged 24.4 — float cost, display != charge; (b) equipping spent gold via the nested UP button; (c) RANKS error; (d) every BE POST timed out 30s+ — Vercel node helpers consume the body stream before Hono reads it | (a) getSummonCost now ceil'd at the source + test; (b) equip/upgrade hitbox+state separation in wave 3; (d) replaced adapter with a hand-rolled handler that rebuilds a web Request from the helper-parsed body — all endpoints answer in ~0.3s |
+| 5 | 2026-07-03 | wave 3 skin integration play-test (director, local preview) | fresh boot after skin: scene stuck in "booting", canvas black | two boot bugs: React StrictMode's double effect destroyed the Phaser game mid-asset-load; separately Phaser 4.2's loader stalls when the first 32-file parallel batch completes (0 inflight, 94 pending) | create-once singleton guard for the game; maxParallelDownloads=256 keeps all 126 assets in one batch (upstream candidate); loader now completes 126/126 and the skinned game renders |
+| 6 | 2026-07-03 | TestSprite round 2+3 vs skinned deploy | round 2: summon+autobuy fixed->passed, merge "failed"; round 3: BE 4/4 all passed, FE 8/11 | checker caught: (a) level badge "2" reads as a stack count, agent (and humans) misread merged books; (b) leaderboard seam bugs from parallel agents — UI POST sent {nickname,stage} vs API {token,nickname}, and GET parser looked for entries[].stage vs API items[].bestStage; (c) test-to-test browser state leaked, auto-buy started broke | Lv-prefixed badges; both leaderboard contract sides aligned + save-before-submit; /?fresh=1 reset affordance + all FE plans start fresh |
+| 7 | 2026-07-03 | TestSprite round 4 + targeted reruns vs current deploy | ALL GREEN: FE 7/7 + BE 4/4 (leaderboard finally green after the GET-parse fix; earlier "blocked" runs were concurrency with our own CI gate) | — | milestone: the full suite passes against the live app; CI gate (.github/workflows/testsprite.yml) now re-verifies every push — first Actions run green in 3m23s |
+| 8 | 2026-07-03 | human playtest (the most honest checker) + two polish agents | owner played the deployed build cold | "there is nothing to do" — new players saw a dead screen: nothing equipped, no attack, no guidance; also a fully-broke old save was a hard softlock | genre-standard onboarding: innate arcane staff bolt (alive from second zero, softlock impossible), summons auto-equip into empty slots, contextual hint strip, empty-tab copy, faster first waves; then release polish: splash+loading bar, settings (sound/new-game/credits), SAVED chip, mobs 2x, coin arcs, boss enrage vignette + slow-mo kill, level-up ring |
+| 9 | 2026-07-03 | TestSprite round 5 + serialized reruns vs polished deploy | ALL GREEN again: FE 7/7 + BE 4/4 on the release build | two systemic test-design catches this round: (a) plans still asserted the pre-auto-equip flow ("book appears in inventory") — features moved, tests must move; (b) any precise gold-delta assertion loses a race against idle combat income; also we rate-limited ourselves (60 triggers/min) by letting CI, manual suites, and docs-push triggers overlap | plans rewritten around user-visible outcomes (arithmetic lives in the 46 engine unit tests); CI now skips docs-only pushes, cancels overlapping runs, retries once after rate-limit backoff |
+
+## README.md
+# Merge Mage 🧙📚
+
+**Play now: https://merge-mage.vercel.app** (mobile-portrait web game — best on a phone-sized window)
+
+A retro pixel idle RPG for **TestSprite Hackathon Season 3 — Build the Loop**. Merge spellbooks to raise your summon floor, equip your six strongest tomes, and let the wizard auto-battle dungeon waves — with cloud saves, server-verified offline earnings, and a live leaderboard.
+
+Built agent-first: coding agents wrote the code, and the **TestSprite CLI was the only source of truth** for whether anything actually worked. The whole build ran as write → deploy → verify → fix → verify. **[LOOP.md](LOOP.md) is the honest log of that loop** — every bug in it was caught by the checker (or by playing the deployed build), not invented.
+
+## The game
+
+- **Summon-floor merge core**: summoned book level = your highest level − 8. Merge two same-level books → +1 level → the floor (and every future summon) rises with you.
+- Six equip slots = six casting instances; fire splashes, frost slows, holy shreds bosses.
+- Boss gates every 10 waves with an enrage timer; skills with free respec; **Arcane Rebirth** prestige for permanent mana-crystal damage.
+- **Server-authoritative economy**: saves are schema-validated (no NaN gold, no teleporting to stage 999999), offline gold is computed from server time (8h cap — clock cheating does nothing), and the leaderboard only trusts stages it can read from your stored save.
+
+## The loop (what the checker caught)
+
+11 TestSprite tests (7 browser-agent FE plans + 4 Python BE scripts) ran against the **live URL** after every deploy. Highlights from [LOOP.md](LOOP.md):
+
+| The checker caught | The fix |
+|---|---|
+| Every API POST hanging 30s+ in prod | Vercel's Node helpers consume the body stream before Hono reads it — hand-rolled the handler |
+| Summon button said 24 gold, charged 24.4 | costs are now integral at the engine source |
+| Equipping a book spent gold | nested upgrade-button hitbox separated from the slot |
+| "Merge failed" — actually the level badge `2` reads as a *stack count* | badges now say `Lv2` (humans misread it too) |
+| Leaderboard dead: two parallel agents disagreed on the API contract | `{token,nickname}` + server-derived stage, both sides aligned |
+| Tests polluting each other's browser state | `/?fresh=1` reset affordance, every plan starts clean |
+
+Plus two engine-level catches while integrating: React StrictMode destroying Phaser mid-asset-load, and a Phaser 4.2 loader stall after the first 32-file parallel batch (upstream issue candidate — worked around with a single batch).
+
+CI keeps the loop honest: [.github/workflows/testsprite.yml](.github/workflows/testsprite.yml) re-verifies the live app with TestSprite on every push and fails the build when the checker disagrees.
+
+## Stack
+
+Phaser **4.2** (WebGL, `pixelArt`) for battle rendering · Vite **8.1** + React 19 DOM overlay for the game UI · pure-TypeScript deterministic economy engine (seeded RNG, 38 unit tests, built-in balance simulator: `npx tsx src/engine/simulate.ts --minutes 120`) · Hono on Vercel functions + Neon Postgres for saves/leaderboard/offline claims.
+
+Agents were guided by the official Phaser AI skills bundle (github.com/phaserjs/phaser/skills) and the TestSprite agent skills installed in this repo (see `AGENTS.md`).
+
+## API
+
+- `GET /api/health` → `{ ok, ts }`
+- `POST /api/save` `{ token, state }` — zod-validates the full engine state, upserts
+- `GET /api/save/:token` → `{ state, savedAt }` or 404
+- `POST /api/offline-claim` `{ token }` — server-time offline gold, 8h cap
+- `GET /api/leaderboard` → top 100 · `POST /api/leaderboard` `{ token, nickname }` — best stage read from the stored save only
+
+Migration: `npx tsx scripts/db-migrate.ts` (`DATABASE_URL` via Vercel/Neon integration or `.env.local`).
+
+## Run it yourself
+
+```bash
+npm install
+npm run dev        # game at localhost:8080 (api routes live on the Vercel deploy)
+npm run build && npx vitest run
+```
+
+## Credits
+
+All art/audio is credited in [CREDITS.md](CREDITS.md) — LuizMelo, 0x72, BigWander, Foozle, pimen, vrtxrry, JDWasabi, HydroGene. Thank you!
+
+## workflow
+# The loop, on autopilot: every push to main re-verifies the LIVE app with
+# TestSprite and fails the build when the checker disagrees. (Hackathon S3
+# CI/CD wiring — see LOOP.md for the loop this gate keeps honest.)
+name: testsprite-gate
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "LOOP.md"
+      - "README.md"
+      - "docs/**"
+      - "CREDITS.md"
+  workflow_dispatch:
+
+concurrency:
+  group: testsprite-gate
+  cancel-in-progress: true
+
+env:
+  TESTSPRITE_API_KEY: ${{ secrets.TESTSPRITE_API_KEY }}
+  BE_PROJECT_ID: 83edef2d-3534-491d-9529-929416c41499
+  FE_SMOKE_TEST_ID: 767706ae-35da-47cb-a1f0-6e5ec92dbe54
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm i -g @testsprite/testsprite-cli
+      - name: Wait for Vercel to serve the new build
+        run: sleep 45
+      - name: Backend suite against the live API
+        run: |
+          testsprite test run --all --project "$BE_PROJECT_ID" --wait --timeout 600 --output json || {
+            echo "retrying once after rate-limit backoff"; sleep 75;
+            testsprite test run --all --project "$BE_PROJECT_ID" --wait --timeout 600 --output json; }
+      - name: Frontend smoke (summon flow) against the live app
+        run: |
+          testsprite test run "$FE_SMOKE_TEST_ID" --wait --timeout 900 --output json || {
+            echo "retrying once after rate-limit backoff"; sleep 75;
+            testsprite test run "$FE_SMOKE_TEST_ID" --wait --timeout 900 --output json; }
+
+## TestSprite files
+tests/testsprite/be/01-save-roundtrip.py
+tests/testsprite/be/02-save-rejects-invalid.py
+tests/testsprite/be/03-leaderboard-server-stage.py
+tests/testsprite/be/04-offline-claim.py
+tests/testsprite/fe/01.json
+tests/testsprite/fe/02.json
+tests/testsprite/fe/03-steps.json
+tests/testsprite/fe/03.json
+tests/testsprite/fe/04.json
+tests/testsprite/fe/05.json
+tests/testsprite/fe/06.json
+tests/testsprite/fe/07.json

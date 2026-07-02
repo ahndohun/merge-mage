@@ -1,0 +1,23 @@
+{
+  "liveUrlWorks": true,
+  "apiHealthWorks": true,
+  "workflowExists": true,
+  "latestGhRun": {
+    "conclusion": "success",
+    "createdAt": "2026-07-02T19:40:39Z",
+    "databaseId": 28616866000,
+    "displayTitle": "docs: LOOP.md iteration 9 — release build all green",
+    "headSha": "dde686c20222ba1da8cfafb5f7a542444906af6c",
+    "status": "completed",
+    "updatedAt": "2026-07-02T19:45:50Z",
+    "url": "https://github.com/ahndohun/merge-mage/actions/runs/28616866000"
+  },
+  "latestGhRunGreen": true,
+  "loopRows": 9,
+  "testSpriteFiles": 12,
+  "readmeClaimsSupportedByFiles": true,
+  "testspritePreflightOk": true,
+  "buildOk": true,
+  "testOk": true,
+  "pass": true
+}

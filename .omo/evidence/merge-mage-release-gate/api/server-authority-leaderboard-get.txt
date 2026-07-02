@@ -1,0 +1,19 @@
+GET https://merge-mage.vercel.app/api/leaderboard
+request-headers: {}
+request-body:
+
+
+status: 200
+response-headers: {
+  "age": "0",
+  "cache-control": "public, max-age=0, must-revalidate",
+  "content-length": "465",
+  "content-type": "application/json",
+  "date": "Thu, 02 Jul 2026 19:48:55 GMT",
+  "server": "Vercel",
+  "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+  "x-vercel-cache": "MISS",
+  "x-vercel-id": "icn1::iad1::q8fsm-1783021735048-bf8fa1dd8e13"
+}
+response-body:
+{"items":[{"nickname":"ProbeWizard","bestStage":4,"prestigeCount":0},{"nickname":"E2EWizard","bestStage":4,"prestigeCount":0},{"nickname":"Gate734557","bestStage":4,"prestigeCount":0},{"nickname":"Champion","bestStage":1,"prestigeCount":0},{"nickname":"TestNick","bestStage":1,"prestigeCount":0},{"nickname":"Tester","bestStage":1,"prestigeCount":0},{"nickname":"Playtester","bestStage":1,"prestigeCount":0},{"nickname":"NovaMage","bestStage":1,"prestigeCount":0}]}

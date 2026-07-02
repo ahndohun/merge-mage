@@ -44,6 +44,7 @@ export function HudOverlay(props: HudOverlayProps) {
   }
 
   return (
+    <>
     <header className="hud-strip" aria-label="Merge Mage HUD">
       <div className="hud-stat">
         <span>GOLD</span>
@@ -84,8 +85,10 @@ export function HudOverlay(props: HudOverlayProps) {
         >
           <span aria-hidden="true" className="settings-glyph" />
         </button>
-        {settingsOpen ? (
-          <div className="settings-popover" id="settings-popover" role="dialog" aria-label="Settings">
+      </div>
+    </header>
+      {settingsOpen ? (
+        <div className="settings-popover" id="settings-popover" role="dialog" aria-label="Settings">
             <button
               aria-pressed={!props.muted}
               className={`settings-sound${props.muted ? " is-muted" : ""}`}
@@ -113,9 +116,8 @@ export function HudOverlay(props: HudOverlayProps) {
               Credits
             </a>
           </div>
-        ) : null}
-      </div>
-    </header>
+      ) : null}
+  </>
   )
 }
 

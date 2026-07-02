@@ -1,0 +1,6 @@
+Browser cleanup receipt:
+- Playwright contexts and browser instances from run-browser-gate.mjs and check-settings-pointer.mjs closed in finally blocks.
+- Verification after cleanup: pgrep for run-browser-gate/check-settings-pointer/run-server-authority returned no processes.
+- Verification after cleanup: no merge-mage/vite/playwright/chrome listening ports found.
+- Temporary dependency directory /tmp/merge-mage-release-gate-playwright removed and verified absent.
+- Aside fallback cleanup: closed transient Merge Mage test tabs. One pre-existing GitHub shadcn/improve popup was also closed while cleaning the browser session; remaining non-test tabs stayed open.
