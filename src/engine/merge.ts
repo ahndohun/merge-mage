@@ -16,13 +16,16 @@ export class MergeLevelMismatchError extends Error {
 export function mergeSpellbooks(
   left: Spellbook,
   right: Spellbook,
-  random: RandomSource,
+  _random: RandomSource,
 ): Spellbook {
   if (left.level !== right.level) {
     throw new MergeLevelMismatchError(left.level, right.level)
   }
 
-  const element: Element = random() < 0.5 ? left.element : right.element
+  // The merged book keeps the TARGET's (right) element. Deterministic merges
+  // give the three elements strategic weight: merge onto the element you want
+  // to keep. (Was random-of-two — pure luck, no player agency.)
+  const element: Element = right.element
 
   return {
     id: `${left.id}+${right.id}`,
