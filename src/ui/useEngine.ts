@@ -242,7 +242,7 @@ export function useEngine(): UseEngineResult {
 
   const summonLevel = getSummonLevel(state.highestLevelEver) + state.skills.summonBonus
   const summonCost = getSummonCost(summonLevel)
-  const canSummon = state.books.length < INVENTORY_LIMIT && state.gold >= summonCost
+  const canSummon = (state.equipped.some((book) => book === null) || state.books.length < INVENTORY_LIMIT) && state.gold >= summonCost
 
   return {
     state,

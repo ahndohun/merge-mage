@@ -20,6 +20,9 @@ export function SkillsPanel(props: SkillsPanelProps) {
         <span>SKILL POINTS</span>
         <strong>{props.state.skillPoints}</strong>
       </div>
+      {props.state.skillPoints === 0 ? (
+        <div className="empty-copy">Level up your wizard (kill things) to earn skill points</div>
+      ) : null}
       <div className="skill-list">
         {SKILL_ROWS.map((skill) => (
           <div className="skill-row" key={skill.name}>

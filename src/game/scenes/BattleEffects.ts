@@ -1,6 +1,6 @@
 import Phaser from "phaser"
-import { assertNever, type Element } from "../../engine/types"
-import { AnimationKeys, ElementColors, TextureKeys } from "../TextureKeys"
+import { assertNever, type CastElement, type Element } from "../../engine/types"
+import { AnimationKeys, CastColors, ElementColors, TextureKeys } from "../TextureKeys"
 import { DamageTextPool } from "./PixelText"
 
 type Point = {
@@ -11,7 +11,7 @@ type Point = {
 type ProjectileRequest = {
   readonly from: Point
   readonly to: Point
-  readonly element: Element
+  readonly element: CastElement
   readonly onImpact: () => void
 }
 
@@ -59,7 +59,12 @@ export class BattleEffects {
       .setScale(1)
       .setRotation(0)
       .setVisible(true)
-      .play(AnimationKeys.projectile[request.element], true)
+      .clearTint()
+      .play(getProjectileAnimation(request.element), true)
+
+    if (request.element === "arcane") {
+      projectile.setTint(CastColors.arcane)
+    }
 
     this.scene.tweens.add({
       targets: projectile,
@@ -75,8 +80,8 @@ export class BattleEffects {
     })
   }
 
-  impact(element: Element, point: Point): void {
-    this.particles.setParticleTint(ElementColors[element])
+  impact(element: CastElement, point: Point): void {
+    this.particles.setParticleTint(CastColors[element])
     this.particles.explode(14, point.x, point.y)
     this.playImpact(point)
   }
@@ -143,7 +148,7 @@ export class BattleEffects {
   }
 }
 
-function getProjectileTexture(element: Element): string {
+function getProjectileTexture(element: CastElement): string {
   switch (element) {
     case "fire":
       return TextureKeys.vfxFrame("fire", 1)
@@ -151,6 +156,23 @@ function getProjectileTexture(element: Element): string {
       return TextureKeys.vfxFrame("frost", 1)
     case "holy":
       return TextureKeys.vfx.holy
+    case "arcane":
+      return TextureKeys.vfxFrame("fire", 1)
+    default:
+      return assertNever(element)
+  }
+}
+
+function getProjectileAnimation(element: CastElement): string {
+  switch (element) {
+    case "fire":
+      return AnimationKeys.projectile.fire
+    case "frost":
+      return AnimationKeys.projectile.frost
+    case "holy":
+      return AnimationKeys.projectile.holy
+    case "arcane":
+      return AnimationKeys.projectile.fire
     default:
       return assertNever(element)
   }

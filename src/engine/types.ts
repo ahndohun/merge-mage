@@ -4,6 +4,7 @@ export const ELEMENTS = ["fire", "frost", "holy"] as const
 export const SKILL_NAMES = ["summonBonus", "castSpeed", "goldGain", "critChance"] as const
 
 export type Element = (typeof ELEMENTS)[number]
+export type CastElement = Element | "arcane"
 export type SkillName = (typeof SKILL_NAMES)[number]
 export type SlotIndex = (typeof SLOT_INDEXES)[number]
 
@@ -64,7 +65,7 @@ export type EngineEvent =
       readonly type: "cast"
       readonly bookId: string
       readonly slotIdx: SlotIndex
-      readonly element: Element
+      readonly element: CastElement
       readonly damage: number
       readonly critical: boolean
       readonly targetsHit: number

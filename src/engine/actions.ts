@@ -44,9 +44,8 @@ type BookLocation =
   | { readonly kind: "equipped"; readonly slot: SlotIndex; readonly book: Spellbook }
 
 export function summonBook(state: EngineState): EngineState {
-  if (state.books.length >= INVENTORY_LIMIT) {
-    throw new InventoryFullError(INVENTORY_LIMIT)
-  }
+  const emptySlot = SLOT_INDEXES.find((slot) => state.equipped[slot] === null)
+  if (emptySlot === undefined && state.books.length >= INVENTORY_LIMIT) { throw new InventoryFullError(INVENTORY_LIMIT) }
 
   const summonLevel = getSummonLevel(state.highestLevelEver) + state.skills.summonBonus
   const cost = getSummonCost(summonLevel)
@@ -64,7 +63,8 @@ export function summonBook(state: EngineState): EngineState {
   return {
     ...state,
     gold: state.gold - cost,
-    books: [...state.books, spellbook],
+    books: emptySlot === undefined ? [...state.books, spellbook] : state.books,
+    equipped: emptySlot === undefined ? state.equipped : setEquippedSlot(state.equipped, emptySlot, spellbook),
     highestLevelEver: Math.max(state.highestLevelEver, spellbook.level),
     rngState: roll.state,
     nextBookId: state.nextBookId + 1,

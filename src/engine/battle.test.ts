@@ -53,4 +53,21 @@ describe("battle ticks", () => {
     expect(result.state.gold).toBeGreaterThan(state.gold)
     expect(result.state.recentGoldPerSecond).toBeGreaterThan(0)
   })
+
+  it("kills a wave-one mob and grants gold from the innate staff bolt when nothing is equipped", () => {
+    const state = createInitialState(21)
+
+    const result = simulateTicks(state, 60)
+
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: "cast",
+        element: "arcane",
+        critical: false,
+        targetsHit: 1,
+      }),
+    )
+    expect(result.events.some((event) => event.type === "kill")).toBe(true)
+    expect(result.state.gold).toBeGreaterThan(state.gold)
+  })
 })

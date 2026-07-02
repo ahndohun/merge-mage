@@ -1,11 +1,18 @@
 import Phaser from "phaser"
-import type { Element } from "../engine/types"
+import type { CastElement, Element } from "../engine/types"
 import type { PixelGlyph } from "./PixelGlyphs"
 
 export const ElementColors: Record<Element, number> = {
   fire: 0xe25822,
   frost: 0x6ecbff,
   holy: 0xffd873,
+}
+
+export const CastColors: Record<CastElement, number> = {
+  fire: ElementColors.fire,
+  frost: ElementColors.frost,
+  holy: ElementColors.holy,
+  arcane: 0xa875ff,
 }
 
 export const MOB_KINDS = ["imp", "goblin", "skelet", "chort", "wogol", "orc_warrior"] as const

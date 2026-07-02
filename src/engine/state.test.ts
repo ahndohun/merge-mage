@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createInitialState } from "./state.js"
+import { createInitialState, getMobHp } from "./state.js"
 
 describe("createInitialState", () => {
   it("creates deterministic run state with inventory, equipment, and battle defaults", () => {
@@ -13,5 +13,9 @@ describe("createInitialState", () => {
     expect(state.stageHp).toBeGreaterThan(0)
     expect(state.skills).toEqual({ summonBonus: 0, castSpeed: 0, goldGain: 0, critChance: 0 })
     expect(state.slotTiers).toEqual([0, 0, 0, 0, 0, 0])
+  })
+
+  it("uses the lowered early pacing HP base for wave one", () => {
+    expect(getMobHp(1)).toBeCloseTo(12.8)
   })
 })

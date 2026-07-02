@@ -1,6 +1,6 @@
 import Phaser from "phaser"
-import type { Element } from "../../engine/types"
-import { AnimationKeys, ElementColors, TextureKeys } from "../TextureKeys"
+import type { CastElement } from "../../engine/types"
+import { AnimationKeys, CastColors, TextureKeys } from "../TextureKeys"
 import { BattleLayout } from "./BattleLayout"
 
 export class BattleWizardView {
@@ -72,8 +72,8 @@ export class BattleWizardView {
     })
   }
 
-  flash(element: Element): void {
-    this.sprite.setTint(ElementColors[element]).setTintMode(Phaser.TintModes.ADD)
+  flash(element: CastElement): void {
+    this.sprite.setTint(CastColors[element]).setTintMode(Phaser.TintModes.ADD)
     this.scene.time.delayedCall(90, () => {
       this.sprite.clearTint()
     })

@@ -25,20 +25,52 @@ function book(id: string, level: number, element: Spellbook["element"]): Spellbo
 }
 
 describe("summonBook", () => {
-  it("adds a deterministic book and charges the summon floor cost", () => {
+  it("auto-equips a deterministic book into the first empty slot and charges the summon floor cost", () => {
     const state = { ...createInitialState(12), gold: 100 }
 
     const next = summonBook(state)
 
-    expect(next.books).toHaveLength(1)
-    expect(next.books[0]?.level).toBe(1)
+    expect(next.equipped[0]?.level).toBe(1)
+    expect(next.books).toHaveLength(0)
     expect(next.gold).toBeCloseTo(100 - getSummonCost(1))
     expect(state.books).toHaveLength(0)
   })
 
+  it("adds summoned books to inventory when all equipment slots are full", () => {
+    const state = {
+      ...createInitialState(12),
+      equipped: [
+        book("slot-0", 1, "fire"),
+        book("slot-1", 1, "frost"),
+        book("slot-2", 1, "holy"),
+        book("slot-3", 1, "fire"),
+        book("slot-4", 1, "frost"),
+        book("slot-5", 1, "holy"),
+      ],
+      gold: 100,
+    } satisfies EngineState
+
+    const next = summonBook(state)
+
+    expect(next.books).toHaveLength(1)
+    expect(next.equipped.map((item) => item?.id)).toEqual(state.equipped.map((item) => item?.id))
+  })
+
   it("rejects a summon when the inventory is full", () => {
     const books = Array.from({ length: 15 }, (_, idx) => book(`b${idx}`, 1, "fire"))
-    const state = { ...createInitialState(1), books, gold: 1_000 }
+    const state = {
+      ...createInitialState(1),
+      books,
+      equipped: [
+        book("slot-0", 1, "fire"),
+        book("slot-1", 1, "frost"),
+        book("slot-2", 1, "holy"),
+        book("slot-3", 1, "fire"),
+        book("slot-4", 1, "frost"),
+        book("slot-5", 1, "holy"),
+      ],
+      gold: 1_000,
+    } satisfies EngineState
 
     expect(() => summonBook(state)).toThrow(InventoryFullError)
   })
@@ -63,7 +95,7 @@ describe("mergeBooks", () => {
     expect(merged.books).toHaveLength(1)
     expect(merged.books[0]?.id).toBe("a+b")
     expect(merged.highestLevelEver).toBe(10)
-    expect(afterSummon.books.at(-1)?.level).toBe(2)
+    expect(afterSummon.equipped[0]?.level).toBe(2)
   })
 
   it("empties idB's equipped slot when merging an equipped book into inventory", () => {

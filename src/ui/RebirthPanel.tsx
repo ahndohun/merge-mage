@@ -26,6 +26,7 @@ export function RebirthPanel(props: RebirthPanelProps) {
       <button className="btn btn-wide" data-testid="prestige-open" disabled={!ready} onClick={() => setConfirming(true)} type="button">
         REBIRTH
       </button>
+      {ready ? null : <div className="empty-copy rebirth-lock-copy">Unlocks at stage 10 (now: {props.state.stage})</div>}
       {confirming ? (
         <div className="modal-shade" role="presentation">
           <div aria-modal="true" className="modal panel" role="dialog">

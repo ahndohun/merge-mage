@@ -9,6 +9,7 @@ import { ControlsPanel } from "./ControlsPanel"
 import { HudOverlay } from "./HudOverlay"
 import { OfflineClaimModal } from "./OfflineClaimModal"
 import { renderTab, type TabId } from "./renderTab"
+import { getContextHint } from "./hints"
 import { Toasts } from "./Toasts"
 import { useEngine } from "./useEngine"
 
@@ -168,6 +169,7 @@ export function GameShell() {
     setSoundMuted(nextMuted)
     writeAudioMutedPreference(nextMuted)
   }
+  const contextHint = getContextHint({ state: engine.state, summonCost: engine.summonCost })
 
   return (
     <main
@@ -197,6 +199,11 @@ export function GameShell() {
               handleUpgradeSlot,
             )}
           </div>
+          {contextHint === null ? null : (
+            <div className="hint-strip" data-testid="hint-strip">
+              {contextHint}
+            </div>
+          )}
           <ControlsPanel
             autoBuy={engine.autoBuy}
             autoMerge={engine.autoMerge}

@@ -49,7 +49,7 @@ function renderStatus(status: LeaderboardStatus, entries: readonly LeaderboardEn
   }
 
   if (entries.length === 0) {
-    return <div className="rank-empty">NO RANKS</div>
+    return <div className="rank-empty">No ranks yet — set a nickname and be first</div>
   }
 
   return entries.map((entry) => (
