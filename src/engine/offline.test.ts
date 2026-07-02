@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { computeOfflineGold } from "./offline"
-import { createInitialState } from "./state"
+import { computeOfflineGold } from "./offline.js"
+import { createInitialState } from "./state.js"
 
 describe("computeOfflineGold", () => {
   it("uses recent gold per second with an eight hour cap and 0.6 factor", () => {

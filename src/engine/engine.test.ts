@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { SUMMON_COST_BASE, SUMMON_COST_GROWTH } from "./constants"
-import { MergeLevelMismatchError, mergeSpellbooks } from "./merge"
-import { getSummonCost, getSummonLevel } from "./summon"
-import type { Spellbook } from "./types"
+import { SUMMON_COST_BASE, SUMMON_COST_GROWTH } from "./constants.js"
+import { MergeLevelMismatchError, mergeSpellbooks } from "./merge.js"
+import { getSummonCost, getSummonLevel } from "./summon.js"
+import type { Spellbook } from "./types.js"
 
 describe("summon floor rule", () => {
   it("returns max one when highest level is inside the floor gap", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { bookDamage, simulateTicks } from "./battle"
-import { createInitialState, type EngineState } from "./state"
-import type { Spellbook } from "./types"
+import { bookDamage, simulateTicks } from "./battle.js"
+import { createInitialState, type EngineState } from "./state.js"
+import type { Spellbook } from "./types.js"
 
 function book(id: string, level: number, element: Spellbook["element"]): Spellbook {
   return { id, level, element }

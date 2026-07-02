@@ -1,11 +1,11 @@
 import { handle } from "@hono/node-server/vercel"
 import { Hono, type Context } from "hono"
 import type { ZodError } from "zod"
-import { claimOffline, getLeaderboard, getSavedGame, saveGame, upsertLeaderboard } from "./_lib/db"
-import { CorruptSaveError, DatabaseConfigError, InvalidJsonError } from "./_lib/errors"
-import { leaderboardBodySchema, saveBodySchema, tokenBodySchema, tokenSchema } from "./_lib/schemas"
+import { claimOffline, getLeaderboard, getSavedGame, saveGame, upsertLeaderboard } from "./_lib/db.js"
+import { CorruptSaveError, DatabaseConfigError, InvalidJsonError } from "./_lib/errors.js"
+import { leaderboardBodySchema, saveBodySchema, tokenBodySchema, tokenSchema } from "./_lib/schemas.js"
 
-export { engineStateSchema, leaderboardBodySchema, saveBodySchema, tokenBodySchema, tokenSchema } from "./_lib/schemas"
+export { engineStateSchema, leaderboardBodySchema, saveBodySchema, tokenBodySchema, tokenSchema } from "./_lib/schemas.js"
 
 export const config = {
   api: {

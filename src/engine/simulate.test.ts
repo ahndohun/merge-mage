@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { runBalanceSimulation } from "./simulate"
+import { runBalanceSimulation } from "./simulate.js"
 
 describe("balance simulator", () => {
   it("runs a 60 minute greedy simulation to at least stage three", () => {

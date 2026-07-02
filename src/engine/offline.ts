@@ -1,5 +1,5 @@
-import { OFFLINE_CAP_MS, OFFLINE_EFFICIENCY } from "./constants"
-import type { EngineState } from "./types"
+import { OFFLINE_CAP_MS, OFFLINE_EFFICIENCY } from "./constants.js"
+import type { EngineState } from "./types.js"
 
 export function computeOfflineGold(state: EngineState, nowServerTs: number): number {
   if (state.lastSeenServerTs === null) {

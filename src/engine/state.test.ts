@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createInitialState } from "./state"
+import { createInitialState } from "./state.js"
 
 describe("createInitialState", () => {
   it("creates deterministic run state with inventory, equipment, and battle defaults", () => {

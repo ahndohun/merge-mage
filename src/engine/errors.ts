@@ -1,4 +1,4 @@
-import type { SlotIndex } from "./types"
+import type { SlotIndex } from "./types.js"
 
 export class InventoryFullError extends Error {
   readonly name = "InventoryFullError"

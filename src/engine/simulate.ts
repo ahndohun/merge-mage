@@ -1,9 +1,9 @@
-import { equipBook, getSlotUpgradeCost, mergeBooks, summonBook, upgradeSlot } from "./actions"
-import { INVENTORY_LIMIT, SLOT_INDEXES, TICK_MS } from "./constants"
-import { simulateTicks } from "./battle"
-import { getSummonCost, getSummonLevel } from "./summon"
-import { createInitialState } from "./state"
-import type { EngineState, Spellbook } from "./types"
+import { equipBook, getSlotUpgradeCost, mergeBooks, summonBook, upgradeSlot } from "./actions.js"
+import { INVENTORY_LIMIT, SLOT_INDEXES, TICK_MS } from "./constants.js"
+import { simulateTicks } from "./battle.js"
+import { getSummonCost, getSummonLevel } from "./summon.js"
+import { createInitialState } from "./state.js"
+import type { EngineState, Spellbook } from "./types.js"
 
 type CliProcess = {
   readonly argv: readonly string[]

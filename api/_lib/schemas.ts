@@ -1,7 +1,7 @@
 import { z, type ZodType } from "zod"
-import { EQUIPMENT_SLOT_COUNT, INVENTORY_LIMIT } from "../../src/engine/constants"
-import { ELEMENTS, type EngineState, type EquippedBooks, type SkillAllocations, type SlotTiers, type SlotTimers, type Spellbook } from "../../src/engine/types"
-import { CorruptSaveError } from "./errors"
+import { EQUIPMENT_SLOT_COUNT, INVENTORY_LIMIT } from "../../src/engine/constants.js"
+import { ELEMENTS, type EngineState, type EquippedBooks, type SkillAllocations, type SlotTiers, type SlotTimers, type Spellbook } from "../../src/engine/types.js"
+import { CorruptSaveError } from "./errors.js"
 
 export const MAX_GOLD = 1_000_000_000_000
 export const MAX_STAGE = 100_000

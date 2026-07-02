@@ -11,10 +11,10 @@ import {
   summonBook,
   unequipBook,
   upgradeSlot,
-} from "./actions"
-import { getSummonCost } from "./summon"
-import type { Spellbook } from "./types"
-import { createInitialState, type EngineState } from "./state"
+} from "./actions.js"
+import { getSummonCost } from "./summon.js"
+import type { Spellbook } from "./types.js"
+import { createInitialState, type EngineState } from "./state.js"
 
 function withBooks(state: EngineState, books: readonly Spellbook[]): EngineState {
   return { ...state, books, highestLevelEver: Math.max(state.highestLevelEver, ...books.map((book) => book.level)) }

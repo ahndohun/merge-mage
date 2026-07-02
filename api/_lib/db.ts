@@ -1,8 +1,8 @@
-import { OFFLINE_CAP_MS } from "../../src/engine/constants"
-import { computeOfflineGold } from "../../src/engine/offline"
-import type { EngineState } from "../../src/engine/types"
-import { CorruptSaveError, DatabaseConfigError } from "./errors"
-import { jsonState, MAX_GOLD, parseSavedState } from "./schemas"
+import { OFFLINE_CAP_MS } from "../../src/engine/constants.js"
+import { computeOfflineGold } from "../../src/engine/offline.js"
+import type { EngineState } from "../../src/engine/types.js"
+import { CorruptSaveError, DatabaseConfigError } from "./errors.js"
+import { jsonState, MAX_GOLD, parseSavedState } from "./schemas.js"
 
 type SaveRow = {
   readonly state: unknown

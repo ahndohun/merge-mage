@@ -8,11 +8,11 @@ import {
   INITIAL_STAGE,
   INITIAL_WAVE,
   REGULAR_MOB_COUNT,
-} from "./constants"
-import { createRandomState } from "./rng"
-import { assertNever, type EngineState, type EquippedBooks, type SkillAllocations, type SlotIndex, type SlotTiers, type SlotTimers } from "./types"
+} from "./constants.js"
+import { createRandomState } from "./rng.js"
+import { assertNever, type EngineState, type EquippedBooks, type SkillAllocations, type SlotIndex, type SlotTiers, type SlotTimers } from "./types.js"
 
-export type { EngineState } from "./types"
+export type { EngineState } from "./types.js"
 
 export function createInitialState(seed: number): EngineState {
   const enemiesHp = createWaveEnemies(INITIAL_STAGE, INITIAL_WAVE)

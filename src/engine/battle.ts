@@ -20,11 +20,11 @@ import {
   SLOT_INDEXES,
   TICK_MS,
   WIZARD_XP_PER_LEVEL,
-} from "./constants"
-import { getSlotMultiplier } from "./actions"
-import { nextRandomState } from "./rng"
-import { createWaveEnemies, setSlotTimer, sumHp } from "./state"
-import { assertNever, type Element, type EngineEvent, type EngineState, type SlotIndex, type Spellbook } from "./types"
+} from "./constants.js"
+import { getSlotMultiplier } from "./actions.js"
+import { nextRandomState } from "./rng.js"
+import { createWaveEnemies, setSlotTimer, sumHp } from "./state.js"
+import { assertNever, type Element, type EngineEvent, type EngineState, type SlotIndex, type Spellbook } from "./types.js"
 
 export type DamageRoll = {
   readonly state: EngineState

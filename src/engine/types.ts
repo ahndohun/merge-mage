@@ -1,4 +1,4 @@
-import { SLOT_INDEXES } from "./constants"
+import { SLOT_INDEXES } from "./constants.js"
 
 export const ELEMENTS = ["fire", "frost", "holy"] as const
 export const SKILL_NAMES = ["summonBonus", "castSpeed", "goldGain", "critChance"] as const

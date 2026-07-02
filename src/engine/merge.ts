@@ -1,5 +1,5 @@
-import type { RandomSource } from "./rng"
-import type { Element, Spellbook } from "./types"
+import type { RandomSource } from "./rng.js"
+import type { Element, Spellbook } from "./types.js"
 
 export class MergeLevelMismatchError extends Error {
   readonly leftLevel: number

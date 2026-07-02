@@ -5,7 +5,7 @@ import {
   SLOT_MULTIPLIER_PER_TIER,
   SLOT_UPGRADE_COST_BASE,
   SLOT_UPGRADE_COST_GROWTH,
-} from "./constants"
+} from "./constants.js"
 import {
   BookNotFoundError,
   EmptySlotError,
@@ -14,10 +14,10 @@ import {
   PrestigeRequirementError,
   SkillPointError,
   SlotIndexError,
-} from "./errors"
-import { mergeSpellbooks } from "./merge"
-import { nextRandomState } from "./rng"
-import { getSummonCost, getSummonLevel } from "./summon"
+} from "./errors.js"
+import { mergeSpellbooks } from "./merge.js"
+import { nextRandomState } from "./rng.js"
+import { getSummonCost, getSummonLevel } from "./summon.js"
 import {
   createInitialState,
   createWaveEnemies,
@@ -26,8 +26,8 @@ import {
   setSlotTier,
   sumHp,
   zeroTimers,
-} from "./state"
-import { assertNever, type Element, type EngineState, type SkillName, type SlotIndex, type Spellbook } from "./types"
+} from "./state.js"
+import { assertNever, type Element, type EngineState, type SkillName, type SlotIndex, type Spellbook } from "./types.js"
 
 export {
   BookNotFoundError,
@@ -37,7 +37,7 @@ export {
   PrestigeRequirementError,
   SkillPointError,
   SlotIndexError,
-} from "./errors"
+} from "./errors.js"
 
 type BookLocation =
   | { readonly kind: "inventory"; readonly index: number; readonly book: Spellbook }
