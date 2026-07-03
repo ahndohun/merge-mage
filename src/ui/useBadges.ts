@@ -1,6 +1,8 @@
 import { getSlotUpgradeCost } from "../engine/actions"
+import { getPrestigeCrystalReward } from "../engine/balance"
 import { getMineClaimPreview, hasDailyMissionClaim } from "../engine/camp"
 import { getClaimableQuests } from "../engine/quests"
+import { getUnlockedFeatures } from "../engine/unlocks"
 import type { EngineState } from "../engine/types"
 
 export type BadgeFlags = {
@@ -12,7 +14,7 @@ export type BadgeFlags = {
 }
 
 export function getRebirthPreviewCrystals(stage: number): number {
-  return Math.floor(stage ** 1.5 / 10)
+  return getPrestigeCrystalReward(stage, 1)
 }
 
 export function getMinimumSlotUpgradeCost(state: EngineState): number {
@@ -25,15 +27,16 @@ export function canAffordSlotUpgrade(state: EngineState, slotIdx: number): boole
 }
 
 export function useBadges(state: EngineState): BadgeFlags {
-  const minUpgradeCost = getMinimumSlotUpgradeCost(state)
+  const unlocked = getUnlockedFeatures(state)
   const rebirthPreview = getRebirthPreviewCrystals(state.stage)
 
   return {
-    books: state.gold >= minUpgradeCost,
-    skills: state.skillPoints > 0,
-    quests: getClaimableQuests(state).length > 0,
-    camp: getMineClaimPreview(state, Date.now()).claimable || hasDailyMissionClaim(state, new Date()),
+    books: false,
+    skills: unlocked.skills && state.skillPoints > 0,
+    quests: unlocked.quests && getClaimableQuests(state).length > 0,
+    camp: unlocked.camp && (getMineClaimPreview(state, Date.now()).claimable || hasDailyMissionClaim(state, new Date())),
     rebirth:
+      unlocked.rebirth &&
       state.stage >= 10 &&
       rebirthPreview > 0 &&
       rebirthPreview >= state.manaCrystals * 0.5,

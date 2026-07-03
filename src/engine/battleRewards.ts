@@ -123,6 +123,7 @@ function advanceWave(state: EngineState, bossGold: number): { readonly state: En
       state: recordDailyProgress(setAchievementCounterMax({
         ...state,
         stage: nextStage,
+        highestStage: Math.max(state.highestStage, nextStage),
         wave: 1,
         enemiesHp,
         stageHp: sumHp(enemiesHp),

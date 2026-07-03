@@ -1,6 +1,7 @@
 import { useState } from "react"
+import { getPrestigeCrystalReward } from "../engine/balance"
 import { MANA_DAMAGE_PER_CRYSTAL, RELIC_SUMMON_COST } from "../engine/constants"
-import { getRelicDefinition, RELICS } from "../engine/relics"
+import { getEquippedRelicEffects, getRelicDefinition, RELICS } from "../engine/relics"
 import type { EngineState } from "../engine/types"
 import { useBadges } from "./useBadges"
 import { useLocale } from "./useLocale"
@@ -17,7 +18,7 @@ export function RebirthPanel(props: RebirthPanelProps) {
   const badges = useBadges(props.state)
   const [confirming, setConfirming] = useState(false)
   const [subview, setSubview] = useState<"rebirth" | "relics">("rebirth")
-  const preview = Math.floor(props.state.stage ** 1.5 / 10)
+  const preview = getPrestigeCrystalReward(props.state.stage, getEquippedRelicEffects(props.state.relics).crystalGainMultiplier)
   const ready = props.state.stage >= 10
 
   return (

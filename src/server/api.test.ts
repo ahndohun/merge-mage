@@ -4,7 +4,7 @@ import { leaderboardBodySchema, saveBodySchema } from "../../api/index"
 import { jsonState, parseSavedState } from "../../api/_lib/schemas"
 
 const token = "merge_mage_test_token_12345"
-const V3_PROGRESS_KEYS = ["quests", "achievements", "codex", "traits", "relics", "riftRuns", "activeRift", "pet", "mine", "dailyMissions", "skins"] as const
+const V3_PROGRESS_KEYS = ["highestStage", "quests", "achievements", "codex", "traits", "relics", "riftRuns", "activeRift", "pet", "mine", "dailyMissions", "skins"] as const
 
 function book(id: string, level = 1) {
   return { id, level, element: "fire" } as const
@@ -42,7 +42,7 @@ describe("saveBodySchema", () => {
     if (parsed.success) {
       expect(parsed.data.state.gold).toBe(99)
       expect(parsed.data.state.stage).toBe(6)
-      expect(parsed.data.state.manaStone).toBe(0)
+      expect(parsed.data.state.highestStage).toBe(6)
       expect(parsed.data.state.quests).toEqual({ completed: [], claimed: [] })
       expect(parsed.data.state.achievements).toEqual({ counters: {}, claimed: [] })
       expect(parsed.data.state.codex).toEqual({ tiers: {} })
@@ -57,11 +57,10 @@ describe("saveBodySchema", () => {
     }
   })
 
-  it("round-trips a v3 engine state through JSON serialization", () => {
+  it("round-trips a v4 engine state through JSON serialization", () => {
     const state = {
       ...createInitialState(7),
       achievements: { counters: { mergesTotal: 12, bossKills: 1 }, claimed: ["merge-10"] },
-      manaStone: 77,
       codex: { tiers: { fire: 3 } },
       relics: { owned: { emberSigil: 2 }, equipped: ["emberSigil", null, null] as const },
       riftRuns: { date: "2026-07-03", golden: 1, trial: 2 },
@@ -72,11 +71,26 @@ describe("saveBodySchema", () => {
 
     expect(parsed.achievements.counters["mergesTotal"]).toBe(12)
     expect(parsed.achievements.counters["bossKills"]).toBe(1)
-    expect(parsed.manaStone).toBe(77)
     expect(parsed.codex.tiers["fire"]).toBe(3)
     expect(parsed.relics).toEqual({ owned: { emberSigil: 2 }, equipped: ["emberSigil", null, null] })
     expect(parsed.riftRuns).toEqual({ date: "2026-07-03", golden: 1, trial: 2 })
     expect(parsed.skins).toEqual({ owned: ["apprentice-blue"], equipped: "apprentice-blue" })
+    expect("manaStone" in parsed).toBe(false)
+  })
+
+  it("accepts a legacy state and folds mana stones into mana crystals", () => {
+    const legacyState = {
+      ...createInitialState(7),
+      stage: 8,
+      manaCrystals: 5,
+      manaStone: 160,
+    }
+
+    const parsed = parseSavedState(legacyState)
+
+    expect(parsed.manaCrystals).toBe(7)
+    expect(parsed.highestStage).toBe(8)
+    expect("manaStone" in parsed).toBe(false)
   })
 
   it("rejects malformed tokens", () => {

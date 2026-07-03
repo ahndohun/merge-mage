@@ -58,6 +58,21 @@ describe("pet progression and battle contribution", () => {
 })
 
 describe("mine production", () => {
+  it("keeps the first mine floor under five percent of the first rebirth per hour", () => {
+    const state = {
+      ...createInitialState(2),
+      stage: 4,
+      mine: { floor: 1, lastClaimAt: 1_000 },
+    } satisfies EngineState
+    const preview = getMineClaimPreview(state, 1_000 + 12 * 60 * 60 * 1_000)
+    const claimed = claimMine(state, 1_000 + 12 * 60 * 60 * 1_000)
+
+    expect(preview.floor).toBe(1)
+    expect(preview.ratePerHour).toBeLessThanOrEqual(0.15)
+    expect(preview.manaCrystals).toBe(1)
+    expect(claimed.manaCrystals).toBe(1)
+  })
+
   it("unlocks floors from stage milestones and caps claim elapsed time at twelve hours", () => {
     expect(getUnlockedMineFloor(4)).toBe(1)
     expect(getUnlockedMineFloor(15)).toBe(2)
@@ -75,12 +90,12 @@ describe("mine production", () => {
     expect(preview.elapsedMs).toBe(12 * 60 * 60 * 1_000)
     expect(claimed.mine.floor).toBe(4)
     expect(claimed.mine.lastClaimAt).toBe(1_000 + 24 * 60 * 60 * 1_000)
-    expect(claimed.manaStone).toBe(preview.manaStone)
+    expect(claimed.manaCrystals).toBe(preview.manaCrystals)
   })
 })
 
 describe("daily missions", () => {
-  it("resets on local date change, tracks progress, and pays mana stones once", () => {
+  it("resets on local date change, tracks progress, and pays mana crystals once", () => {
     const date = new Date(2026, 6, 3, 9)
     const reset = syncDailyMissions(createInitialState(3), date)
     const progressed = recordDailyProgress(reset, "merge20", 20, date)
@@ -93,8 +108,8 @@ describe("daily missions", () => {
     }
 
     expect(getDailyMissionStatus(progressed, mission, date).claimable).toBe(true)
-    expect(claimed.manaStone).toBe(mission.rewardManaStone)
-    expect(secondClaim.manaStone).toBe(claimed.manaStone)
+    expect(claimed.manaCrystals).toBe(mission.rewardManaCrystals)
+    expect(secondClaim.manaCrystals).toBe(claimed.manaCrystals)
     expect(nextDay.dailyMissions.date).toBe("2026-07-04")
     expect(nextDay.dailyMissions.progress).toEqual({})
     expect(nextDay.dailyMissions.claimed).toEqual([])

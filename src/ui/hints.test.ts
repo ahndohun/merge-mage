@@ -44,6 +44,7 @@ describe("getContextHint", () => {
     const rebirth = {
       ...createInitialState(1),
       stage: 10,
+      highestStage: 10,
       equipped: [book("equipped", 3, "holy"), null, null, null, null, null],
     } satisfies EngineState
 

@@ -22,6 +22,7 @@ export function HudOverlay(props: HudOverlayProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [newGameArmed, setNewGameArmed] = useState(false)
   const disarmTimerRef = useRef<number | null>(null)
+  const showCrystals = props.state.prestigeCount > 0 || props.state.manaCrystals > 0
 
   useEffect(() => {
     return () => {
@@ -67,7 +68,7 @@ export function HudOverlay(props: HudOverlayProps) {
 
   return (
     <>
-    <header className="hud-strip" aria-label="Merge Mage HUD">
+    <header className={`hud-strip${showCrystals ? " has-crystals" : ""}`} aria-label="Merge Mage HUD">
       <div className="hud-stat">
         <span>{t("gold")}</span>
         <strong>{formatNumber(props.state.gold)}</strong>
@@ -78,10 +79,12 @@ export function HudOverlay(props: HudOverlayProps) {
           {props.state.stage}-{props.state.wave}
         </strong>
       </div>
-      <div className="hud-stat">
-        <span>{t("mana")}</span>
-        <strong>{formatNumber(props.state.manaCrystals)}</strong>
-      </div>
+      {showCrystals ? (
+        <div className="hud-stat">
+          <span>{t("manaCrystals")}</span>
+          <strong>{formatNumber(props.state.manaCrystals)}</strong>
+        </div>
+      ) : null}
       <div className="hud-stat wizard-stat">
         <span>{t.wizardLevel(props.state.wizardLevel)}</span>
         <div className="xp-bar" aria-label="Wizard XP">

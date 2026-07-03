@@ -6,7 +6,8 @@ export function mirrorBattleState(state: EngineState): void {
   document.body.dataset["wave"] = `${state.wave}`
   document.body.dataset["gold"] = `${Math.floor(state.gold)}`
   document.body.dataset["bossHp"] = `${getBossHp(state)}`
-  document.body.dataset["manaStone"] = `${Math.floor(state.manaStone)}`
+  delete document.body.dataset["manaStone"]
+  document.body.dataset["manaCrystals"] = `${Math.floor(state.manaCrystals)}`
   document.body.dataset["petLevel"] = `${state.pet.level}`
   document.body.dataset["mineFloor"] = `${state.mine.floor}`
 }

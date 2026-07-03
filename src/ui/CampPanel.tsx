@@ -45,12 +45,15 @@ export function CampPanel(props: CampPanelProps) {
   const equippedSkin = getEquippedSkin(props.state)
   const petXpRequired = getPetXpThreshold(props.state.pet.level)
   const petXpPercent = Math.min(100, (props.state.pet.xp / petXpRequired) * 100)
+  const mineRate = mine.ratePerHour < 1 ? mine.ratePerHour.toFixed(2) : formatNumber(mine.ratePerHour)
 
   return (
     <section className="panel tab-panel camp-panel" aria-label="Camp">
       <div className="panel-header">
         <span>{t("campTitle")}</span>
-        <strong>{formatNumber(props.state.manaStone)} {t.locale === "ko" ? "마나석" : "MANA"}</strong>
+        <strong>
+          {formatNumber(props.state.manaCrystals)} {t("manaCrystals")}
+        </strong>
       </div>
 
       <div className="camp-grid">
@@ -73,9 +76,9 @@ export function CampPanel(props: CampPanelProps) {
           <div className="camp-card-title">{t("mineTitle")}</div>
           <div className="camp-mine-row">
             <span>{t.mineFloor(mine.floor)}</span>
-            <strong>{formatNumber(mine.manaStone)}</strong>
+            <strong>{formatNumber(mine.manaCrystals)}</strong>
           </div>
-          <div className="camp-muted">{t.mineRate(formatNumber(mine.ratePerHour))}</div>
+          <div className="camp-muted">{t.mineRate(mineRate)}</div>
           <button
             className="btn btn-mini btn-wide"
             data-testid="mine-claim-btn"
@@ -124,8 +127,8 @@ export function CampPanel(props: CampPanelProps) {
                 <div className="daily-copy">
                   <span>{t(missionLabelKeys[mission.id])}</span>
                   <small>
-                    {formatNumber(status.progress)}/{formatNumber(status.goal)} +{formatNumber(status.rewardManaStone)}{" "}
-                    {t.locale === "ko" ? "마나석" : "MANA"}
+                    {formatNumber(status.progress)}/{formatNumber(status.goal)} +{formatNumber(status.rewardManaCrystals)}{" "}
+                    {t("manaCrystals")}
                   </small>
                 </div>
                 <button

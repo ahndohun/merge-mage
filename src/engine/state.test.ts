@@ -9,6 +9,7 @@ describe("createInitialState", () => {
     expect(state.books).toEqual([])
     expect(state.equipped).toEqual([null, null, null, null, null, null])
     expect(state.highestLevelEver).toBe(1)
+    expect(state.highestStage).toBe(1)
     expect(state.stage).toBe(1)
     expect(state.wave).toBe(1)
     expect(state.stageHp).toBeGreaterThan(0)
@@ -24,7 +25,6 @@ describe("createInitialState", () => {
     expect(state.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
     expect(state.mine).toEqual({ floor: 1, lastClaimAt: null })
     expect(state.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
-    expect(state.manaStone).toBe(0)
     expect(state.skins).toEqual({ owned: ["apprentice"], equipped: "apprentice" })
   })
 

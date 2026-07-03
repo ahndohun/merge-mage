@@ -1,5 +1,6 @@
 import { z, type ZodType } from "zod"
 import { EQUIPMENT_SLOT_COUNT, INVENTORY_LIMIT } from "../../src/engine/constants.js"
+import { convertLegacyManaStonesToCrystals } from "../../src/engine/currency.js"
 import {
   ELEMENTS,
   type ActiveRiftState,
@@ -23,6 +24,18 @@ import {
   type TraitState,
 } from "../../src/engine/types.js"
 import { CorruptSaveError } from "./errors.js"
+import {
+  defaultAchievementState,
+  defaultCodexState,
+  defaultDailyMissionState,
+  defaultMineState,
+  defaultPetState,
+  defaultQuestState,
+  defaultRelicState,
+  defaultRiftRunsState,
+  defaultSkinState,
+  defaultTraitState,
+} from "./stateDefaults.js"
 
 export const MAX_GOLD = 1_000_000_000_000
 export const MAX_STAGE = 100_000
@@ -138,52 +151,13 @@ const skinSchema = z.object({
   equipped: idSchema.nullable(),
 }) satisfies ZodType<SkinState>
 
-function defaultQuestState(): { completed: string[]; claimed: string[] } {
-  return { completed: [], claimed: [] }
-}
-
-function defaultAchievementState(): { counters: Record<string, number>; claimed: string[] } {
-  return { counters: {}, claimed: [] }
-}
-
-function defaultCodexState(): { tiers: Record<string, number> } {
-  return { tiers: {} }
-}
-
-function defaultTraitState(): { picks: Record<string, string> } {
-  return { picks: {} }
-}
-
-function defaultRelicState(): { owned: Record<string, number>; equipped: [string | null, string | null, string | null] } {
-  return { owned: {}, equipped: [null, null, null] }
-}
-
-function defaultRiftRunsState(): { date: string; golden: number; trial: number } {
-  return { date: "", golden: 0, trial: 0 }
-}
-
-function defaultPetState(): { level: number; xp: number; evolution: number } {
-  return { level: 1, xp: 0, evolution: 0 }
-}
-
-function defaultMineState(): { floor: number; lastClaimAt: number | null } {
-  return { floor: 1, lastClaimAt: null }
-}
-
-function defaultDailyMissionState(): { date: string; progress: Record<string, number>; claimed: string[] } {
-  return { date: "", progress: {}, claimed: [] }
-}
-
-function defaultSkinState(): { owned: string[]; equipped: string | null } {
-  return { owned: ["apprentice"], equipped: "apprentice" }
-}
-
 export const engineStateSchema: ZodType<EngineState> = z
   .object({
     gold: goldSchema,
     books: z.array(spellbookSchema).max(INVENTORY_LIMIT),
     equipped: equippedSchema,
     highestLevelEver: levelSchema,
+    highestStage: stageSchema.optional(),
     stage: stageSchema,
     wave: levelSchema,
     stageHp: nonNegativeNumber,
@@ -192,7 +166,7 @@ export const engineStateSchema: ZodType<EngineState> = z
     skillPoints: slotNumberSchema,
     skills: skillsSchema,
     manaCrystals: slotNumberSchema,
-    manaStone: slotNumberSchema.default(0),
+    manaStone: slotNumberSchema.optional(),
     prestigeCount: slotNumberSchema,
     lastSeenServerTs: nonNegativeNumber.nullable(),
     slotTiers: slotsSchema,
@@ -225,6 +199,16 @@ export const engineStateSchema: ZodType<EngineState> = z
         path: ["books"],
         message: "too many spellbooks",
       })
+    }
+  })
+  .transform((state): EngineState => {
+    const { highestStage, manaStone = 0, ...withoutLegacyFields } = state
+    const bestStageCounter = state.achievements.counters["bestStage"] ?? 0
+    const stagesReachedCounter = state.achievements.counters["stagesReached"] ?? 0
+    return {
+      ...withoutLegacyFields,
+      manaCrystals: state.manaCrystals + convertLegacyManaStonesToCrystals(manaStone),
+      highestStage: Math.max(state.stage, highestStage ?? 0, bestStageCounter, stagesReachedCounter),
     }
   })
 

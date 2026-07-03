@@ -114,6 +114,7 @@ export type EngineState = {
   readonly books: readonly Spellbook[]
   readonly equipped: EquippedBooks
   readonly highestLevelEver: number
+  readonly highestStage: number
   readonly stage: number
   readonly wave: number
   readonly stageHp: number
@@ -122,7 +123,6 @@ export type EngineState = {
   readonly skillPoints: number
   readonly skills: SkillAllocations
   readonly manaCrystals: number
-  readonly manaStone: number
   readonly prestigeCount: number
   readonly lastSeenServerTs: number | null
   readonly slotTiers: SlotTiers

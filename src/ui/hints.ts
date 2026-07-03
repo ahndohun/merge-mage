@@ -1,4 +1,5 @@
 import { BOSS_WAVE } from "../engine/constants"
+import { getUnlockedFeatures } from "../engine/unlocks"
 import type { EngineState, Spellbook } from "../engine/types"
 import { createTranslator, type Translator } from "./i18n"
 
@@ -29,7 +30,7 @@ export function getContextHint(input: HintInput, t: Translator = defaultTranslat
     return t("hintBossHoly")
   }
 
-  if (input.state.stage >= 10 && input.state.prestigeCount === 0) {
+  if (getUnlockedFeatures(input.state).rebirth && input.state.prestigeCount === 0) {
     return t("hintRebirthUnlocked")
   }
 

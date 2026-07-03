@@ -326,6 +326,7 @@ describe("prestige", () => {
       equipped: [book("b", 6, "holy"), null, null, null, null, null],
       highestLevelEver: 7,
       stage: 20,
+      highestStage: 20,
       wave: 8,
       wizardLevel: 4,
       skillPoints: 1,
@@ -343,6 +344,7 @@ describe("prestige", () => {
     expect(next.books).toEqual([])
     expect(next.equipped).toEqual([null, null, null, null, null, null])
     expect(next.stage).toBe(1)
+    expect(next.highestStage).toBe(20)
     expect(next.wave).toBe(1)
     expect(next.highestLevelEver).toBe(1)
     expect(next.wizardLevel).toBe(4)

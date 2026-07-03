@@ -6,7 +6,7 @@ import { LOCALE_STORAGE_KEY } from "./i18n"
 const SAVE_STATE_KEY = "merge-mage:engine-state"
 const SAVE_TOKEN_KEY = "merge-mage:save-token"
 const TUTORIAL_DONE_KEY = "merge-mage:tutorial-done"
-const V3_PROGRESS_KEYS = ["quests", "achievements", "codex", "traits", "relics", "riftRuns", "activeRift", "pet", "mine", "dailyMissions", "skins"] as const
+const V3_PROGRESS_KEYS = ["highestStage", "quests", "achievements", "codex", "traits", "relics", "riftRuns", "activeRift", "pet", "mine", "dailyMissions", "skins"] as const
 
 function withoutV3Progression(state: ReturnType<typeof createInitialState>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(state).filter(([key]) => !V3_PROGRESS_KEYS.some((progressKey) => progressKey === key)))
@@ -46,6 +46,7 @@ describe("engineStorage save versioning", () => {
     expect(raw).not.toBeNull()
     const parsed = JSON.parse(raw as string)
     expect(parsed.version).toBe(SAVE_VERSION)
+    expect(parsed.version).toBe(4)
     expect(parsed.state.rngSeed).toBe(7)
   })
 
@@ -86,7 +87,7 @@ describe("engineStorage save versioning", () => {
     expect(storage.getItem(TUTORIAL_DONE_KEY)).toBeNull()
   })
 
-  it("migrates a v2 save to v3 while preserving existing progress", () => {
+  it("migrates a v2 save to v4 while preserving existing progress", () => {
     const v2State = withoutV3Progression({
       ...createInitialState(13),
       gold: 12_345,
@@ -112,22 +113,27 @@ describe("engineStorage save versioning", () => {
     expect(loaded.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
     expect(loaded.mine).toEqual({ floor: 1, lastClaimAt: null })
     expect(loaded.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
-    expect(loaded.manaStone).toBe(0)
+    expect(loaded.highestStage).toBe(9)
     expect(loaded.skins).toEqual({ owned: ["apprentice"], equipped: "apprentice" })
   })
 
-  it("migrates a current v3 save created before mana stones existed", () => {
-    const { manaStone: _manaStone, ...preManaStone } = {
+  it("migrates a v3 save by folding mana stones into crystals and deriving highest stage", () => {
+    const v3State = {
       ...createInitialState(17),
       gold: 222,
+      stage: 9,
+      manaCrystals: 3,
+      manaStone: 160,
       skins: { owned: ["ember"], equipped: "ember" },
     }
-    storage.setItem(SAVE_STATE_KEY, JSON.stringify({ version: SAVE_VERSION, state: preManaStone }))
+    storage.setItem(SAVE_STATE_KEY, JSON.stringify({ version: 3, state: v3State }))
 
     const loaded = loadInitialState()
 
     expect(loaded.gold).toBe(222)
-    expect(loaded.manaStone).toBe(0)
+    expect(loaded.manaCrystals).toBe(5)
+    expect(loaded.highestStage).toBe(9)
+    expect("manaStone" in loaded).toBe(false)
     expect(loaded.skins).toEqual({ owned: ["ember"], equipped: "ember" })
   })
 

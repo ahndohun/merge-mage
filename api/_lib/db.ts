@@ -16,7 +16,7 @@ type LeaderboardRow = {
 }
 
 type SaveSummary = {
-  readonly stage: number
+  readonly highestStage: number
   readonly prestigeCount: number
 }
 
@@ -99,7 +99,7 @@ export async function upsertLeaderboard(token: string, nickname: string): Promis
   const sql = await getSql()
   const [row] = await sql<{ readonly best_stage: number }>`
     insert into leaderboard (token, nickname, best_stage, prestige_count, updated_at)
-    values (${token}, ${nickname}, ${save.stage}, ${save.prestigeCount}, now())
+    values (${token}, ${nickname}, ${save.highestStage}, ${save.prestigeCount}, now())
     on conflict (token) do update set
       nickname = case when excluded.best_stage >= leaderboard.best_stage then excluded.nickname else leaderboard.nickname end,
       best_stage = greatest(leaderboard.best_stage, excluded.best_stage),
@@ -111,7 +111,7 @@ export async function upsertLeaderboard(token: string, nickname: string): Promis
       updated_at = case when excluded.best_stage >= leaderboard.best_stage then now() else leaderboard.updated_at end
     returning best_stage
   `
-  return row?.best_stage ?? save.stage
+  return row?.best_stage ?? save.highestStage
 }
 
 async function loadSaveSummary(token: string): Promise<SaveSummary | null> {
@@ -119,7 +119,7 @@ async function loadSaveSummary(token: string): Promise<SaveSummary | null> {
   if (save === null) {
     return null
   }
-  return { stage: save.state.stage, prestigeCount: save.state.prestigeCount }
+  return { highestStage: save.state.highestStage, prestigeCount: save.state.prestigeCount }
 }
 
 async function getSql(): Promise<NeonQuery> {

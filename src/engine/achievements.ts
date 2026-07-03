@@ -51,7 +51,7 @@ export function refreshAchievementCounters(state: EngineState): EngineState {
         rebirths: state.prestigeCount,
         questsClaimed: state.quests.claimed.length,
         highestLevelEver: state.highestLevelEver,
-        stagesReached: state.stage,
+        stagesReached: state.highestStage,
         codexCells: getCodexCellCount(state),
       },
     },

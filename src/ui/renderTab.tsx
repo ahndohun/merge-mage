@@ -6,9 +6,8 @@ import { QuestsPanel } from "./QuestsPanel"
 import { RanksPanel } from "./RanksPanel"
 import { RebirthPanel } from "./RebirthPanel"
 import { SkillsPanel } from "./SkillsPanel"
+import type { TabId } from "./tabs"
 import type { UseEngineResult } from "./useEngine"
-
-export type TabId = "books" | "skills" | "quests" | "camp" | "rebirth" | "ranks"
 
 export function renderTab(
   activeTab: TabId,

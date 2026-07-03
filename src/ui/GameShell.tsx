@@ -26,10 +26,12 @@ import { clearSavedRun } from "./engineStorage"
 import { HelpModal } from "./HelpModal"
 import { HudOverlay } from "./HudOverlay"
 import { OfflineClaimModal } from "./OfflineClaimModal"
-import { renderTab, type TabId } from "./renderTab"
+import { renderTab } from "./renderTab"
 import { RiftsOverlay } from "./RiftsOverlay"
 import { getContextHint } from "./hints"
+import { getUnlockedFeatures, UNLOCK_FEATURE_IDS, type UnlockFeatureId } from "../engine/unlocks"
 import { Toasts } from "./Toasts"
+import { getVisibleTabs, tabShowsDot, type TabId } from "./tabs"
 import { isTutorialActive } from "./tutorial"
 import { Tutorial } from "./TutorialOverlay"
 import { useActionFeedback } from "./useActionFeedback"
@@ -37,20 +39,7 @@ import { useBadges } from "./useBadges"
 import { useEngine } from "./useEngine"
 import { useLocale } from "./useLocale"
 import { useTutorial } from "./useTutorial"
-import type { MessageKey } from "./i18n"
-
-const TABS: readonly {
-  readonly id: TabId
-  readonly labelKey: MessageKey
-  readonly testId: string
-}[] = [
-  { id: "books", labelKey: "tabBooks", testId: "tab-books" },
-  { id: "skills", labelKey: "tabSkills", testId: "tab-skills" },
-  { id: "quests", labelKey: "tabQuests", testId: "tab-quests" },
-  { id: "camp", labelKey: "tabCamp", testId: "tab-camp" },
-  { id: "rebirth", labelKey: "tabRebirth", testId: "tab-rebirth" },
-  { id: "ranks", labelKey: "tabRanks", testId: "tab-ranks" },
-]
+const PULSE_MS = 900
 
 export function GameShell() {
   const { t } = useLocale()
@@ -73,14 +62,45 @@ export function GameShell() {
   dragGhostRef.current = dragGhost
   const [soundMuted, setSoundMuted] = useState(readAudioMutedPreference)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [pulsingTabs, setPulsingTabs] = useState<readonly TabId[]>([])
   const engine = useEngine()
   const engineStateRef = useRef(engine.state)
   engineStateRef.current = engine.state
   const feedback = useActionFeedback()
   const badges = useBadges(engine.state)
+  const visibleTabs = getVisibleTabs(engine.state)
+  const unlockedFeatures = getUnlockedFeatures(engine.state)
+  const previousUnlockedRef = useRef(unlockedFeatures)
   const tutorial = useTutorial(engine.state, {
     onComplete: () => engine.notify(t("toastTutorialComplete"), "notice"),
   })
+
+  useEffect(() => {
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab("books")
+    }
+  }, [activeTab, visibleTabs])
+
+  useEffect(() => {
+    const previous = previousUnlockedRef.current
+    const newlyUnlocked = UNLOCK_FEATURE_IDS.filter((feature) => feature !== "books" && !previous[feature] && unlockedFeatures[feature])
+    previousUnlockedRef.current = unlockedFeatures
+
+    if (newlyUnlocked.length === 0) {
+      return
+    }
+
+    for (const feature of newlyUnlocked) {
+      engine.notify(t.featureUnlocked(t(featureLabelKey(feature))), "notice")
+    }
+
+    const newPulseTabs = visibleTabs.filter((tab) => newlyUnlocked.some((feature) => tab.feature === feature)).map((tab) => tab.id)
+    setPulsingTabs((current) => mergeTabIds(current, newPulseTabs))
+    const timeoutId = window.setTimeout(() => {
+      setPulsingTabs((current) => current.filter((tabId) => !newPulseTabs.includes(tabId)))
+    }, PULSE_MS)
+    return () => window.clearTimeout(timeoutId)
+  }, [engine.notify, t, unlockedFeatures, visibleTabs])
 
   useEffect(() => {
     const host = hostRef.current
@@ -501,25 +521,6 @@ export function GameShell() {
   const contextHint = getContextHint({ state: engine.state, summonCost: engine.summonCost }, t)
   const nextGoalHint = activeTab === "books" ? contextHint : null
 
-  const tabShowsDot = (tabId: TabId): boolean => {
-    switch (tabId) {
-      case "books":
-        return badges.books
-      case "skills":
-        return badges.skills
-      case "quests":
-        return badges.quests
-      case "camp":
-        return badges.camp
-      case "rebirth":
-        return badges.rebirth
-      case "ranks":
-        return false
-      default:
-        return assertNever(tabId)
-    }
-  }
-
   return (
     <main
       id="app-root"
@@ -531,7 +532,7 @@ export function GameShell() {
       data-rift-runs-golden={engine.state.riftRuns.golden}
       data-rift-runs-trial={engine.state.riftRuns.trial}
       data-quests-claimable={badges.quests ? "true" : "false"}
-      data-mana-stone={Math.floor(engine.state.manaStone)}
+      data-mana-crystals={Math.floor(engine.state.manaCrystals)}
       data-mine-floor={engine.state.mine.floor}
       data-pet-level={engine.state.pet.level}
       data-stage={engine.state.stage}
@@ -557,25 +558,27 @@ export function GameShell() {
           saveIndicator={engine.saveIndicator}
           state={engine.state}
         />
-        <RiftsOverlay
-          state={engine.state}
-          onEnterRift={(kind) => {
-            const entered = engine.enterRift(kind)
-            if (entered) {
-              emitGameSfx("confirm")
-              return true
-            }
-            feedback.microToast(t("toastRiftBlocked"))
-            return false
-          }}
-          onExitRift={() => {
-            const exited = engine.exitRift()
-            if (exited) {
-              emitGameSfx("confirm")
-            }
-            return exited
-          }}
-        />
+        {unlockedFeatures.rifts || engine.state.activeRift !== null ? (
+          <RiftsOverlay
+            state={engine.state}
+            onEnterRift={(kind) => {
+              const entered = engine.enterRift(kind)
+              if (entered) {
+                emitGameSfx("confirm")
+                return true
+              }
+              feedback.microToast(t("toastRiftBlocked"))
+              return false
+            }}
+            onExitRift={() => {
+              const exited = engine.exitRift()
+              if (exited) {
+                emitGameSfx("confirm")
+              }
+              return exited
+            }}
+          />
+        ) : null}
         <div className="bottom-overlay">
           <div className="tab-content">
             {renderTab(
@@ -632,10 +635,10 @@ export function GameShell() {
             summonLevel={engine.summonLevel}
           />
           <nav className="tab-bar" aria-label="Game tabs">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 aria-pressed={activeTab === tab.id}
-                className={`tab-btn${activeTab === tab.id ? " is-active" : ""}`}
+                className={`tab-btn${activeTab === tab.id ? " is-active" : ""}${pulsingTabs.includes(tab.id) ? " is-unlocked-pulse" : ""}`}
                 data-testid={tab.testId}
                 key={tab.id}
                 onClick={() => {
@@ -650,7 +653,7 @@ export function GameShell() {
                     {engine.state.skillPoints}
                   </span>
                 ) : null}
-                {tabShowsDot(tab.id) ? <span aria-hidden="true" className="badge-dot" /> : null}
+                {tabShowsDot(tab.id, engine.state, badges) ? <span aria-hidden="true" className="badge-dot" /> : null}
               </button>
             ))}
           </nav>
@@ -668,4 +671,31 @@ export function GameShell() {
       </div>
     </main>
   )
+}
+
+function featureLabelKey(feature: UnlockFeatureId): "tabBooks" | "tabSkills" | "tabQuests" | "rifts" | "tabRebirth" | "tabCamp" {
+  switch (feature) {
+    case "books":
+      return "tabBooks"
+    case "skills":
+      return "tabSkills"
+    case "quests":
+      return "tabQuests"
+    case "rifts":
+      return "rifts"
+    case "rebirth":
+      return "tabRebirth"
+    case "camp":
+      return "tabCamp"
+    default:
+      return assertNever(feature)
+  }
+}
+
+function mergeTabIds(current: readonly TabId[], next: readonly TabId[]): readonly TabId[] {
+  const merged = new Set<TabId>(current)
+  for (const tabId of next) {
+    merged.add(tabId)
+  }
+  return [...merged]
 }

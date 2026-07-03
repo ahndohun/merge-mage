@@ -272,6 +272,7 @@ export function prestige(state: EngineState): EngineState {
     skillPoints: state.skillPoints,
     manaCrystals: state.manaCrystals + manaCrystals,
     prestigeCount: state.prestigeCount + 1,
+    highestStage: state.highestStage,
     rngState: state.rngState,
     nextBookId: initial.nextBookId,
     equipped: emptyEquipment(),

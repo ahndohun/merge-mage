@@ -1,5 +1,6 @@
+import { convertLegacyManaStonesToCrystals } from "../engine/currency"
 import { createInitialState, createInitialV3ProgressionState, type EngineV3ProgressionState } from "../engine/state"
-import type { EngineState, Spellbook } from "../engine/types"
+import type { AchievementState, EngineState, Spellbook } from "../engine/types"
 import { writeLocaleOverride } from "./i18n"
 
 const SAVE_STATE_KEY = "merge-mage:engine-state"
@@ -9,17 +10,23 @@ const TUTORIAL_DONE_KEY = "merge-mage:tutorial-done"
 
 /**
  * Bump when a save-format change changes the local wrapper contract. v2 wiped
- * pre-release bare saves; v3 preserves v2 progress and adds progression slots.
+ * pre-release bare saves; v3 preserved progression slots; v4 folds mana stones
+ * into crystals and records highestStage.
  */
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 type VersionedSave = {
   readonly version: number
   readonly state: unknown
 }
 
-type EngineV2State = Omit<EngineState, keyof EngineV3ProgressionState | "manaStone">
-type EnginePreManaStoneState = Omit<EngineState, "manaStone">
+type EngineV2State = Omit<EngineState, keyof EngineV3ProgressionState | "highestStage"> & {
+  readonly manaStone?: number
+}
+type EngineV3State = Omit<EngineState, "highestStage"> & {
+  readonly manaStone: number
+}
+type EngineV3PreManaStoneState = Omit<EngineState, "highestStage">
 
 export type SaveToken = {
   readonly token: string
@@ -72,9 +79,8 @@ export function loadInitialState(): EngineState {
 }
 
 /**
- * Returns the EngineState from a persisted wrapper. v2 is migrated in place by
- * adding v3 progression defaults; older versions return null so the caller
- * resets.
+ * Returns the EngineState from a persisted wrapper. v2/v3 are migrated in
+ * place; older versions return null so the caller resets.
  */
 function readVersionedSave(value: unknown): EngineState | null {
   if (isVersionedSave(value)) {
@@ -82,12 +88,17 @@ function readVersionedSave(value: unknown): EngineState | null {
       if (isEngineState(value.state)) {
         return value.state
       }
-      if (isPreManaStoneState(value.state)) {
-        return { ...value.state, manaStone: 0 }
+    }
+    if (value.version === 3) {
+      if (isV3EngineState(value.state)) {
+        return migrateV3State(value.state)
+      }
+      if (isV3PreManaStoneState(value.state)) {
+        return migrateV3PreManaStoneState(value.state)
       }
     }
     if (value.version === 2 && isV2EngineState(value.state)) {
-      return { ...value.state, manaStone: 0, ...createInitialV3ProgressionState() }
+      return migrateV2State(value.state)
     }
   }
   return null
@@ -172,11 +183,14 @@ function isEngineState(value: unknown): value is EngineState {
 
   return (
     isV2EngineState(value) &&
-    typeof record["manaStone"] === "number" &&
+    typeof record["highestStage"] === "number" &&
+    !("manaStone" in record) &&
     isQuestState(record["quests"]) &&
     isAchievementState(record["achievements"]) &&
     isCodexState(record["codex"]) &&
     isTraitState(record["traits"]) &&
+    isRiftRunsState(record["riftRuns"]) &&
+    (record["activeRift"] === null || isActiveRiftState(record["activeRift"])) &&
     isRelicState(record["relics"]) &&
     isPetState(record["pet"]) &&
     isMineState(record["mine"]) &&
@@ -185,7 +199,15 @@ function isEngineState(value: unknown): value is EngineState {
   )
 }
 
-function isPreManaStoneState(value: unknown): value is EnginePreManaStoneState {
+function isV3EngineState(value: unknown): value is EngineV3State {
+  if (!isRecord(value)) {
+    return false
+  }
+  const record: Record<string, unknown> = value
+  return isV3PreManaStoneState(value) && typeof record["manaStone"] === "number"
+}
+
+function isV3PreManaStoneState(value: unknown): value is EngineV3PreManaStoneState {
   if (!isRecord(value)) {
     return false
   }
@@ -206,6 +228,33 @@ function isPreManaStoneState(value: unknown): value is EnginePreManaStoneState {
     isDailyMissionState(record["dailyMissions"]) &&
     isSkinState(record["skins"])
   )
+}
+
+function migrateV2State(state: EngineV2State): EngineState {
+  const { manaStone = 0, ...withoutManaStone } = state
+  return {
+    ...withoutManaStone,
+    manaCrystals: state.manaCrystals + convertLegacyManaStonesToCrystals(manaStone),
+    highestStage: deriveHighestStage(state),
+    ...createInitialV3ProgressionState(),
+  }
+}
+
+function migrateV3State(state: EngineV3State): EngineState {
+  const { manaStone, ...withoutManaStone } = state
+  return {
+    ...withoutManaStone,
+    manaCrystals: state.manaCrystals + convertLegacyManaStonesToCrystals(manaStone),
+    highestStage: deriveHighestStage(state),
+  }
+}
+
+function migrateV3PreManaStoneState(state: EngineV3PreManaStoneState): EngineState {
+  return { ...state, highestStage: deriveHighestStage(state) }
+}
+
+function deriveHighestStage(state: { readonly stage: number; readonly highestStage?: number; readonly achievements?: AchievementState }): number {
+  return Math.max(state.stage, state.highestStage ?? 0, state.achievements?.counters["bestStage"] ?? 0, state.achievements?.counters["stagesReached"] ?? 0)
 }
 
 function isV2EngineState(value: unknown): value is EngineV2State {

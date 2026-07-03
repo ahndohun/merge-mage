@@ -4,19 +4,20 @@ import type { EngineState } from "../engine/types"
 import { getMinimumSlotUpgradeCost, getRebirthPreviewCrystals, useBadges } from "./useBadges"
 
 describe("useBadges", () => {
-  it("flags books when gold covers the cheapest slot upgrade", () => {
+  it("keeps the books tab dot clear even when a slot upgrade is affordable", () => {
     const state = {
       ...createInitialState(1),
       gold: getMinimumSlotUpgradeCost(createInitialState(1)),
     } satisfies EngineState
 
-    expect(useBadges(state).books).toBe(true)
+    expect(useBadges(state).books).toBe(false)
   })
 
   it("flags skills when skill points are available", () => {
     const state = {
       ...createInitialState(1),
       skillPoints: 2,
+      wizardLevel: 3,
     } satisfies EngineState
 
     expect(useBadges(state).skills).toBe(true)
@@ -26,6 +27,7 @@ describe("useBadges", () => {
     const state = {
       ...createInitialState(1),
       stage: 16,
+      highestStage: 16,
       manaCrystals: 4,
     } satisfies EngineState
 
@@ -37,6 +39,7 @@ describe("useBadges", () => {
     const state = {
       ...createInitialState(1),
       stage: 9,
+      highestStage: 9,
       manaCrystals: 0,
     } satisfies EngineState
 

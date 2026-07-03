@@ -137,6 +137,7 @@ const enMessages = {
   toastRiftComplete: "Rift settled.",
   toastQuestClaimed: "Quest reward claimed.",
   toastMineClaimed: "Mine claimed.",
+  toastFeatureUnlocked: "UNLOCKED: {feature}",
   toastLeaderboardSaved: "Nickname saved to the leaderboard!",
   toastCloudSaveUnavailable: "Cloud save unavailable; local save active.",
   toastBossFail: "The boss overwhelmed you — back to wave 1!",
@@ -284,6 +285,7 @@ const ko: Record<MessageKey, string> = {
   toastRiftComplete: "균열 정산 완료.",
   toastQuestClaimed: "퀘스트 보상 획득!",
   toastMineClaimed: "광산 보상을 받았어요.",
+  toastFeatureUnlocked: "해금: {feature}",
   toastLeaderboardSaved: "리더보드에 닉네임을 저장했어요!",
   toastCloudSaveUnavailable: "클라우드 저장 불가. 로컬 저장 중이에요.",
   toastBossFail: "보스를 제압하지 못했어요 — 웨이브 1부터 다시!",
@@ -319,6 +321,7 @@ type TemplateSet = {
   readonly petDps: (dps: string) => string
   readonly mineFloor: (floor: number) => string
   readonly mineRate: (rate: string) => string
+  readonly featureUnlocked: (feature: string) => string
   readonly rankStage: (stage: number) => string
   readonly saveFailed: (message: string) => string
   readonly soundState: (muted: boolean) => string
@@ -368,7 +371,8 @@ const templates: Record<Locale, TemplateSet> = {
     petEvolution: (evolution) => `EV ${evolution}`,
     petDps: (dps) => `${dps} DPS`,
     mineFloor: (floor) => `FLOOR ${floor}`,
-    mineRate: (rate) => `${rate} mana/h`,
+    mineRate: (rate) => `${rate} crystals/h`,
+    featureUnlocked: (feature) => en.toastFeatureUnlocked.replace("{feature}", feature),
     rankStage: (stage) => `ST ${stage}`,
     saveFailed: (message) => `Save failed: ${message}`,
     soundState: (muted) => `SOUND ${muted ? "OFF" : "ON"}`,
@@ -412,7 +416,8 @@ const templates: Record<Locale, TemplateSet> = {
     petEvolution: (evolution) => `진화 ${evolution}`,
     petDps: (dps) => `${dps} DPS`,
     mineFloor: (floor) => `${floor}층`,
-    mineRate: (rate) => `${rate} 마나석 / 시간`,
+    mineRate: (rate) => `${rate} 크리스탈 / 시간`,
+    featureUnlocked: (feature) => ko.toastFeatureUnlocked.replace("{feature}", feature),
     rankStage: (stage) => `스테이지 ${stage}`,
     saveFailed: (message) => `저장 실패: ${message}`,
     soundState: (muted) => `사운드 ${muted ? "끔" : "켬"}`,

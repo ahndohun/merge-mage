@@ -30,7 +30,7 @@ export type SkinId = "apprentice" | "ember" | "frost" | "gilded"
 export type DailyMissionDefinition = {
   readonly id: DailyMissionId
   readonly goal: number
-  readonly rewardManaStone: number
+  readonly rewardManaCrystals: number
 }
 
 export type DailyMissionStatus = DailyMissionDefinition & {
@@ -47,7 +47,7 @@ export type SkinDefinition = {
 export type MineClaimPreview = {
   readonly floor: number
   readonly elapsedMs: number
-  readonly manaStone: number
+  readonly manaCrystals: number
   readonly ratePerHour: number
   readonly claimable: boolean
 }
@@ -59,14 +59,14 @@ const PET_BASE_DPS_SHARE = 0.05
 const PET_LEVEL_DPS_SHARE = 0.01
 const PET_EVOLUTION_DPS_SHARE = 0.05
 const MINE_CAP_MS = 12 * 60 * 60 * 1_000
-const MINE_FLOOR_ONE_RATE = 12
-const MINE_FLOOR_RATES_PER_HOUR: readonly [number, number, number, number] = [MINE_FLOOR_ONE_RATE, 32, 76, 160]
+const MINE_FLOOR_ONE_RATE = 0.15
+const MINE_FLOOR_RATES_PER_HOUR: readonly [number, number, number, number] = [MINE_FLOOR_ONE_RATE, 0.4, 0.95, 2]
 
-const DAILY_MISSION_MERGE20: DailyMissionDefinition = { id: "merge20", goal: 20, rewardManaStone: 30 }
-const DAILY_MISSION_BOSS3: DailyMissionDefinition = { id: "boss3", goal: 3, rewardManaStone: 45 }
-const DAILY_MISSION_SUMMON30: DailyMissionDefinition = { id: "summon30", goal: 30, rewardManaStone: 35 }
-const DAILY_MISSION_MINE_CLAIM1: DailyMissionDefinition = { id: "mineClaim1", goal: 1, rewardManaStone: 25 }
-const DAILY_MISSION_STAGE3: DailyMissionDefinition = { id: "stage3", goal: 3, rewardManaStone: 40 }
+const DAILY_MISSION_MERGE20: DailyMissionDefinition = { id: "merge20", goal: 20, rewardManaCrystals: 1 }
+const DAILY_MISSION_BOSS3: DailyMissionDefinition = { id: "boss3", goal: 3, rewardManaCrystals: 1 }
+const DAILY_MISSION_SUMMON30: DailyMissionDefinition = { id: "summon30", goal: 30, rewardManaCrystals: 1 }
+const DAILY_MISSION_MINE_CLAIM1: DailyMissionDefinition = { id: "mineClaim1", goal: 1, rewardManaCrystals: 1 }
+const DAILY_MISSION_STAGE3: DailyMissionDefinition = { id: "stage3", goal: 3, rewardManaCrystals: 1 }
 
 export const DAILY_MISSIONS: readonly DailyMissionDefinition[] = [
   DAILY_MISSION_MERGE20,
@@ -164,25 +164,25 @@ export function getMineClaimPreview(state: EngineState, nowMs: number): MineClai
   const floor = Math.max(state.mine.floor, getUnlockedMineFloor(state.stage))
   const ratePerHour = getMineRatePerHour(floor)
   if (state.mine.lastClaimAt === null) {
-    return { floor, elapsedMs: 0, manaStone: 0, ratePerHour, claimable: false }
+    return { floor, elapsedMs: 0, manaCrystals: 0, ratePerHour, claimable: false }
   }
 
   const elapsedMs = Math.min(MINE_CAP_MS, Math.max(0, nowMs - state.mine.lastClaimAt))
-  const manaStone = Math.floor((elapsedMs / (60 * 60 * 1_000)) * ratePerHour)
-  return { floor, elapsedMs, manaStone, ratePerHour, claimable: manaStone > 0 }
+  const manaCrystals = Math.floor((elapsedMs / (60 * 60 * 1_000)) * ratePerHour)
+  return { floor, elapsedMs, manaCrystals, ratePerHour, claimable: manaCrystals > 0 }
 }
 
 export function claimMine(state: EngineState, nowMs: number): EngineState {
   const preview = getMineClaimPreview(state, nowMs)
   const claimed = {
     ...state,
-    manaStone: state.manaStone + preview.manaStone,
+    manaCrystals: state.manaCrystals + preview.manaCrystals,
     mine: {
       floor: preview.floor,
       lastClaimAt: nowMs,
     },
   }
-  return preview.manaStone > 0 ? recordDailyProgress(incrementAchievementCounter(claimed, "mineClaims", 1), "mineClaim1", 1) : claimed
+  return preview.manaCrystals > 0 ? recordDailyProgress(incrementAchievementCounter(claimed, "mineClaims", 1), "mineClaim1", 1) : claimed
 }
 
 export function syncMineClock(state: EngineState, nowMs: number): EngineState {
@@ -248,7 +248,7 @@ export function claimDailyMission(state: EngineState, missionId: DailyMissionId,
   }
   return {
     ...current,
-    manaStone: current.manaStone + mission.rewardManaStone,
+    manaCrystals: current.manaCrystals + mission.rewardManaCrystals,
     dailyMissions: {
       ...current.dailyMissions,
       claimed: [...current.dailyMissions.claimed, missionId],

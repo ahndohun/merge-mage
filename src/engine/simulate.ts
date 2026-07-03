@@ -503,6 +503,7 @@ function prestigeForBalance(state: EngineState, manaCrystals: number, config: Si
     stageHp: sumHp(enemiesHp),
     manaCrystals: state.manaCrystals + manaCrystals,
     prestigeCount: state.prestigeCount + 1,
+    highestStage: state.highestStage,
     castProgressMs: zeroSlots(),
     enemiesHp,
     bossElapsedMs: 0,
@@ -639,7 +640,7 @@ function advanceWave(state: EngineState, config: SimulationConfig): EngineState 
   if (state.wave === config.BOSS_WAVE) {
     const nextStage = state.stage + 1
     const enemiesHp = createWaveEnemies(nextStage, 1, config)
-    return { ...state, stage: nextStage, wave: 1, enemiesHp, stageHp: sumHp(enemiesHp), bossElapsedMs: 0 }
+    return { ...state, stage: nextStage, highestStage: Math.max(state.highestStage, nextStage), wave: 1, enemiesHp, stageHp: sumHp(enemiesHp), bossElapsedMs: 0 }
   }
 
   const nextWave = state.wave + 1
@@ -669,6 +670,7 @@ function createInitialSimulationState(seed: number, config: SimulationConfig): E
     books: [],
     equipped: emptyEquipment(),
     highestLevelEver: config.INITIAL_HIGHEST_LEVEL,
+    highestStage: config.INITIAL_STAGE,
     stage: config.INITIAL_STAGE,
     wave: config.INITIAL_WAVE,
     stageHp: sumHp(enemiesHp),
@@ -677,7 +679,6 @@ function createInitialSimulationState(seed: number, config: SimulationConfig): E
     skillPoints: 0,
     skills: { summonBonus: 0, castSpeed: 0, goldGain: 0, critChance: 0 },
     manaCrystals: 0,
-    manaStone: 0,
     prestigeCount: 0,
     lastSeenServerTs: null,
     slotTiers: zeroSlots(),
