@@ -14,6 +14,15 @@ describe("createInitialState", () => {
     expect(state.stageHp).toBeGreaterThan(0)
     expect(state.skills).toEqual({ summonBonus: 0, castSpeed: 0, goldGain: 0, critChance: 0 })
     expect(state.slotTiers).toEqual([0, 0, 0, 0, 0, 0])
+    expect(state.quests).toEqual({ completed: [], claimed: [] })
+    expect(state.achievements).toEqual({ counters: {}, claimed: [] })
+    expect(state.codex).toEqual({ tiers: {} })
+    expect(state.traits).toEqual({ picks: {} })
+    expect(state.relics).toEqual({ owned: {}, equipped: [null, null, null] })
+    expect(state.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
+    expect(state.mine).toEqual({ floor: 1, lastClaimAt: null })
+    expect(state.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
+    expect(state.skins).toEqual({ owned: [], equipped: null })
   })
 
   it("derives wave-one mob HP from the tuning constants", () => {

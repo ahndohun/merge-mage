@@ -1,7 +1,7 @@
 import { equipBook, mergeBooks } from "./actions.js"
 import * as C from "./constants.js"
 import { createRandomState, nextRandomState } from "./rng.js"
-import { setEquippedSlot, setSlotTier, setSlotTimer, sumHp } from "./state.js"
+import { createInitialV3ProgressionState, setEquippedSlot, setSlotTier, setSlotTimer, sumHp } from "./state.js"
 import { assertNever, type Element, type EngineState, type EquippedBooks, type SlotIndex, type SlotTiers, type SlotTimers, type Spellbook } from "./types.js"
 
 type CliProcess = {
@@ -516,6 +516,7 @@ function createInitialSimulationState(seed: number, config: SimulationConfig): E
     rngSeed: seed,
     rngState: createRandomState(seed),
     nextBookId: 1,
+    ...createInitialV3ProgressionState(),
   }
 }
 

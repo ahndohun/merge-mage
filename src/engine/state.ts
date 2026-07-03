@@ -13,6 +13,10 @@ import { createRandomState } from "./rng.js"
 import { assertNever, type EngineState, type EquippedBooks, type SkillAllocations, type SlotIndex, type SlotTiers, type SlotTimers } from "./types.js"
 
 export type { EngineState } from "./types.js"
+export type EngineV3ProgressionState = Pick<
+  EngineState,
+  "quests" | "achievements" | "codex" | "traits" | "relics" | "pet" | "mine" | "dailyMissions" | "skins"
+>
 
 export function createInitialState(seed: number): EngineState {
   const enemiesHp = createWaveEnemies(INITIAL_STAGE, INITIAL_WAVE)
@@ -42,6 +46,21 @@ export function createInitialState(seed: number): EngineState {
     rngSeed: seed,
     rngState: createRandomState(seed),
     nextBookId: 1,
+    ...createInitialV3ProgressionState(),
+  }
+}
+
+export function createInitialV3ProgressionState(): EngineV3ProgressionState {
+  return {
+    quests: { completed: [], claimed: [] },
+    achievements: { counters: {}, claimed: [] },
+    codex: { tiers: {} },
+    traits: { picks: {} },
+    relics: { owned: {}, equipped: [null, null, null] },
+    pet: { level: 1, xp: 0, evolution: 0 },
+    mine: { floor: 1, lastClaimAt: null },
+    dailyMissions: { date: "", progress: {}, claimed: [] },
+    skins: { owned: [], equipped: null },
   }
 }
 

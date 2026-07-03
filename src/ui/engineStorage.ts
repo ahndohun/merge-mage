@@ -1,4 +1,4 @@
-import { createInitialState } from "../engine/state"
+import { createInitialState, createInitialV3ProgressionState, type EngineV3ProgressionState } from "../engine/state"
 import type { EngineState, Spellbook } from "../engine/types"
 import { writeLocaleOverride } from "./i18n"
 
@@ -8,18 +8,17 @@ const NICKNAME_KEY = "merge-mage:nickname"
 const TUTORIAL_DONE_KEY = "merge-mage:tutorial-done"
 
 /**
- * Bump when a save-format change should invalidate every existing local save.
- * v2 wipes all pre-release saves (owner included): they predate the new
- * onboarding, and no shipped players exist yet, so a clean first run is safest.
- * Persisted saves are wrapped as {version, state}; a bare EngineState (or any
- * value below the current version) is treated as legacy and reset.
+ * Bump when a save-format change changes the local wrapper contract. v2 wiped
+ * pre-release bare saves; v3 preserves v2 progress and adds progression slots.
  */
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 
 type VersionedSave = {
   readonly version: number
-  readonly state: EngineState
+  readonly state: unknown
 }
+
+type EngineV2State = Omit<EngineState, keyof EngineV3ProgressionState>
 
 export type SaveToken = {
   readonly token: string
@@ -72,13 +71,18 @@ export function loadInitialState(): EngineState {
 }
 
 /**
- * Returns the EngineState from a persisted value only when it is wrapped at the
- * current SAVE_VERSION. Bare EngineState (unwrapped legacy) and older versions
- * return null so the caller resets.
+ * Returns the EngineState from a persisted wrapper. v2 is migrated in place by
+ * adding v3 progression defaults; older versions return null so the caller
+ * resets.
  */
 function readVersionedSave(value: unknown): EngineState | null {
   if (isVersionedSave(value)) {
-    return value.version >= SAVE_VERSION && isEngineState(value.state) ? value.state : null
+    if (value.version >= SAVE_VERSION && isEngineState(value.state)) {
+      return value.state
+    }
+    if (value.version === 2 && isV2EngineState(value.state)) {
+      return { ...value.state, ...createInitialV3ProgressionState() }
+    }
   }
   return null
 }
@@ -158,6 +162,26 @@ function isEngineState(value: unknown): value is EngineState {
   if (!isRecord(value)) {
     return false
   }
+  const record: Record<string, unknown> = value
+
+  return (
+    isV2EngineState(value) &&
+    isQuestState(record["quests"]) &&
+    isAchievementState(record["achievements"]) &&
+    isCodexState(record["codex"]) &&
+    isTraitState(record["traits"]) &&
+    isRelicState(record["relics"]) &&
+    isPetState(record["pet"]) &&
+    isMineState(record["mine"]) &&
+    isDailyMissionState(record["dailyMissions"]) &&
+    isSkinState(record["skins"])
+  )
+}
+
+function isV2EngineState(value: unknown): value is EngineV2State {
+  if (!isRecord(value)) {
+    return false
+  }
 
   const numbers = [
     "gold",
@@ -191,6 +215,47 @@ function isEngineState(value: unknown): value is EngineState {
   )
 }
 
+function isQuestState(value: unknown): boolean {
+  return isRecord(value) && isStringArray(value["completed"]) && isStringArray(value["claimed"])
+}
+
+function isAchievementState(value: unknown): boolean {
+  return isRecord(value) && isNumberRecord(value["counters"]) && isStringArray(value["claimed"])
+}
+
+function isCodexState(value: unknown): boolean {
+  return isRecord(value) && isNumberRecord(value["tiers"])
+}
+
+function isTraitState(value: unknown): boolean {
+  return isRecord(value) && isStringRecord(value["picks"])
+}
+
+function isRelicState(value: unknown): boolean {
+  return isRecord(value) && isNumberRecord(value["owned"]) && isNullableStringArray(value["equipped"], 3)
+}
+
+function isPetState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value["level"] === "number" &&
+    typeof value["xp"] === "number" &&
+    typeof value["evolution"] === "number"
+  )
+}
+
+function isMineState(value: unknown): boolean {
+  return isRecord(value) && typeof value["floor"] === "number" && (value["lastClaimAt"] === null || typeof value["lastClaimAt"] === "number")
+}
+
+function isDailyMissionState(value: unknown): boolean {
+  return isRecord(value) && typeof value["date"] === "string" && isNumberRecord(value["progress"]) && isStringArray(value["claimed"])
+}
+
+function isSkinState(value: unknown): boolean {
+  return isRecord(value) && isStringArray(value["owned"]) && (value["equipped"] === null || typeof value["equipped"] === "string")
+}
+
 function isSkills(value: unknown): boolean {
   return (
     isRecord(value) &&
@@ -211,6 +276,22 @@ function isSpellbookArray(value: unknown): boolean {
 
 function isNumberArray(value: unknown, length: number | null): boolean {
   return Array.isArray(value) && (length === null || value.length === length) && value.every((item) => typeof item === "number")
+}
+
+function isStringArray(value: unknown): boolean {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+}
+
+function isNullableStringArray(value: unknown, length: number): boolean {
+  return Array.isArray(value) && value.length === length && value.every((item) => item === null || typeof item === "string")
+}
+
+function isNumberRecord(value: unknown): boolean {
+  return isRecord(value) && Object.values(value).every((item) => typeof item === "number")
+}
+
+function isStringRecord(value: unknown): boolean {
+  return isRecord(value) && Object.values(value).every((item) => typeof item === "string")
 }
 
 function isSpellbook(value: unknown): value is Spellbook {

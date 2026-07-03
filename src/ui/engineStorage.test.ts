@@ -6,6 +6,11 @@ import { LOCALE_STORAGE_KEY } from "./i18n"
 const SAVE_STATE_KEY = "merge-mage:engine-state"
 const SAVE_TOKEN_KEY = "merge-mage:save-token"
 const TUTORIAL_DONE_KEY = "merge-mage:tutorial-done"
+const V3_PROGRESS_KEYS = ["quests", "achievements", "codex", "traits", "relics", "pet", "mine", "dailyMissions", "skins"] as const
+
+function withoutV3Progression(state: ReturnType<typeof createInitialState>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(state).filter(([key]) => !V3_PROGRESS_KEYS.some((progressKey) => progressKey === key)))
+}
 
 function memoryStorage(): Storage {
   const map = new Map<string, string>()
@@ -79,6 +84,33 @@ describe("engineStorage save versioning", () => {
 
     expect(loaded.stage).toBe(1)
     expect(storage.getItem(TUTORIAL_DONE_KEY)).toBeNull()
+  })
+
+  it("migrates a v2 save to v3 while preserving existing progress", () => {
+    const v2State = withoutV3Progression({
+      ...createInitialState(13),
+      gold: 12_345,
+      stage: 9,
+      wave: 4,
+      highestLevelEver: 6,
+    })
+    storage.setItem(SAVE_STATE_KEY, JSON.stringify({ version: 2, state: v2State }))
+
+    const loaded = loadInitialState()
+
+    expect(loaded.gold).toBe(12_345)
+    expect(loaded.stage).toBe(9)
+    expect(loaded.wave).toBe(4)
+    expect(loaded.highestLevelEver).toBe(6)
+    expect(loaded.quests).toEqual({ completed: [], claimed: [] })
+    expect(loaded.achievements).toEqual({ counters: {}, claimed: [] })
+    expect(loaded.codex).toEqual({ tiers: {} })
+    expect(loaded.traits).toEqual({ picks: {} })
+    expect(loaded.relics).toEqual({ owned: {}, equipped: [null, null, null] })
+    expect(loaded.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
+    expect(loaded.mine).toEqual({ floor: 1, lastClaimAt: null })
+    expect(loaded.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
+    expect(loaded.skins).toEqual({ owned: [], equipped: null })
   })
 
   it("round-trips a saved-then-loaded run at the current version", () => {

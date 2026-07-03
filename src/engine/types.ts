@@ -32,6 +32,52 @@ export type EquippedBooks = readonly [
 
 export type SlotTiers = readonly [number, number, number, number, number, number]
 export type SlotTimers = readonly [number, number, number, number, number, number]
+export type RelicEquipment = readonly [string | null, string | null, string | null]
+
+export type QuestState = {
+  readonly completed: readonly string[]
+  readonly claimed: readonly string[]
+}
+
+export type AchievementState = {
+  readonly counters: Record<string, number>
+  readonly claimed: readonly string[]
+}
+
+export type CodexState = {
+  readonly tiers: Record<string, number>
+}
+
+export type TraitState = {
+  readonly picks: Record<string, string>
+}
+
+export type RelicState = {
+  readonly owned: Record<string, number>
+  readonly equipped: RelicEquipment
+}
+
+export type PetState = {
+  readonly level: number
+  readonly xp: number
+  readonly evolution: number
+}
+
+export type MineState = {
+  readonly floor: number
+  readonly lastClaimAt: number | null
+}
+
+export type DailyMissionState = {
+  readonly date: string
+  readonly progress: Record<string, number>
+  readonly claimed: readonly string[]
+}
+
+export type SkinState = {
+  readonly owned: readonly string[]
+  readonly equipped: string | null
+}
 
 export type EngineState = {
   readonly gold: number
@@ -58,6 +104,15 @@ export type EngineState = {
   readonly rngSeed: number
   readonly rngState: number
   readonly nextBookId: number
+  readonly quests: QuestState
+  readonly achievements: AchievementState
+  readonly codex: CodexState
+  readonly traits: TraitState
+  readonly relics: RelicState
+  readonly pet: PetState
+  readonly mine: MineState
+  readonly dailyMissions: DailyMissionState
+  readonly skins: SkinState
 }
 
 export type EngineEvent =

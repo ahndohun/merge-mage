@@ -1,6 +1,24 @@
 import { z, type ZodType } from "zod"
 import { EQUIPMENT_SLOT_COUNT, INVENTORY_LIMIT } from "../../src/engine/constants.js"
-import { ELEMENTS, type EngineState, type EquippedBooks, type SkillAllocations, type SlotTiers, type SlotTimers, type Spellbook } from "../../src/engine/types.js"
+import {
+  ELEMENTS,
+  type AchievementState,
+  type CodexState,
+  type DailyMissionState,
+  type EngineState,
+  type EquippedBooks,
+  type MineState,
+  type PetState,
+  type QuestState,
+  type RelicEquipment,
+  type RelicState,
+  type SkillAllocations,
+  type SkinState,
+  type SlotTiers,
+  type SlotTimers,
+  type Spellbook,
+  type TraitState,
+} from "../../src/engine/types.js"
 import { CorruptSaveError } from "./errors.js"
 
 export const MAX_GOLD = 1_000_000_000_000
@@ -13,8 +31,12 @@ const goldSchema = nonNegativeNumber.max(MAX_GOLD)
 const stageSchema = z.number().finite().int().min(1).max(MAX_STAGE)
 const levelSchema = z.number().finite().int().min(1)
 const slotNumberSchema = z.number().finite().int().min(0)
+const idSchema = z.string().min(1).max(128)
+const shortLabelSchema = z.string().max(64)
+const counterRecordSchema = z.record(idSchema, slotNumberSchema)
+const stringRecordSchema = z.record(idSchema, idSchema)
 const spellbookSchema = z.object({
-  id: z.string().min(1).max(128),
+  id: idSchema,
   level: levelSchema,
   element: z.enum(ELEMENTS),
 }) satisfies ZodType<Spellbook>
@@ -48,6 +70,79 @@ const timersSchema = z.tuple([
   nonNegativeNumber,
   nonNegativeNumber,
 ]) satisfies ZodType<SlotTimers>
+const questSchema = z.object({
+  completed: z.array(idSchema),
+  claimed: z.array(idSchema),
+}) satisfies ZodType<QuestState>
+const achievementSchema = z.object({
+  counters: counterRecordSchema,
+  claimed: z.array(idSchema),
+}) satisfies ZodType<AchievementState>
+const codexSchema = z.object({
+  tiers: counterRecordSchema,
+}) satisfies ZodType<CodexState>
+const traitSchema = z.object({
+  picks: stringRecordSchema,
+}) satisfies ZodType<TraitState>
+const relicEquipmentSchema = z.tuple([idSchema.nullable(), idSchema.nullable(), idSchema.nullable()]) satisfies ZodType<RelicEquipment>
+const relicSchema = z.object({
+  owned: counterRecordSchema,
+  equipped: relicEquipmentSchema,
+}) satisfies ZodType<RelicState>
+const petSchema = z.object({
+  level: levelSchema,
+  xp: nonNegativeNumber,
+  evolution: slotNumberSchema,
+}) satisfies ZodType<PetState>
+const mineSchema = z.object({
+  floor: levelSchema,
+  lastClaimAt: nonNegativeNumber.nullable(),
+}) satisfies ZodType<MineState>
+const dailyMissionSchema = z.object({
+  date: shortLabelSchema,
+  progress: counterRecordSchema,
+  claimed: z.array(idSchema),
+}) satisfies ZodType<DailyMissionState>
+const skinSchema = z.object({
+  owned: z.array(idSchema),
+  equipped: idSchema.nullable(),
+}) satisfies ZodType<SkinState>
+
+function defaultQuestState(): { completed: string[]; claimed: string[] } {
+  return { completed: [], claimed: [] }
+}
+
+function defaultAchievementState(): { counters: Record<string, number>; claimed: string[] } {
+  return { counters: {}, claimed: [] }
+}
+
+function defaultCodexState(): { tiers: Record<string, number> } {
+  return { tiers: {} }
+}
+
+function defaultTraitState(): { picks: Record<string, string> } {
+  return { picks: {} }
+}
+
+function defaultRelicState(): { owned: Record<string, number>; equipped: [string | null, string | null, string | null] } {
+  return { owned: {}, equipped: [null, null, null] }
+}
+
+function defaultPetState(): { level: number; xp: number; evolution: number } {
+  return { level: 1, xp: 0, evolution: 0 }
+}
+
+function defaultMineState(): { floor: number; lastClaimAt: number | null } {
+  return { floor: 1, lastClaimAt: null }
+}
+
+function defaultDailyMissionState(): { date: string; progress: Record<string, number>; claimed: string[] } {
+  return { date: "", progress: {}, claimed: [] }
+}
+
+function defaultSkinState(): { owned: string[]; equipped: string | null } {
+  return { owned: [], equipped: null }
+}
 
 export const engineStateSchema: ZodType<EngineState> = z
   .object({
@@ -75,6 +170,15 @@ export const engineStateSchema: ZodType<EngineState> = z
     rngSeed: slotNumberSchema,
     rngState: slotNumberSchema,
     nextBookId: levelSchema,
+    quests: questSchema.default(defaultQuestState),
+    achievements: achievementSchema.default(defaultAchievementState),
+    codex: codexSchema.default(defaultCodexState),
+    traits: traitSchema.default(defaultTraitState),
+    relics: relicSchema.default(defaultRelicState),
+    pet: petSchema.default(defaultPetState),
+    mine: mineSchema.default(defaultMineState),
+    dailyMissions: dailyMissionSchema.default(defaultDailyMissionState),
+    skins: skinSchema.default(defaultSkinState),
   })
   .superRefine((state, context) => {
     const equippedCount = state.equipped.filter((book) => book !== null).length
