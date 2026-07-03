@@ -1,7 +1,19 @@
 import { equipBook, mergeBooks } from "./actions.js"
+import { addPetXp } from "./camp.js"
 import * as C from "./constants.js"
+import { getCodexBonusMultiplier, recordBookCodex } from "./codex.js"
+import { getEquippedRelicEffects, getElementDamageMultiplier, RELIC_IDS, type RelicId } from "./relics.js"
+import { getFireTargetCap, getFrostSlow, getHolyBossMultiplier } from "./resonance.js"
 import { createRandomState, nextRandomState } from "./rng.js"
 import { createInitialV3ProgressionState, setEquippedSlot, setSlotTier, setSlotTimer, sumHp } from "./state.js"
+import {
+  applyTraitCastInterval,
+  getTraitCodexBonusPerTier,
+  getTraitElementDamageMultiplier,
+  getTraitSkillGoldPoints,
+  type TraitId,
+  type TraitSlot,
+} from "./traits.js"
 import { assertNever, type Element, type EngineState, type EquippedBooks, type SlotIndex, type SlotTiers, type SlotTimers, type Spellbook } from "./types.js"
 
 type CliProcess = {
@@ -12,6 +24,10 @@ type CliProcess = {
 declare const process: CliProcess | undefined
 
 const INNATE_STAFF_INTERVAL_MS = 1_200
+const PET_ATTACK_INTERVAL_MS = 1_000
+const PET_BASE_DPS_SHARE = 0.05
+const PET_LEVEL_DPS_SHARE = 0.01
+const PET_EVOLUTION_DPS_SHARE = 0.05
 const RECENT_POWERUP_INTERVALS = 10
 const POLICY_INTERVAL_TICKS = 10
 const WALL_STRENGTH_CAP = 999.9
@@ -36,9 +52,16 @@ const SIMULATION_CONSTANT_KEYS = [
   "BASE_CAST_INTERVAL_MS",
   "CAST_SPEED_REDUCTION_MS",
   "MIN_CAST_INTERVAL_MS",
-  "REGULAR_MOB_COUNT",
+  "REGULAR_MOB_BASE_COUNT",
+  "REGULAR_MOB_MIN_COUNT",
+  "REGULAR_MOB_MAX_COUNT",
+  "REGULAR_MOB_STAGE_BAND",
   "BOSS_WAVE",
-  "BOSS_HP_MULTIPLIER",
+  "BOSS_EXPECTED_DPS_BASE",
+  "BOSS_EXPECTED_DPS_GROWTH",
+  "BOSS_REGULAR_FACTOR",
+  "BOSS_WALL_FACTOR",
+  "BOSS_GATE_FACTOR",
   "BOSS_ENRAGE_MS",
   "FIRE_TARGET_CAP",
   "FROST_SLOW_MS",
@@ -52,6 +75,16 @@ const SIMULATION_CONSTANT_KEYS = [
   "GOLD_GAIN_PER_POINT",
   "BOSS_REWARD_MULTIPLIER",
   "WIZARD_XP_PER_LEVEL",
+  "WIZARD_CAST_MILESTONE_LEVEL",
+  "WIZARD_CAST_INTERVAL_MULTIPLIER",
+  "WIZARD_CRIT_MILESTONE_LEVEL",
+  "WIZARD_CRIT_CHANCE_BONUS",
+  "WIZARD_GOLD_MILESTONE_LEVEL",
+  "WIZARD_GOLD_MULTIPLIER",
+  "TOME_DAMAGE_MILESTONE_MULTIPLIER",
+  "PRESTIGE_STAGE_OFFSET",
+  "PRESTIGE_CRYSTAL_EXPONENT",
+  "PRESTIGE_CRYSTAL_DIVISOR",
   "XP_PER_KILL",
   "XP_PER_BOSS_KILL",
 ] as const
@@ -103,6 +136,7 @@ type PowerupTracker = {
 type PolicyResult = {
   readonly state: EngineState
   readonly powerup: boolean
+  readonly prestiged: boolean
 }
 
 type TickResult = {
@@ -143,6 +177,9 @@ export function runBalanceSimulation(options: SimulationOptions): SimulationResu
     const policy = applyGreedyPolicy(state, config)
     state = policy.state
     tracker = policy.powerup ? recordPowerup(tracker, ((tick - 1) * config.TICK_MS) / 1_000) : tracker
+    if (firstPrestigeMinute === null && policy.prestiged) {
+      firstPrestigeMinute = Math.floor(((tick - 1) * config.TICK_MS) / 60_000)
+    }
 
     const ticksThisStep = Math.min(POLICY_INTERVAL_TICKS, totalTicks - tick + 1)
     state = simulateTicksForBalance(state, ticksThisStep, config).state
@@ -153,10 +190,6 @@ export function runBalanceSimulation(options: SimulationOptions): SimulationResu
       stageBreakthroughs = recordStageBreakthroughs(stageBreakthroughs, lastStage, state.stage, minute)
       lastStage = state.stage
       lastProgressMinute = minute
-    }
-
-    if (firstPrestigeMinute === null && state.stage >= config.BOSS_WAVE) {
-      firstPrestigeMinute = minute
     }
 
     if (currentTick % rowIntervalTicks === 0) {
@@ -241,9 +274,16 @@ const DEFAULT_SIMULATION_CONFIG: SimulationConfig = {
   BASE_CAST_INTERVAL_MS: C.BASE_CAST_INTERVAL_MS,
   CAST_SPEED_REDUCTION_MS: C.CAST_SPEED_REDUCTION_MS,
   MIN_CAST_INTERVAL_MS: C.MIN_CAST_INTERVAL_MS,
-  REGULAR_MOB_COUNT: C.REGULAR_MOB_COUNT,
+  REGULAR_MOB_BASE_COUNT: C.REGULAR_MOB_BASE_COUNT,
+  REGULAR_MOB_MIN_COUNT: C.REGULAR_MOB_MIN_COUNT,
+  REGULAR_MOB_MAX_COUNT: C.REGULAR_MOB_MAX_COUNT,
+  REGULAR_MOB_STAGE_BAND: C.REGULAR_MOB_STAGE_BAND,
   BOSS_WAVE: C.BOSS_WAVE,
-  BOSS_HP_MULTIPLIER: C.BOSS_HP_MULTIPLIER,
+  BOSS_EXPECTED_DPS_BASE: C.BOSS_EXPECTED_DPS_BASE,
+  BOSS_EXPECTED_DPS_GROWTH: C.BOSS_EXPECTED_DPS_GROWTH,
+  BOSS_REGULAR_FACTOR: C.BOSS_REGULAR_FACTOR,
+  BOSS_WALL_FACTOR: C.BOSS_WALL_FACTOR,
+  BOSS_GATE_FACTOR: C.BOSS_GATE_FACTOR,
   BOSS_ENRAGE_MS: C.BOSS_ENRAGE_MS,
   FIRE_TARGET_CAP: C.FIRE_TARGET_CAP,
   FROST_SLOW_MS: C.FROST_SLOW_MS,
@@ -257,12 +297,23 @@ const DEFAULT_SIMULATION_CONFIG: SimulationConfig = {
   GOLD_GAIN_PER_POINT: C.GOLD_GAIN_PER_POINT,
   BOSS_REWARD_MULTIPLIER: C.BOSS_REWARD_MULTIPLIER,
   WIZARD_XP_PER_LEVEL: C.WIZARD_XP_PER_LEVEL,
+  WIZARD_CAST_MILESTONE_LEVEL: C.WIZARD_CAST_MILESTONE_LEVEL,
+  WIZARD_CAST_INTERVAL_MULTIPLIER: C.WIZARD_CAST_INTERVAL_MULTIPLIER,
+  WIZARD_CRIT_MILESTONE_LEVEL: C.WIZARD_CRIT_MILESTONE_LEVEL,
+  WIZARD_CRIT_CHANCE_BONUS: C.WIZARD_CRIT_CHANCE_BONUS,
+  WIZARD_GOLD_MILESTONE_LEVEL: C.WIZARD_GOLD_MILESTONE_LEVEL,
+  WIZARD_GOLD_MULTIPLIER: C.WIZARD_GOLD_MULTIPLIER,
+  TOME_DAMAGE_MILESTONE_MULTIPLIER: C.TOME_DAMAGE_MILESTONE_MULTIPLIER,
+  PRESTIGE_STAGE_OFFSET: C.PRESTIGE_STAGE_OFFSET,
+  PRESTIGE_CRYSTAL_EXPONENT: C.PRESTIGE_CRYSTAL_EXPONENT,
+  PRESTIGE_CRYSTAL_DIVISOR: C.PRESTIGE_CRYSTAL_DIVISOR,
   XP_PER_KILL: C.XP_PER_KILL,
   XP_PER_BOSS_KILL: C.XP_PER_BOSS_KILL,
 }
 
 function applyGreedyPolicy(state: EngineState, config: SimulationConfig): PolicyResult {
-  const summoned = summonAffordableBooks(state, config)
+  const meta = applyMetaPolicy(state, config)
+  const summoned = summonAffordableBooks(meta.state, config)
   let current = mergeAllPairs(summoned.state)
   let changed = true
 
@@ -274,7 +325,23 @@ function applyGreedyPolicy(state: EngineState, config: SimulationConfig): Policy
   }
 
   const upgraded = upgradeCheapestSlot(equipTopSix(current), config)
-  return { state: upgraded.state, powerup: summoned.powerup || upgraded.powerup }
+  return { state: upgraded.state, powerup: meta.powerup || summoned.powerup || upgraded.powerup, prestiged: meta.prestiged }
+}
+
+function applyMetaPolicy(state: EngineState, config: SimulationConfig): PolicyResult {
+  const withTraits = selectGreedyTraits(state)
+  const withRelics = summonAndEquipRelics(withTraits)
+  const previewCrystals = getPrestigeCrystalReward(withRelics.stage, getEquippedRelicEffects(withRelics.relics).crystalGainMultiplier, config)
+
+  if (previewCrystals >= getPrestigeTarget(withRelics.prestigeCount)) {
+    return {
+      state: prestigeForBalance(withRelics, previewCrystals, config),
+      powerup: true,
+      prestiged: true,
+    }
+  }
+
+  return { state: withRelics, powerup: withRelics !== state, prestiged: false }
 }
 
 function summonAffordableBooks(state: EngineState, config: SimulationConfig): PolicyResult {
@@ -293,7 +360,7 @@ function summonAffordableBooks(state: EngineState, config: SimulationConfig): Po
     }
   }
 
-  return { state: current, powerup }
+  return { state: current, powerup, prestiged: false }
 }
 
 function mergeAllPairs(state: EngineState): EngineState {
@@ -355,10 +422,94 @@ function upgradeCheapestSlot(state: EngineState, config: SimulationConfig): Poli
     return {
       state: { ...state, gold: state.gold - cheapestCost, slotTiers: setSlotTier(state.slotTiers, cheapestSlot, state.slotTiers[cheapestSlot] + 1) },
       powerup: true,
+      prestiged: false,
     }
   }
 
-  return { state, powerup: false }
+  return { state, powerup: false, prestiged: false }
+}
+
+function selectGreedyTraits(state: EngineState): EngineState {
+  return selectTraitIfOpen(
+    selectTraitIfOpen(
+      selectTraitIfOpen(state, "lv8", "elementalCycle", 8),
+      "lv16",
+      "pyroGlyphs",
+      16,
+    ),
+    "lv24",
+    "quickHands",
+    24,
+  )
+}
+
+function selectTraitIfOpen(state: EngineState, slot: TraitSlot, traitId: TraitId, requiredLevel: number): EngineState {
+  if (state.wizardLevel < requiredLevel || state.traits.picks[slot] !== undefined) {
+    return state
+  }
+  return { ...state, traits: { picks: { ...state.traits.picks, [slot]: traitId } } }
+}
+
+function summonAndEquipRelics(state: EngineState): EngineState {
+  let current = state
+
+  while (current.manaCrystals >= C.RELIC_SUMMON_COST) {
+    const roll = nextRandomState(current.rngState)
+    const relicId = RELIC_IDS[Math.floor(roll.value * RELIC_IDS.length)] ?? "emberSigil"
+    const level = current.relics.owned[relicId] ?? 0
+    if (level >= C.RELIC_LEVEL_CAP) {
+      return { ...current, rngState: roll.state }
+    }
+    current = {
+      ...current,
+      manaCrystals: current.manaCrystals - C.RELIC_SUMMON_COST,
+      rngState: roll.state,
+      relics: {
+        ...current.relics,
+        owned: { ...current.relics.owned, [relicId]: level + 1 },
+      },
+    }
+  }
+
+  return equipPreferredRelics(current)
+}
+
+function equipPreferredRelics(state: EngineState): EngineState {
+  const preferred: readonly RelicId[] = ["quickeningHourglass", "emberSigil", "goldenBookmark", "crystalVial", "sageInk", "craftsmanChisel"]
+  const equipped = preferred.filter((relicId) => (state.relics.owned[relicId] ?? 0) > 0).slice(0, 3)
+  return {
+    ...state,
+    relics: {
+      ...state.relics,
+      equipped: [equipped[0] ?? null, equipped[1] ?? null, equipped[2] ?? null],
+    },
+  }
+}
+
+function getPrestigeTarget(prestigeCount: number): number {
+  return Math.floor(3 * 1.45 ** prestigeCount)
+}
+
+function prestigeForBalance(state: EngineState, manaCrystals: number, config: SimulationConfig): EngineState {
+  const enemiesHp = createWaveEnemies(config.INITIAL_STAGE, config.INITIAL_WAVE, config)
+  return {
+    ...state,
+    gold: config.INITIAL_GOLD + getEquippedRelicEffects(state.relics).startingGoldBonus,
+    books: [],
+    equipped: emptyEquipment(),
+    highestLevelEver: config.INITIAL_HIGHEST_LEVEL,
+    stage: config.INITIAL_STAGE,
+    wave: config.INITIAL_WAVE,
+    stageHp: sumHp(enemiesHp),
+    manaCrystals: state.manaCrystals + manaCrystals,
+    prestigeCount: state.prestigeCount + 1,
+    castProgressMs: zeroSlots(),
+    enemiesHp,
+    bossElapsedMs: 0,
+    frostSlowMs: 0,
+    recentGoldPerSecond: 0,
+    activeRift: null,
+  }
 }
 
 function simulateTicksForBalance(state: EngineState, nTicks: number, config: SimulationConfig): TickResult {
@@ -375,6 +526,12 @@ function simulateTicksForBalance(state: EngineState, nTicks: number, config: Sim
 
     if (shouldCastInnateStaff(previousElapsedMs, current.elapsedMs)) {
       const applied = applyInnateStaffDamage(current, config)
+      current = applied.state
+      goldEarned += applied.goldEarned
+    }
+
+    if (shouldPetAttack(previousElapsedMs, current.elapsedMs)) {
+      const applied = applyPetDamage(current, config)
       current = applied.state
       goldEarned += applied.goldEarned
     }
@@ -436,15 +593,31 @@ function applyInnateStaffDamage(state: EngineState, config: SimulationConfig): T
   return finalizeDamage(state, damaged, config)
 }
 
+function applyPetDamage(state: EngineState, config: SimulationConfig): TickResult {
+  if (state.enemiesHp.length === 0) {
+    return { state, goldEarned: 0 }
+  }
+
+  const damage = getPetDps(state, config)
+  if (damage <= 0) {
+    return { state, goldEarned: 0 }
+  }
+
+  const damaged = state.enemiesHp.map((hp, index) => (index === 0 ? hp - damage : hp))
+  return finalizeDamage(state, damaged, config)
+}
+
 function applyCastDamage(state: EngineState, slot: SlotIndex, book: Spellbook, baseDamage: number, config: SimulationConfig): TickResult {
   if (state.enemiesHp.length === 0) {
     return { state, goldEarned: 0 }
   }
 
-  const targetsHit = getTargetsHit(book.element, state.enemiesHp.length, config)
-  const damage = getElementDamage(book.element, baseDamage, state.wave, config)
+  const targetsHit = getTargetsHit(book.element, state.enemiesHp.length, state)
+  const damage = getElementDamage(book.element, baseDamage, state.wave, state, config)
   const damaged = state.enemiesHp.map((hp, index) => (index < targetsHit ? hp - damage : hp))
-  const slowedState = book.element === "frost" ? { ...state, frostSlowMs: Math.max(state.frostSlowMs, config.FROST_SLOW_MS) } : state
+  const frostSlow = getFrostSlow(state)
+  const frostSlowMs = frostSlow.durationMs + getEquippedRelicEffects(state.relics).frostSlowBonusMs
+  const slowedState = book.element === "frost" ? { ...state, frostSlowMs: Math.max(state.frostSlowMs, frostSlowMs) } : state
   return finalizeDamage(slowedState, damaged, config)
 }
 
@@ -452,9 +625,9 @@ function finalizeDamage(state: EngineState, damaged: readonly number[], config: 
   const survivors = damaged.filter((hp) => hp > 0)
   const killed = damaged.length - survivors.length
   const boss = state.wave === config.BOSS_WAVE
-  const reward = getKillReward(state.stage, boss, state.skills.goldGain, config)
+  const reward = getKillReward(state, boss, config)
   const gold = reward * killed
-  const xpPerKill = boss ? config.XP_PER_BOSS_KILL : config.XP_PER_KILL
+  const xpPerKill = getXpPerKill(state, boss, config)
   const withXp = addWizardXp({ ...state, gold: state.gold + gold }, xpPerKill * killed, config)
   const stateWithEnemies = { ...withXp, enemiesHp: survivors, stageHp: sumHp(survivors) }
   const cleared = survivors.length === 0 ? advanceWave(stateWithEnemies, config) : stateWithEnemies
@@ -485,7 +658,7 @@ function addWizardXp(state: EngineState, xp: number, config: SimulationConfig): 
     skillPoints += 1
   }
 
-  return { ...state, wizardLevel, wizardXp, skillPoints }
+  return addPetXp({ ...state, wizardLevel, wizardXp, skillPoints }, xp * 0.5)
 }
 
 function createInitialSimulationState(seed: number, config: SimulationConfig): EngineState {
@@ -530,7 +703,7 @@ function summonBookForBalance(state: EngineState, summonLevel: number, cost: num
     element: pickElement(roll.value),
   }
 
-  return {
+  return recordBookCodex({
     ...state,
     gold: state.gold - cost,
     books: emptySlot === undefined ? [...state.books, spellbook] : state.books,
@@ -538,7 +711,7 @@ function summonBookForBalance(state: EngineState, summonLevel: number, cost: num
     highestLevelEver: Math.max(state.highestLevelEver, spellbook.level),
     rngState: roll.state,
     nextBookId: state.nextBookId + 1,
-  }
+  }, spellbook)
 }
 
 function recordPowerup(tracker: PowerupTracker, second: number): PowerupTracker {
@@ -557,6 +730,10 @@ function recordPowerup(tracker: PowerupTracker, second: number): PowerupTracker 
 }
 
 function getWallStrength(state: EngineState, tracker: PowerupTracker, config: SimulationConfig): number {
+  if (state.stage < 7) {
+    return 0
+  }
+
   const median = getMedian(tracker.intervals)
   if (median === null || median <= 0) {
     return 0
@@ -628,22 +805,27 @@ function normalizeBattleState(state: EngineState, config: SimulationConfig): Eng
 function createWaveEnemies(stage: number, wave: number, config: SimulationConfig): readonly number[] {
   const hp = config.HP_BASE * config.HP_GROWTH ** stage
   if (wave === config.BOSS_WAVE) {
-    return [hp * config.BOSS_HP_MULTIPLIER]
+    return [getBossHp(stage, config)]
   }
 
-  return Array.from({ length: config.REGULAR_MOB_COUNT }, () => hp)
+  const mobCount = getRegularMobCount(stage, config)
+  return Array.from({ length: mobCount }, () => (hp * config.REGULAR_MOB_BASE_COUNT) / mobCount)
 }
 
 function bookDamage(book: Spellbook, slotTier: number, state: EngineState, config: SimulationConfig): { readonly state: EngineState; readonly damage: number } {
   const roll = nextRandomState(state.rngState)
-  const critChance = Math.min(1, config.BASE_CRIT_CHANCE + config.CRIT_CHANCE_PER_POINT * state.skills.critChance)
+  const critChance = Math.min(1, config.BASE_CRIT_CHANCE + config.CRIT_CHANCE_PER_POINT * state.skills.critChance + getWizardCritChanceBonus(state.wizardLevel, config))
   const critical = roll.value < critChance
-  const critFactor = critical ? config.CRIT_DAMAGE_MULTIPLIER : 1
+  const relicEffects = getEquippedRelicEffects(state.relics)
+  const critFactor = critical ? config.CRIT_DAMAGE_MULTIPLIER + relicEffects.critDamageBonus : 1
   const damage =
     config.DMG_BASE *
     config.DMG_GROWTH ** book.level *
     getSlotMultiplier(slotTier, config) *
     (1 + config.MANA_DAMAGE_PER_CRYSTAL * state.manaCrystals) *
+    getElementDamageMultiplier(book.element, state.relics) *
+    getElementProgressionMultiplier(state, book.element) *
+    getTomeMilestoneDamageMultiplier(state.highestLevelEver, config) *
     critFactor
 
   return { state: { ...state, rngState: roll.state }, damage }
@@ -653,10 +835,14 @@ function shouldCastInnateStaff(previousElapsedMs: number, nextElapsedMs: number)
   return Math.floor(previousElapsedMs / INNATE_STAFF_INTERVAL_MS) < Math.floor(nextElapsedMs / INNATE_STAFF_INTERVAL_MS)
 }
 
-function getTargetsHit(element: Element, enemyCount: number, config: SimulationConfig): number {
+function shouldPetAttack(previousElapsedMs: number, nextElapsedMs: number): boolean {
+  return Math.floor(previousElapsedMs / PET_ATTACK_INTERVAL_MS) < Math.floor(nextElapsedMs / PET_ATTACK_INTERVAL_MS)
+}
+
+function getTargetsHit(element: Element, enemyCount: number, state: EngineState): number {
   switch (element) {
     case "fire":
-      return Math.min(config.FIRE_TARGET_CAP, enemyCount)
+      return Math.min(getFireTargetCap(state), enemyCount)
     case "frost":
       return Math.min(1, enemyCount)
     case "holy":
@@ -666,14 +852,14 @@ function getTargetsHit(element: Element, enemyCount: number, config: SimulationC
   }
 }
 
-function getElementDamage(element: Element, damage: number, wave: number, config: SimulationConfig): number {
+function getElementDamage(element: Element, damage: number, wave: number, state: EngineState, config: SimulationConfig): number {
   switch (element) {
     case "fire":
       return damage
     case "frost":
       return damage
     case "holy":
-      return wave === config.BOSS_WAVE ? damage * 2 : damage
+      return wave === config.BOSS_WAVE ? damage * getHolyBossMultiplier(state) : damage
     default:
       return assertNever(element)
   }
@@ -690,12 +876,23 @@ function pickElement(value: number): Element {
 }
 
 function getCastIntervalMs(state: EngineState, config: SimulationConfig): number {
-  return Math.max(config.MIN_CAST_INTERVAL_MS, config.BASE_CAST_INTERVAL_MS - config.CAST_SPEED_REDUCTION_MS * state.skills.castSpeed)
+  const baseInterval = config.BASE_CAST_INTERVAL_MS - config.CAST_SPEED_REDUCTION_MS * state.skills.castSpeed
+  const relicInterval = baseInterval * getEquippedRelicEffects(state.relics).castIntervalMultiplier * getWizardCastIntervalMultiplier(state.wizardLevel, config)
+  return applyTraitCastInterval(state, Math.max(config.MIN_CAST_INTERVAL_MS, relicInterval))
 }
 
-function getKillReward(stage: number, boss: boolean, goldGain: number, config: SimulationConfig): number {
-  const reward = Math.ceil(config.GOLD_REWARD_BASE * config.GOLD_REWARD_GROWTH ** stage * (1 + config.GOLD_GAIN_PER_POINT * goldGain))
-  return boss ? reward * config.BOSS_REWARD_MULTIPLIER : reward
+function getKillReward(state: EngineState, boss: boolean, config: SimulationConfig): number {
+  const relicEffects = getEquippedRelicEffects(state.relics)
+  const reward = Math.ceil(
+    config.GOLD_REWARD_BASE *
+      config.GOLD_REWARD_GROWTH ** state.stage *
+      (1 + config.GOLD_GAIN_PER_POINT * getTraitSkillGoldPoints(state)) *
+      getWizardGoldMultiplier(state.wizardLevel, config) *
+      relicEffects.goldMultiplier,
+  )
+  return boss
+    ? Math.ceil(reward * config.BOSS_REWARD_MULTIPLIER * relicEffects.bossGoldMultiplier)
+    : Math.ceil((reward * config.REGULAR_MOB_BASE_COUNT) / getRegularMobCount(state.stage, config))
 }
 
 function getSlotUpgradeCost(currentTier: number, config: SimulationConfig): number {
@@ -704,6 +901,85 @@ function getSlotUpgradeCost(currentTier: number, config: SimulationConfig): numb
 
 function getSlotMultiplier(currentTier: number, config: SimulationConfig): number {
   return 1 + config.SLOT_MULTIPLIER_PER_TIER * currentTier
+}
+
+function getRegularMobCount(stage: number, config: SimulationConfig): number {
+  return Math.min(config.REGULAR_MOB_MAX_COUNT, config.REGULAR_MOB_MIN_COUNT + Math.floor(Math.max(0, stage - 1) / config.REGULAR_MOB_STAGE_BAND))
+}
+
+function getBossHp(stage: number, config: SimulationConfig): number {
+  return config.BOSS_EXPECTED_DPS_BASE * config.BOSS_EXPECTED_DPS_GROWTH ** stage * (config.BOSS_ENRAGE_MS / 1_000) * getBossFactor(stage, config)
+}
+
+function getBossFactor(stage: number, config: SimulationConfig): number {
+  if (stage % 10 === 0) {
+    return config.BOSS_GATE_FACTOR
+  }
+  if (stage % 5 === 0) {
+    return config.BOSS_WALL_FACTOR
+  }
+  return config.BOSS_REGULAR_FACTOR
+}
+
+function getXpPerKill(state: EngineState, boss: boolean, config: SimulationConfig): number {
+  const baseXp = boss ? config.XP_PER_BOSS_KILL : (config.XP_PER_KILL * config.REGULAR_MOB_BASE_COUNT) / getRegularMobCount(state.stage, config)
+  return baseXp * getEquippedRelicEffects(state.relics).xpMultiplier
+}
+
+function getPetDps(state: EngineState, config: SimulationConfig): number {
+  return getWizardTotalDps(state, config) * (PET_BASE_DPS_SHARE + PET_LEVEL_DPS_SHARE * state.pet.level + PET_EVOLUTION_DPS_SHARE * state.pet.evolution)
+}
+
+function getWizardTotalDps(state: EngineState, config: SimulationConfig): number {
+  const castIntervalSeconds = getCastIntervalMs(state, config) / 1_000
+  const equippedDps = C.SLOT_INDEXES.reduce<number>((total, slot) => {
+    const book = state.equipped[slot]
+    return book === null ? total : total + getExpectedBookDamage(state, book, state.slotTiers[slot], config) / castIntervalSeconds
+  }, 0)
+  const innateStaffDps = (config.DMG_BASE * 0.6 * (1 + config.MANA_DAMAGE_PER_CRYSTAL * state.manaCrystals)) / (INNATE_STAFF_INTERVAL_MS / 1_000)
+  return equippedDps + innateStaffDps
+}
+
+function getExpectedBookDamage(state: EngineState, book: Spellbook, slotTier: number, config: SimulationConfig): number {
+  const critChance = Math.min(1, config.BASE_CRIT_CHANCE + config.CRIT_CHANCE_PER_POINT * state.skills.critChance + getWizardCritChanceBonus(state.wizardLevel, config))
+  const expectedCritFactor = 1 + critChance * (config.CRIT_DAMAGE_MULTIPLIER + getEquippedRelicEffects(state.relics).critDamageBonus - 1)
+  const bossElementMultiplier = book.element === "holy" && state.wave === config.BOSS_WAVE ? getHolyBossMultiplier(state) : 1
+  return config.DMG_BASE *
+    config.DMG_GROWTH ** book.level *
+    getSlotMultiplier(slotTier, config) *
+    (1 + config.MANA_DAMAGE_PER_CRYSTAL * state.manaCrystals) *
+    getElementDamageMultiplier(book.element, state.relics) *
+    getElementProgressionMultiplier(state, book.element) *
+    getTomeMilestoneDamageMultiplier(state.highestLevelEver, config) *
+    bossElementMultiplier *
+    expectedCritFactor
+}
+
+function getElementProgressionMultiplier(state: EngineState, element: Element): number {
+  const codexTiers = state.codex.tiers[element] ?? 0
+  return getCodexBonusMultiplier(state, element) * (1 + getTraitCodexBonusPerTier(state) * codexTiers) * getTraitElementDamageMultiplier(state, element)
+}
+
+function getTomeMilestoneDamageMultiplier(highestLevelEver: number, config: SimulationConfig): number {
+  const milestones = [10, 20, 30, 40] as const
+  return config.TOME_DAMAGE_MILESTONE_MULTIPLIER ** milestones.filter((level) => highestLevelEver >= level).length
+}
+
+function getWizardCastIntervalMultiplier(wizardLevel: number, config: SimulationConfig): number {
+  return wizardLevel >= config.WIZARD_CAST_MILESTONE_LEVEL ? config.WIZARD_CAST_INTERVAL_MULTIPLIER : 1
+}
+
+function getWizardCritChanceBonus(wizardLevel: number, config: SimulationConfig): number {
+  return wizardLevel >= config.WIZARD_CRIT_MILESTONE_LEVEL ? config.WIZARD_CRIT_CHANCE_BONUS : 0
+}
+
+function getWizardGoldMultiplier(wizardLevel: number, config: SimulationConfig): number {
+  return wizardLevel >= config.WIZARD_GOLD_MILESTONE_LEVEL ? config.WIZARD_GOLD_MULTIPLIER : 1
+}
+
+function getPrestigeCrystalReward(stage: number, crystalGainMultiplier: number, config: SimulationConfig): number {
+  const progress = Math.max(0, stage - config.PRESTIGE_STAGE_OFFSET)
+  return Math.floor((progress ** config.PRESTIGE_CRYSTAL_EXPONENT / config.PRESTIGE_CRYSTAL_DIVISOR) * crystalGainMultiplier)
 }
 
 function getSummonLevel(highestLevel: number, config: SimulationConfig): number {

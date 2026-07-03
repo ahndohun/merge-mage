@@ -1,5 +1,4 @@
 import {
-  BOSS_HP_MULTIPLIER,
   BOSS_WAVE,
   HP_BASE,
   HP_GROWTH,
@@ -7,8 +6,9 @@ import {
   INITIAL_HIGHEST_LEVEL,
   INITIAL_STAGE,
   INITIAL_WAVE,
-  REGULAR_MOB_COUNT,
+  REGULAR_MOB_BASE_COUNT,
 } from "./constants.js"
+import { getBossHp, getRegularMobCount } from "./balance.js"
 import { DEFAULT_SKIN_STATE } from "./camp.js"
 import { createRandomState } from "./rng.js"
 import { assertNever, type EngineState, type EquippedBooks, type SkillAllocations, type SlotIndex, type SlotTiers, type SlotTimers } from "./types.js"
@@ -88,10 +88,12 @@ export function createWaveEnemies(stage: number, wave: number): readonly number[
   const hp = getMobHp(stage)
 
   if (wave === BOSS_WAVE) {
-    return [hp * BOSS_HP_MULTIPLIER]
+    return [getBossHp(stage)]
   }
 
-  return Array.from({ length: REGULAR_MOB_COUNT }, () => hp)
+  const mobCount = getRegularMobCount(stage)
+  const perMobHp = (hp * REGULAR_MOB_BASE_COUNT) / mobCount
+  return Array.from({ length: mobCount }, () => perMobHp)
 }
 
 export function getMobHp(stage: number): number {

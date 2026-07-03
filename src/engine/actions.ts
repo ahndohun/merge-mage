@@ -38,6 +38,7 @@ import { trackProgress } from "./progression.js"
 import { nextRandomState } from "./rng.js"
 import { getEquippedRelicEffects, getUncappedRelicIds, isRelicId, RELIC_IDS, type RelicId } from "./relics.js"
 import { getSummonCost, getSummonLevel } from "./summon.js"
+import { getPrestigeCrystalReward } from "./balance.js"
 import {
   createInitialState,
   createWaveEnemies,
@@ -259,7 +260,7 @@ export function prestige(state: EngineState): EngineState {
   }
 
   const initial = createInitialState(state.rngSeed)
-  const manaCrystals = Math.floor((state.stage ** 1.5 / 10) * getEquippedRelicEffects(state.relics).crystalGainMultiplier)
+  const manaCrystals = getPrestigeCrystalReward(state.stage, getEquippedRelicEffects(state.relics).crystalGainMultiplier)
   const enemiesHp = createWaveEnemies(initial.stage, initial.wave)
 
   return trackProgress(grantTraitRespecAfterPrestige({

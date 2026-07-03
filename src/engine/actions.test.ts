@@ -337,7 +337,7 @@ describe("prestige", () => {
 
     const next = prestige(state)
 
-    expect(next.manaCrystals).toBe(11)
+    expect(next.manaCrystals).toBe(14)
     expect(next.gold).toBe(createInitialState(4).gold + 5)
     expect(next.prestigeCount).toBe(1)
     expect(next.books).toEqual([])

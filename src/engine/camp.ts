@@ -1,6 +1,7 @@
 import {
   BASE_CAST_INTERVAL_MS,
   BASE_CRIT_CHANCE,
+  BOSS_WAVE,
   CAST_SPEED_REDUCTION_MS,
   CRIT_CHANCE_PER_POINT,
   CRIT_DAMAGE_MULTIPLIER,
@@ -12,7 +13,16 @@ import {
   SLOT_MULTIPLIER_PER_TIER,
   WIZARD_XP_PER_LEVEL,
 } from "./constants.js"
-import type { EngineState, PetState, SkinState } from "./types.js"
+import {
+  getTomeMilestoneDamageMultiplier,
+  getWizardCastIntervalMultiplier,
+  getWizardCritChanceBonus,
+} from "./balance.js"
+import { getCodexBonusMultiplier } from "./codex.js"
+import { getElementDamageMultiplier, getEquippedRelicEffects } from "./relics.js"
+import { getHolyBossMultiplier } from "./resonance.js"
+import { applyTraitCastInterval, getTraitCodexBonusPerTier, getTraitElementDamageMultiplier } from "./traits.js"
+import type { Element, EngineState, PetState, SkinState } from "./types.js"
 
 export type DailyMissionId = "merge20" | "boss3" | "summon30" | "mineClaim1" | "stage3"
 export type SkinId = "apprentice" | "ember" | "frost" | "gilded"
@@ -127,7 +137,7 @@ export function getWizardTotalDps(state: EngineState): number {
     if (book === null) {
       continue
     }
-    equippedDps += getExpectedBookDamage(state, book.level, state.slotTiers[slot]) / castIntervalSeconds
+    equippedDps += getExpectedBookDamage(state, book.level, state.slotTiers[slot], book.element) / castIntervalSeconds
   }
   const innateStaffDps = DMG_BASE * 0.6 * getManaDamageMultiplier(state) / 1.2
   return equippedDps + innateStaffDps
@@ -331,10 +341,22 @@ export function setAchievementCounterMax(state: EngineState, counter: string, va
   }
 }
 
-function getExpectedBookDamage(state: EngineState, level: number, slotTier: number): number {
-  const critChance = Math.min(1, BASE_CRIT_CHANCE + CRIT_CHANCE_PER_POINT * state.skills.critChance)
-  const expectedCritFactor = 1 + critChance * (CRIT_DAMAGE_MULTIPLIER - 1)
-  return DMG_BASE * DMG_GROWTH ** level * getSlotMultiplierForTier(slotTier) * getManaDamageMultiplier(state) * expectedCritFactor
+function getExpectedBookDamage(state: EngineState, level: number, slotTier: number, element: Element): number {
+  const critChance = Math.min(1, BASE_CRIT_CHANCE + CRIT_CHANCE_PER_POINT * state.skills.critChance + getWizardCritChanceBonus(state.wizardLevel))
+  const expectedCritFactor = 1 + critChance * (CRIT_DAMAGE_MULTIPLIER + getEquippedRelicEffects(state.relics).critDamageBonus - 1)
+  const bossElementMultiplier = element === "holy" && state.wave === BOSS_WAVE ? getHolyBossMultiplier(state) : 1
+  const codexTiers = state.codex.tiers[element] ?? 0
+  return DMG_BASE *
+    DMG_GROWTH ** level *
+    getSlotMultiplierForTier(slotTier) *
+    getManaDamageMultiplier(state) *
+    getElementDamageMultiplier(element, state.relics) *
+    getCodexBonusMultiplier(state, element) *
+    (1 + getTraitCodexBonusPerTier(state) * codexTiers) *
+    getTraitElementDamageMultiplier(state, element) *
+    getTomeMilestoneDamageMultiplier(state.highestLevelEver) *
+    bossElementMultiplier *
+    expectedCritFactor
 }
 
 function getManaDamageMultiplier(state: EngineState): number {
@@ -342,7 +364,9 @@ function getManaDamageMultiplier(state: EngineState): number {
 }
 
 function getCastIntervalMs(state: EngineState): number {
-  return Math.max(MIN_CAST_INTERVAL_MS, BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * state.skills.castSpeed)
+  const baseInterval = BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * state.skills.castSpeed
+  const relicInterval = baseInterval * getEquippedRelicEffects(state.relics).castIntervalMultiplier * getWizardCastIntervalMultiplier(state.wizardLevel)
+  return applyTraitCastInterval(state, Math.max(MIN_CAST_INTERVAL_MS, relicInterval))
 }
 
 function getSlotMultiplierForTier(slotTier: number): number {
