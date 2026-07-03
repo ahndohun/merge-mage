@@ -107,6 +107,10 @@ export const AnimationKeys = {
   },
   impact: "battle:anim:impact:explosion",
   holyImpact: "battle:anim:impact:holy",
+  familiar: {
+    idle: "battle:anim:familiar:idle",
+    run: "battle:anim:familiar:run",
+  },
 } as const
 
 export function preloadBattleAssets(scene: Phaser.Scene): void {
@@ -184,6 +188,9 @@ export function createBattleAnimations(scene: Phaser.Scene): void {
     createActorAnimation(scene, AnimationKeys.mob(kind, "idle"), TextureKeys.mob, kind, "idle", 6, -1)
     createActorAnimation(scene, AnimationKeys.mob(kind, "run"), TextureKeys.mob, kind, "run", 10, -1)
   }
+
+  createActorAnimation(scene, AnimationKeys.familiar.idle, TextureKeys.mob, "imp", "idle", 7, -1)
+  createActorAnimation(scene, AnimationKeys.familiar.run, TextureKeys.mob, "imp", "run", 12, -1)
 
   for (const kind of BOSS_KINDS) {
     createActorAnimation(scene, AnimationKeys.boss(kind, "idle"), TextureKeys.boss, kind, "idle", 5, -1)

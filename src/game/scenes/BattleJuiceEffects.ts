@@ -80,10 +80,10 @@ export class BattleJuiceEffects {
     })
   }
 
-  flyCoins(point: Point, bonusCoins = 0): void {
+  flyCoins(point: Point, bonusCoins = 0, target?: Point): void {
     const count = Math.min(5, 2 + (Math.round(point.x + point.y) % 2) + bonusCoins)
     for (let index = 0; index < count; index += 1) {
-      this.flyCoin(point, index)
+      this.flyCoin(point, index, target)
     }
   }
 
@@ -104,14 +104,14 @@ export class BattleJuiceEffects {
     })
   }
 
-  private flyCoin(point: Point, index: number): void {
+  private flyCoin(point: Point, index: number, target?: Point): void {
     const coin = this.borrowImage(this.coins)
     if (coin === null) {
       return
     }
 
-    const targetX = BattleLayout.hudCoinTargetX + index * 7
-    const targetY = BattleLayout.hudCoinTargetY + (index % 2) * 4
+    const targetX = target === undefined ? BattleLayout.hudCoinTargetX + index * 7 : target.x + index * 3
+    const targetY = target === undefined ? BattleLayout.hudCoinTargetY + (index % 2) * 4 : target.y + (index % 2) * 3
     coin.setPosition(point.x + index * 3, point.y - 8).setTint(0xe6b450).setAlpha(1).setScale(4).setVisible(true)
     this.scene.tweens.add({
       targets: coin,

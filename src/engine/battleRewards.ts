@@ -12,6 +12,7 @@ import {
 } from "./constants.js"
 import { getEquippedRelicEffects } from "./relics.js"
 import { incrementAchievementCounter, refreshAchievementCounters } from "./achievements.js"
+import { addPetXp, recordDailyProgress, setAchievementCounterMax } from "./camp.js"
 import { createWaveEnemies, sumHp } from "./state.js"
 import { getTraitSkillGoldPoints } from "./traits.js"
 import type { EngineEvent, EngineState } from "./types.js"
@@ -36,7 +37,7 @@ export function finalizeDamage(
   // while the level threshold is linear, so gold-XP floods skill points late
   // game (measured: 22 unspent points in 3 minutes) and erases the choice.
   const xpPerKill = Math.ceil((boss ? XP_PER_BOSS_KILL : XP_PER_KILL) * getEquippedRelicEffects(state.relics).xpMultiplier)
-  const withRewards = addWizardXp({ ...state, gold: state.gold + gold }, xpPerKill * killed)
+  const withRewards = addCombatXp({ ...state, gold: state.gold + gold }, xpPerKill * killed)
   const killEvents = Array.from({ length: killed }, () => ({
     type: "kill",
     stage: state.stage,
@@ -47,8 +48,9 @@ export function finalizeDamage(
   }) satisfies EngineEvent)
   const countedState = killed > 0 ? incrementAchievementCounter(withRewards.state, "killsTotal", killed) : refreshAchievementCounters(withRewards.state)
   const bossCountedState = boss && killed > 0 ? incrementAchievementCounter(countedState, "bossKills", killed) : countedState
+  const progressedState = boss && killed > 0 ? recordDailyProgress(bossCountedState, "boss3", killed) : bossCountedState
   const stateWithEnemies = {
-    ...bossCountedState,
+    ...progressedState,
     enemiesHp: survivors,
     stageHp: sumHp(survivors),
   }
@@ -115,14 +117,14 @@ function advanceWave(state: EngineState, bossGold: number): { readonly state: En
     const nextStage = state.stage + 1
     const enemiesHp = createWaveEnemies(nextStage, 1)
     return {
-      state: {
+      state: recordDailyProgress(setAchievementCounterMax({
         ...state,
         stage: nextStage,
         wave: 1,
         enemiesHp,
         stageHp: sumHp(enemiesHp),
         bossElapsedMs: 0,
-      },
+      }, "bestStage", nextStage), "stage3", 1),
       events: [clearEvent, { type: "bossKill", stage: state.stage, gold: bossGold }],
     }
   }
@@ -142,7 +144,7 @@ function advanceWave(state: EngineState, bossGold: number): { readonly state: En
   }
 }
 
-function addWizardXp(state: EngineState, xp: number): { readonly state: EngineState; readonly events: readonly EngineEvent[] } {
+function addCombatXp(state: EngineState, xp: number): { readonly state: EngineState; readonly events: readonly EngineEvent[] } {
   let wizardLevel = state.wizardLevel
   let wizardXp = state.wizardXp + xp
   let skillPoints = state.skillPoints
@@ -156,7 +158,7 @@ function addWizardXp(state: EngineState, xp: number): { readonly state: EngineSt
   }
 
   return {
-    state: { ...state, wizardLevel, wizardXp, skillPoints },
+    state: addPetXp({ ...state, wizardLevel, wizardXp, skillPoints }, xp * 0.5),
     events,
   }
 }

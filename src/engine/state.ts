@@ -9,6 +9,7 @@ import {
   INITIAL_WAVE,
   REGULAR_MOB_COUNT,
 } from "./constants.js"
+import { DEFAULT_SKIN_STATE } from "./camp.js"
 import { createRandomState } from "./rng.js"
 import { assertNever, type EngineState, type EquippedBooks, type SkillAllocations, type SlotIndex, type SlotTiers, type SlotTimers } from "./types.js"
 
@@ -34,6 +35,7 @@ export function createInitialState(seed: number): EngineState {
     skillPoints: 0,
     skills: zeroSkills(),
     manaCrystals: 0,
+    manaStone: 0,
     prestigeCount: 0,
     lastSeenServerTs: null,
     slotTiers: zeroSlots(),
@@ -62,7 +64,7 @@ export function createInitialV3ProgressionState(): EngineV3ProgressionState {
     pet: { level: 1, xp: 0, evolution: 0 },
     mine: { floor: 1, lastClaimAt: null },
     dailyMissions: { date: "", progress: {}, claimed: [] },
-    skins: { owned: [], equipped: null },
+    skins: DEFAULT_SKIN_STATE,
   }
 }
 

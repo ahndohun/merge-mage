@@ -46,6 +46,7 @@ const TABS: readonly {
   { id: "books", labelKey: "tabBooks", testId: "tab-books" },
   { id: "skills", labelKey: "tabSkills", testId: "tab-skills" },
   { id: "quests", labelKey: "tabQuests", testId: "tab-quests" },
+  { id: "camp", labelKey: "tabCamp", testId: "tab-camp" },
   { id: "rebirth", labelKey: "tabRebirth", testId: "tab-rebirth" },
   { id: "ranks", labelKey: "tabRanks", testId: "tab-ranks" },
 ]
@@ -504,6 +505,8 @@ export function GameShell() {
         return badges.skills
       case "quests":
         return badges.quests
+      case "camp":
+        return badges.camp
       case "rebirth":
         return badges.rebirth
       case "ranks":
@@ -524,6 +527,9 @@ export function GameShell() {
       data-rift-runs-golden={engine.state.riftRuns.golden}
       data-rift-runs-trial={engine.state.riftRuns.trial}
       data-quests-claimable={badges.quests ? "true" : "false"}
+      data-mana-stone={Math.floor(engine.state.manaStone)}
+      data-mine-floor={engine.state.mine.floor}
+      data-pet-level={engine.state.pet.level}
       data-stage={engine.state.stage}
       data-summon-level={engine.summonLevel}
       data-save-status={engine.saveIndicator}

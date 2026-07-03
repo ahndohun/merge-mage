@@ -49,6 +49,7 @@ import {
 } from "./state.js"
 import { assertNever, type BattleSnapshot, type Element, type EngineState, type RelicEquipment, type RiftKind, type SkillName, type Spellbook } from "./types.js"
 import { grantTraitRespecAfterPrestige } from "./traits.js"
+import { equipSkin as equipSkinReducer, recordDailyProgress } from "./camp.js"
 
 export {
   BookNotFoundError,
@@ -83,7 +84,7 @@ export function summonBook(state: EngineState): EngineState {
     element: pickElement(roll.value),
   }
 
-  return trackProgress({
+  const next = {
     ...state,
     gold: state.gold - cost,
     books: emptySlot === undefined ? [...state.books, spellbook] : state.books,
@@ -91,7 +92,9 @@ export function summonBook(state: EngineState): EngineState {
     highestLevelEver: Math.max(state.highestLevelEver, spellbook.level),
     rngState: roll.state,
     nextBookId: state.nextBookId + 1,
-  }, [{ counter: "summonsTotal", amount: 1 }], spellbook)
+  }
+
+  return recordDailyProgress(trackProgress(next, [{ counter: "summonsTotal", amount: 1 }], spellbook), "summon30", 1)
 }
 
 export function mergeBooks(state: EngineState, idA: string, idB: string): EngineState {
@@ -133,9 +136,9 @@ export function mergeBooks(state: EngineState, idA: string, idB: string): Engine
     rngState: roll.state,
     nextBookId: state.nextBookId + 1,
   }
-
   const refilled = right.kind === "equipped" ? refillSlotsFromInventory(next, [right.slot]) : next
-  return trackProgress(refilled, [{ counter: "mergesTotal", amount: 1 }], merged)
+
+  return recordDailyProgress(trackProgress(refilled, [{ counter: "mergesTotal", amount: 1 }], merged), "merge20", 1)
 }
 
 export function equipBook(state: EngineState, bookId: string, slotIdx: number): EngineState {
@@ -318,6 +321,10 @@ export function summonRelic(state: EngineState): EngineState {
       owned: { ...state.relics.owned, [relicId]: currentLevel + 1 },
     },
   }
+}
+
+export function equipSkin(state: EngineState, skinId: string): EngineState {
+  return equipSkinReducer(state, skinId)
 }
 
 export function equipRelic(state: EngineState, relicId: string | null, slotIdx: number): EngineState {

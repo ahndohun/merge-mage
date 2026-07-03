@@ -14,6 +14,7 @@ import {
   SLOT_INDEXES,
   TICK_MS,
 } from "./constants.js"
+import { getPetDps, shouldPetAttack } from "./camp.js"
 import { getSlotMultiplier } from "./actions.js"
 import { finalizeDamage, type DamageApplication } from "./battleRewards.js"
 import { getElementDamageMultiplier, getEquippedRelicEffects } from "./relics.js"
@@ -79,6 +80,13 @@ export function simulateTicks(state: EngineState, nTicks: number): TickSimulatio
 
     if (shouldCastInnateStaff(previousElapsedMs, current.elapsedMs)) {
       const applied = applyInnateStaffDamage(current)
+      current = applied.state
+      events = [...events, ...applied.events]
+      goldEarned += applied.goldEarned
+    }
+
+    if (shouldPetAttack(previousElapsedMs, current.elapsedMs)) {
+      const applied = applyPetDamage(current)
       current = applied.state
       events = [...events, ...applied.events]
       goldEarned += applied.goldEarned
@@ -162,6 +170,27 @@ function applyInnateStaffDamage(state: EngineState): DamageApplication {
     critical: false,
     targetIndex: 0,
     targetsHit: 1,
+  }
+
+  return finalizeDamage(state, damaged, [castEvent])
+}
+
+function applyPetDamage(state: EngineState): DamageApplication {
+  if (state.enemiesHp.length === 0) {
+    return { state, events: [], goldEarned: 0 }
+  }
+
+  const damage = getPetDps(state)
+  if (damage <= 0) {
+    return { state, events: [], goldEarned: 0 }
+  }
+
+  const damaged = state.enemiesHp.map((hp, index) => (index === 0 ? hp - damage : hp))
+  const castEvent: EngineEvent = {
+    type: "petCast",
+    damage,
+    targetIndex: 0,
+    evolution: state.pet.evolution,
   }
 
   return finalizeDamage(state, damaged, [castEvent])

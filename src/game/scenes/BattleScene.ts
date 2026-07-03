@@ -123,6 +123,9 @@ export class BattleScene extends Phaser.Scene {
       case "cast":
         this.playCast(event)
         return
+      case "petCast":
+        this.playPetCast(event)
+        return
       case "kill":
         return
       case "waveClear":
@@ -212,16 +215,31 @@ export class BattleScene extends Phaser.Scene {
     })
   }
 
+  private playPetCast(event: Extract<EngineEvent, { readonly type: "petCast" }>): void {
+    const effects = this.effects
+    if (effects === null) {
+      return
+    }
+
+    this.castController?.playPetCast({
+      event,
+      activeMobs: this.activeMobs,
+      effects,
+      audio: this.audio,
+    })
+  }
+
   private playMobDeath(mob: BattleMobView): void {
     const effects = this.effects
     const point = mob.getImpactPoint()
     const element = mob.getElement()
+    const coinTarget = this.castController?.getFamiliarCoinTarget()
 
     if (effects !== null) {
       if (mob.isBoss()) {
-        effects.bossDeath(point, element)
+        effects.bossDeath(point, element, coinTarget)
       } else {
-        effects.death(point, element)
+        effects.death(point, element, coinTarget)
       }
     }
 

@@ -24,7 +24,8 @@ describe("createInitialState", () => {
     expect(state.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
     expect(state.mine).toEqual({ floor: 1, lastClaimAt: null })
     expect(state.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
-    expect(state.skins).toEqual({ owned: [], equipped: null })
+    expect(state.manaStone).toBe(0)
+    expect(state.skins).toEqual({ owned: ["apprentice"], equipped: "apprentice" })
   })
 
   it("derives wave-one mob HP from the tuning constants", () => {

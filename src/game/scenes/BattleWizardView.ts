@@ -12,6 +12,7 @@ export class BattleWizardView {
   readonly sprite: Phaser.GameObjects.Sprite
 
   private tintTimer: Phaser.Time.TimerEvent | null = null
+  private baseTint = 0xffffff
 
   constructor(private readonly scene: Phaser.Scene) {
     this.sprite = scene.add
@@ -81,6 +82,13 @@ export class BattleWizardView {
     this.setTint(CastColors[element], Phaser.TintModes.ADD, 70)
   }
 
+  syncSkinTint(tint: number): void {
+    this.baseTint = tint
+    if (this.tintTimer === null) {
+      this.applyBaseTint()
+    }
+  }
+
   /**
    * Single owner for the wizard sprite's tint. Any caller that wants a
    * temporary tint goes through here so there is only ever one pending
@@ -103,13 +111,21 @@ export class BattleWizardView {
 
     this.tintTimer = this.scene.time.delayedCall(durationMs, () => {
       this.tintTimer = null
-      this.sprite.clearTint()
+      this.applyBaseTint()
     })
   }
 
   private clearTint(): void {
     this.tintTimer?.remove()
     this.tintTimer = null
-    this.sprite.clearTint()
+    this.applyBaseTint()
+  }
+
+  private applyBaseTint(): void {
+    if (this.baseTint === 0xffffff) {
+      this.sprite.clearTint()
+      return
+    }
+    this.sprite.setTint(this.baseTint).setTintMode(Phaser.TintModes.MULTIPLY)
   }
 }
