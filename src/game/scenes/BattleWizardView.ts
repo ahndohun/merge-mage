@@ -16,11 +16,11 @@ export class BattleWizardView {
 
   constructor(private readonly scene: Phaser.Scene) {
     this.sprite = scene.add
-      .sprite(BattleLayout.wizardX, BattleLayout.wizardY, TextureKeys.wizard.idle)
+      .sprite(BattleLayout.wizardX, BattleLayout.wizardY, TextureKeys.wizard2.idle(1))
       .setOrigin(0.46, 0.78)
       .setDepth(18)
       .setScale(1)
-    this.sprite.play(AnimationKeys.wizard.idle)
+    this.sprite.play(AnimationKeys.wizard2.idle)
     scene.tweens.add({
       targets: this.sprite,
       y: BattleLayout.wizardY - 3,
@@ -32,7 +32,7 @@ export class BattleWizardView {
   }
 
   playCast(onLaunch: () => void): void {
-    this.sprite.play(AnimationKeys.wizard.idle, true)
+    this.sprite.play(AnimationKeys.wizard2.idle, true)
     onLaunch()
   }
 
@@ -56,10 +56,15 @@ export class BattleWizardView {
 
   playHit(): void {
     this.clearTint()
-    this.sprite.play(AnimationKeys.wizard.hit)
+    this.sprite.play(AnimationKeys.wizard2.hurt)
     this.sprite.once("animationcomplete", () => {
-      this.sprite.play(AnimationKeys.wizard.idle, true)
+      this.sprite.play(AnimationKeys.wizard2.idle, true)
     })
+  }
+
+  playDeath(): void {
+    this.clearTint()
+    this.sprite.play(AnimationKeys.wizard2.death)
   }
 
   playFail(): void {

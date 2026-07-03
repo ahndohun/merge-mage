@@ -31,6 +31,11 @@ const WIZARD_FRAMES = {
   hit: 4,
   death: 7,
 } as const
+const WIZARD2_FRAMES = {
+  idle: [1, 2, 3, 4, 5, 6],
+  hurt: [1, 2, 3, 4],
+  death: [1, 2, 3, 4, 5, 6, 7, 8],
+} as const
 const VFX_PROJECTILE_FRAMES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
 const VFX_EXPLOSION_FRAMES = [1, 2, 3, 4, 5, 6, 7] as const
 const HOLY_FRAME_COUNT = 16
@@ -46,6 +51,17 @@ export const TextureKeys = {
     cast: "battle:wizard:cast",
     hit: "battle:wizard:hit",
     death: "battle:wizard:death",
+  },
+  wizard2: {
+    idle(frame: number): string {
+      return `battle:wizard2:idle:${frame}`
+    },
+    hurt(frame: number): string {
+      return `battle:wizard2:hurt:${frame}`
+    },
+    death(frame: number): string {
+      return `battle:wizard2:death:${frame}`
+    },
   },
   tome: {
     fire: "battle:tome:fire",
@@ -94,6 +110,11 @@ export const AnimationKeys = {
     hit: "battle:anim:wizard:hit",
     death: "battle:anim:wizard:death",
   },
+  wizard2: {
+    idle: "battle:anim:wizard2:idle",
+    hurt: "battle:anim:wizard2:hurt",
+    death: "battle:anim:wizard2:death",
+  },
   mob(kind: MobKind, action: ActorAction): string {
     return `battle:anim:mob:${kind}:${action}`
   },
@@ -131,6 +152,7 @@ export function preloadBattleAssets(scene: Phaser.Scene): void {
     frameWidth: WIZARD_FRAME_SIZE.width,
     frameHeight: WIZARD_FRAME_SIZE.height,
   })
+  loadWizard2Frames(scene)
 
   for (const kind of MOB_KINDS) {
     loadActorFrames(scene, "mobs", kind, TextureKeys.mob)
@@ -183,6 +205,9 @@ export function createBattleAnimations(scene: Phaser.Scene): void {
   createAnimation(scene, AnimationKeys.wizard.cast, scene.anims.generateFrameNumbers(TextureKeys.wizard.cast, { start: 0, end: WIZARD_FRAMES.cast - 1 }), 18, 0)
   createAnimation(scene, AnimationKeys.wizard.hit, scene.anims.generateFrameNumbers(TextureKeys.wizard.hit, { start: 0, end: WIZARD_FRAMES.hit - 1 }), 14, 0)
   createAnimation(scene, AnimationKeys.wizard.death, scene.anims.generateFrameNumbers(TextureKeys.wizard.death, { start: 0, end: WIZARD_FRAMES.death - 1 }), 12, 0)
+  createAnimation(scene, AnimationKeys.wizard2.idle, sequenceFrames(WIZARD2_FRAMES.idle.map((frame) => TextureKeys.wizard2.idle(frame))), 8, -1)
+  createAnimation(scene, AnimationKeys.wizard2.hurt, sequenceFrames(WIZARD2_FRAMES.hurt.map((frame) => TextureKeys.wizard2.hurt(frame))), 14, 0)
+  createAnimation(scene, AnimationKeys.wizard2.death, sequenceFrames(WIZARD2_FRAMES.death.map((frame) => TextureKeys.wizard2.death(frame))), 12, 0)
 
   for (const kind of MOB_KINDS) {
     createActorAnimation(scene, AnimationKeys.mob(kind, "idle"), TextureKeys.mob, kind, "idle", 6, -1)
@@ -222,6 +247,18 @@ function loadActorFrames<Kind extends string>(
     for (const frame of ACTOR_FRAME_NUMBERS) {
       scene.load.image(keyFor(kind, action, frame), `/assets/${folder}/${kind}_${action}_anim_f${frame}.png`)
     }
+  }
+}
+
+function loadWizard2Frames(scene: Phaser.Scene): void {
+  for (const frame of WIZARD2_FRAMES.idle) {
+    scene.load.image(TextureKeys.wizard2.idle(frame), `/assets/wizard2/idle-${frame}.png`)
+  }
+  for (const frame of WIZARD2_FRAMES.hurt) {
+    scene.load.image(TextureKeys.wizard2.hurt(frame), `/assets/wizard2/hurt-${frame}.png`)
+  }
+  for (const frame of WIZARD2_FRAMES.death) {
+    scene.load.image(TextureKeys.wizard2.death(frame), `/assets/wizard2/death-${frame}.png`)
   }
 }
 

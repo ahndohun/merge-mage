@@ -3,6 +3,7 @@
 All third-party assets, with license terms. Thank you to these creators.
 
 ## Art
+- **Apprentice Mage sprite** — generated with agent-sprite-forge (Codex image gen), original character
 - **Wizard Pack** — [LuizMelo](https://luizmelo.itch.io/wizard-pack) — CC0
 - **16x16 DungeonTileset II** — [0x72](https://0x72.itch.io/dungeontileset-ii) — CC0
 - **Tiny Tomes** — [BigWander](https://bigwander.itch.io/tiny-tomes) — free license (embedded in game; no redistribution of raw sprites)

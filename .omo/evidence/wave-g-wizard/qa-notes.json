@@ -1,0 +1,17 @@
+{
+  "url": "http://127.0.0.1:5173/?fresh=1",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "screenshots": [
+    "01-fresh-idle-orbit.png",
+    "02-fresh-seeded-ember-tint-orbit.png",
+    "03-fresh-seeded-boss-fail-hurt.png"
+  ],
+  "notes": [
+    "01 uses an unmodified ?fresh=1 run, then clicks SUMMON three times to expose orbiting tomes around the idle wizard.",
+    "02 keeps the visible URL at ?fresh=1 but seeds an ember skin state before app bootstrap to verify Phaser tint on wizard2 textures.",
+    "03 keeps the visible URL at ?fresh=1 but seeds a boss-fail state before app bootstrap to capture the wizard2 hurt animation."
+  ]
+}
