@@ -1,17 +1,27 @@
 import {
   BOSS_WAVE,
+  GOLDEN_RIFT_MS,
   INVENTORY_LIMIT,
+  RELIC_LEVEL_CAP,
+  RELIC_SUMMON_COST,
+  RIFT_DAILY_LIMIT,
   SLOT_INDEXES,
   SLOT_MULTIPLIER_PER_TIER,
   SLOT_UPGRADE_COST_BASE,
   SLOT_UPGRADE_COST_GROWTH,
+  TRIAL_RIFT_BOSS_MULTIPLIERS,
 } from "./constants.js"
 import {
   BookNotFoundError,
   EmptySlotError,
   InsufficientGoldError,
+  InsufficientManaCrystalsError,
   InventoryFullError,
   PrestigeRequirementError,
+  RelicLevelCapError,
+  RelicNotOwnedError,
+  RelicSlotIndexError,
+  RiftEntryError,
   SkillPointError,
   SlotIndexError,
 } from "./errors.js"
@@ -25,6 +35,7 @@ import {
 } from "./bookSlots.js"
 import { mergeSpellbooks } from "./merge.js"
 import { nextRandomState } from "./rng.js"
+import { getEquippedRelicEffects, getUncappedRelicIds, isRelicId, RELIC_IDS, type RelicId } from "./relics.js"
 import { getSummonCost, getSummonLevel } from "./summon.js"
 import {
   createInitialState,
@@ -35,14 +46,19 @@ import {
   sumHp,
   zeroTimers,
 } from "./state.js"
-import { assertNever, type Element, type EngineState, type SkillName, type Spellbook } from "./types.js"
+import { assertNever, type BattleSnapshot, type Element, type EngineState, type RelicEquipment, type RiftKind, type SkillName, type Spellbook } from "./types.js"
 
 export {
   BookNotFoundError,
   EmptySlotError,
   InsufficientGoldError,
+  InsufficientManaCrystalsError,
   InventoryFullError,
   PrestigeRequirementError,
+  RelicLevelCapError,
+  RelicNotOwnedError,
+  RelicSlotIndexError,
+  RiftEntryError,
   SkillPointError,
   SlotIndexError,
 } from "./errors.js"
@@ -52,7 +68,7 @@ export function summonBook(state: EngineState): EngineState {
   if (emptySlot === undefined && state.books.length >= INVENTORY_LIMIT) { throw new InventoryFullError(INVENTORY_LIMIT) }
 
   const summonLevel = getSummonLevel(state.highestLevelEver) + state.skills.summonBonus
-  const cost = getSummonCost(summonLevel)
+  const cost = getSummonCost(summonLevel, getEquippedRelicEffects(state.relics).summonCostMultiplier)
   if (state.gold < cost) {
     throw new InsufficientGoldError(cost, state.gold)
   }
@@ -188,7 +204,7 @@ export function autoMergeBooks(state: EngineState): EngineState {
 export function upgradeSlot(state: EngineState, slotIdx: number): EngineState {
   const slot = toSlotIndex(slotIdx)
   const currentTier = state.slotTiers[slot]
-  const cost = getSlotUpgradeCost(currentTier)
+  const cost = getSlotUpgradeCost(currentTier, getEquippedRelicEffects(state.relics).slotUpgradeCostMultiplier)
 
   if (state.gold < cost) {
     throw new InsufficientGoldError(cost, state.gold)
@@ -236,11 +252,12 @@ export function prestige(state: EngineState): EngineState {
   }
 
   const initial = createInitialState(state.rngSeed)
-  const manaCrystals = Math.floor(state.stage ** 1.5 / 10)
+  const manaCrystals = Math.floor((state.stage ** 1.5 / 10) * getEquippedRelicEffects(state.relics).crystalGainMultiplier)
   const enemiesHp = createWaveEnemies(initial.stage, initial.wave)
 
   return {
     ...initial,
+    gold: initial.gold + getEquippedRelicEffects(state.relics).startingGoldBonus,
     skills: state.skills,
     wizardLevel: state.wizardLevel,
     wizardXp: state.wizardXp,
@@ -254,11 +271,108 @@ export function prestige(state: EngineState): EngineState {
     enemiesHp,
     stageHp: sumHp(enemiesHp),
     lastSeenServerTs: state.lastSeenServerTs,
+    quests: state.quests,
+    achievements: state.achievements,
+    codex: state.codex,
+    traits: state.traits,
+    relics: state.relics,
+    riftRuns: state.riftRuns,
+    activeRift: null,
+    pet: state.pet,
+    mine: state.mine,
+    dailyMissions: state.dailyMissions,
+    skins: state.skins,
   }
 }
 
-export function getSlotUpgradeCost(currentTier: number): number {
-  return SLOT_UPGRADE_COST_BASE * SLOT_UPGRADE_COST_GROWTH ** currentTier
+export function summonRelic(state: EngineState): EngineState {
+  if (state.manaCrystals < RELIC_SUMMON_COST) {
+    throw new InsufficientManaCrystalsError(RELIC_SUMMON_COST, state.manaCrystals)
+  }
+
+  const uncapped = getUncappedRelicIds(state.relics)
+  if (uncapped.length === 0) {
+    throw new RelicLevelCapError("all")
+  }
+
+  const roll = nextRandomState(state.rngState)
+  const rolledIndex = Math.floor(roll.value * RELIC_IDS.length)
+  const rolledId = RELIC_IDS[rolledIndex] ?? "emberSigil"
+  const relicId = state.relics.owned[rolledId] === RELIC_LEVEL_CAP ? getFirstRelicId(uncapped) : rolledId
+  const currentLevel = state.relics.owned[relicId] ?? 0
+
+  if (currentLevel >= RELIC_LEVEL_CAP) {
+    throw new RelicLevelCapError(relicId)
+  }
+
+  return {
+    ...state,
+    manaCrystals: state.manaCrystals - RELIC_SUMMON_COST,
+    rngState: roll.state,
+    relics: {
+      ...state.relics,
+      owned: { ...state.relics.owned, [relicId]: currentLevel + 1 },
+    },
+  }
+}
+
+export function equipRelic(state: EngineState, relicId: string | null, slotIdx: number): EngineState {
+  const slot = toRelicSlot(slotIdx)
+  if (relicId !== null && (!isRelicId(relicId) || (state.relics.owned[relicId] ?? 0) < 1)) {
+    throw new RelicNotOwnedError(relicId)
+  }
+
+  const cleared = state.relics.equipped.map((equippedId) => (equippedId === relicId ? null : equippedId))
+  return {
+    ...state,
+    relics: {
+      ...state.relics,
+      equipped: setRelicSlot(toRelicEquipment(cleared), slot, relicId),
+    },
+  }
+}
+
+export function enterRift(state: EngineState, kind: RiftKind, date: string): EngineState {
+  if (state.activeRift !== null) {
+    throw new RiftEntryError("active-rift")
+  }
+
+  const riftRuns = state.riftRuns.date === date ? state.riftRuns : { date, golden: 0, trial: 0 }
+  const used = kind === "golden" ? riftRuns.golden : riftRuns.trial
+  if (used >= RIFT_DAILY_LIMIT) {
+    throw new RiftEntryError("daily-limit")
+  }
+
+  const snapshot = takeBattleSnapshot(state)
+  const nextRuns = kind === "golden"
+    ? { ...riftRuns, golden: riftRuns.golden + 1 }
+    : { ...riftRuns, trial: riftRuns.trial + 1 }
+  const enemiesHp = kind === "golden" ? createWaveEnemies(state.stage, 1) : createTrialEnemies(state.stage, 0)
+
+  return {
+    ...state,
+    riftRuns: nextRuns,
+    activeRift:
+      kind === "golden"
+        ? { kind, remainingMs: GOLDEN_RIFT_MS, startedStage: state.stage, snapshot }
+        : { kind, step: 0, startedStage: state.stage, snapshot },
+    wave: kind === "golden" ? 1 : BOSS_WAVE,
+    enemiesHp,
+    stageHp: sumHp(enemiesHp),
+    bossElapsedMs: 0,
+    frostSlowMs: 0,
+  }
+}
+
+export function exitRift(state: EngineState): EngineState {
+  if (state.activeRift === null) {
+    return state
+  }
+  return restoreBattleSnapshot(state)
+}
+
+export function getSlotUpgradeCost(currentTier: number, costMultiplier = 1): number {
+  return Math.ceil(SLOT_UPGRADE_COST_BASE * SLOT_UPGRADE_COST_GROWTH ** currentTier * costMultiplier)
 }
 
 export function getSlotMultiplier(currentTier: number): number {
@@ -273,4 +387,69 @@ function pickElement(value: number): Element {
     return "frost"
   }
   return "holy"
+}
+
+function toRelicSlot(slotIdx: number): 0 | 1 | 2 {
+  switch (slotIdx) {
+    case 0:
+    case 1:
+    case 2:
+      return slotIdx
+    default:
+      throw new RelicSlotIndexError(slotIdx)
+  }
+}
+
+function setRelicSlot(equipped: RelicEquipment, slot: 0 | 1 | 2, relicId: string | null): RelicEquipment {
+  switch (slot) {
+    case 0:
+      return [relicId, equipped[1], equipped[2]]
+    case 1:
+      return [equipped[0], relicId, equipped[2]]
+    case 2:
+      return [equipped[0], equipped[1], relicId]
+    default:
+      return assertNever(slot)
+  }
+}
+
+function toRelicEquipment(values: readonly (string | null)[]): RelicEquipment {
+  return [
+    values[0] ?? null,
+    values[1] ?? null,
+    values[2] ?? null,
+  ]
+}
+
+function takeBattleSnapshot(state: EngineState): BattleSnapshot {
+  return {
+    stage: state.stage,
+    wave: state.wave,
+    stageHp: state.stageHp,
+    enemiesHp: state.enemiesHp,
+    bossElapsedMs: state.bossElapsedMs,
+    frostSlowMs: state.frostSlowMs,
+  }
+}
+
+function restoreBattleSnapshot(state: EngineState): EngineState {
+  const activeRift = state.activeRift
+  if (activeRift === null) {
+    return state
+  }
+  return {
+    ...state,
+    ...activeRift.snapshot,
+    activeRift: null,
+  }
+}
+
+function createTrialEnemies(stage: number, step: number): readonly number[] {
+  const multiplier = TRIAL_RIFT_BOSS_MULTIPLIERS[step] ?? 2.2
+  const hp = createWaveEnemies(stage, BOSS_WAVE)[0] ?? 1
+  return [hp * multiplier]
+}
+
+function getFirstRelicId(ids: readonly RelicId[]): RelicId {
+  return ids[0] ?? "emberSigil"
 }

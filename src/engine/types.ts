@@ -33,6 +33,7 @@ export type EquippedBooks = readonly [
 export type SlotTiers = readonly [number, number, number, number, number, number]
 export type SlotTimers = readonly [number, number, number, number, number, number]
 export type RelicEquipment = readonly [string | null, string | null, string | null]
+export type RiftKind = "golden" | "trial"
 
 export type QuestState = {
   readonly completed: readonly string[]
@@ -56,6 +57,35 @@ export type RelicState = {
   readonly owned: Record<string, number>
   readonly equipped: RelicEquipment
 }
+
+export type RiftRunsState = {
+  readonly date: string
+  readonly golden: number
+  readonly trial: number
+}
+
+export type BattleSnapshot = {
+  readonly stage: number
+  readonly wave: number
+  readonly stageHp: number
+  readonly enemiesHp: readonly number[]
+  readonly bossElapsedMs: number
+  readonly frostSlowMs: number
+}
+
+export type ActiveRiftState =
+  | {
+      readonly kind: "golden"
+      readonly remainingMs: number
+      readonly startedStage: number
+      readonly snapshot: BattleSnapshot
+    }
+  | {
+      readonly kind: "trial"
+      readonly step: number
+      readonly startedStage: number
+      readonly snapshot: BattleSnapshot
+    }
 
 export type PetState = {
   readonly level: number
@@ -109,6 +139,8 @@ export type EngineState = {
   readonly codex: CodexState
   readonly traits: TraitState
   readonly relics: RelicState
+  readonly riftRuns: RiftRunsState
+  readonly activeRift: ActiveRiftState | null
   readonly pet: PetState
   readonly mine: MineState
   readonly dailyMissions: DailyMissionState
@@ -140,6 +172,7 @@ export type EngineEvent =
   | { readonly type: "bossFail"; readonly stage: number }
   | { readonly type: "levelUp"; readonly wizardLevel: number; readonly skillPoints: number }
   | { readonly type: "slow"; readonly durationMs: number; readonly factor: number }
+  | { readonly type: "riftComplete"; readonly kind: RiftKind; readonly reward: number }
 
 export class UnexpectedVariantError extends Error {
   readonly name = "UnexpectedVariantError"

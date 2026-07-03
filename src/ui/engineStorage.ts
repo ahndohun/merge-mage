@@ -171,6 +171,8 @@ function isEngineState(value: unknown): value is EngineState {
     isCodexState(record["codex"]) &&
     isTraitState(record["traits"]) &&
     isRelicState(record["relics"]) &&
+    isRiftRunsState(record["riftRuns"]) &&
+    (record["activeRift"] === null || isActiveRiftState(record["activeRift"])) &&
     isPetState(record["pet"]) &&
     isMineState(record["mine"]) &&
     isDailyMissionState(record["dailyMissions"]) &&
@@ -233,6 +235,40 @@ function isTraitState(value: unknown): boolean {
 
 function isRelicState(value: unknown): boolean {
   return isRecord(value) && isNumberRecord(value["owned"]) && isNullableStringArray(value["equipped"], 3)
+}
+
+function isRiftRunsState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value["date"] === "string" &&
+    typeof value["golden"] === "number" &&
+    typeof value["trial"] === "number"
+  )
+}
+
+function isActiveRiftState(value: unknown): boolean {
+  if (!isRecord(value) || !isBattleSnapshot(value["snapshot"]) || typeof value["startedStage"] !== "number") {
+    return false
+  }
+  if (value["kind"] === "golden") {
+    return typeof value["remainingMs"] === "number"
+  }
+  if (value["kind"] === "trial") {
+    return typeof value["step"] === "number"
+  }
+  return false
+}
+
+function isBattleSnapshot(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value["stage"] === "number" &&
+    typeof value["wave"] === "number" &&
+    typeof value["stageHp"] === "number" &&
+    isNumberArray(value["enemiesHp"], null) &&
+    typeof value["bossElapsedMs"] === "number" &&
+    typeof value["frostSlowMs"] === "number"
+  )
 }
 
 function isPetState(value: unknown): boolean {

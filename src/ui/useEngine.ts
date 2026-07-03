@@ -2,18 +2,23 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   allocateSkill as allocateSkillReducer,
   autoMergeBooks as autoMergeBooksReducer,
+  enterRift as enterRiftReducer,
+  equipRelic as equipRelicReducer,
   equipBook as equipBookReducer,
+  exitRift as exitRiftReducer,
   mergeBooks as mergeBooksReducer,
   prestige as prestigeReducer,
   resetSkills as resetSkillsReducer,
+  summonRelic as summonRelicReducer,
   summonBook,
   swapBookPositions as swapBookPositionsReducer,
   unequipBook as unequipBookReducer,
   upgradeSlot as upgradeSlotReducer,
 } from "../engine/actions"
 import { INVENTORY_LIMIT } from "../engine/constants"
+import { getEquippedRelicEffects } from "../engine/relics"
 import { getSummonCost, getSummonLevel } from "../engine/summon"
-import type { EngineEvent, EngineState, SkillName } from "../engine/types"
+import type { EngineEvent, EngineState, RiftKind, SkillName } from "../engine/types"
 import { EventBus } from "../bridge/EventBus"
 import { canMerge, isExpectedEngineError } from "./engineActionHelpers"
 import { ensureSaveToken, loadInitialState, loadNickname, saveNickname } from "./engineStorage"
@@ -58,6 +63,10 @@ export type UseEngineResult = {
   readonly allocateSkill: (skill: SkillName) => boolean
   readonly resetSkills: () => boolean
   readonly prestige: () => boolean
+  readonly summonRelic: () => boolean
+  readonly equipRelic: (relicId: string | null, slotIdx: number) => boolean
+  readonly enterRift: (kind: RiftKind) => boolean
+  readonly exitRift: () => boolean
   readonly setAutoMerge: (enabled: boolean) => void
   readonly setAutoBuy: (enabled: boolean) => void
   readonly setNickname: (nickname: string) => void
@@ -178,6 +187,16 @@ export function useEngine(): UseEngineResult {
   const resetSkills = useCallback(() => applyReducer({ reducer: resetSkillsReducer }), [applyReducer])
 
   const prestige = useCallback(() => applyReducer({ reducer: prestigeReducer, successToast: t("toastRebirthComplete") }), [applyReducer, t])
+  const summonRelic = useCallback(() => applyReducer({ reducer: summonRelicReducer, successToast: t("toastRelicSummoned") }), [applyReducer, t])
+  const equipRelic = useCallback(
+    (relicId: string | null, slotIdx: number) => applyReducer({ reducer: (current) => equipRelicReducer(current, relicId, slotIdx) }),
+    [applyReducer],
+  )
+  const enterRift = useCallback(
+    (kind: RiftKind) => applyReducer({ reducer: (current) => enterRiftReducer(current, kind, currentLocalDate()) }),
+    [applyReducer],
+  )
+  const exitRift = useCallback(() => applyReducer({ reducer: exitRiftReducer }), [applyReducer])
 
   const setAutoMerge = useCallback((enabled: boolean) => {
     autoMergeRef.current = enabled
@@ -269,7 +288,7 @@ export function useEngine(): UseEngineResult {
   }, [refreshLeaderboard])
 
   const summonLevel = getSummonLevel(state.highestLevelEver) + state.skills.summonBonus
-  const summonCost = getSummonCost(summonLevel)
+  const summonCost = getSummonCost(summonLevel, getEquippedRelicEffects(state.relics).summonCostMultiplier)
   const canSummon = (state.equipped.some((book) => book === null) || state.books.length < INVENTORY_LIMIT) && state.gold >= summonCost
 
   return {
@@ -298,6 +317,10 @@ export function useEngine(): UseEngineResult {
     allocateSkill,
     resetSkills,
     prestige,
+    summonRelic,
+    equipRelic,
+    enterRift,
+    exitRift,
     setAutoMerge,
     setAutoBuy,
     setNickname,
@@ -305,4 +328,12 @@ export function useEngine(): UseEngineResult {
     refreshLeaderboard,
     closeOfflineClaim,
   }
+}
+
+function currentLocalDate(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, "0")
+  const day = String(now.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }

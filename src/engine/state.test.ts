@@ -19,6 +19,8 @@ describe("createInitialState", () => {
     expect(state.codex).toEqual({ tiers: {} })
     expect(state.traits).toEqual({ picks: {} })
     expect(state.relics).toEqual({ owned: {}, equipped: [null, null, null] })
+    expect(state.riftRuns).toEqual({ date: "", golden: 0, trial: 0 })
+    expect(state.activeRift).toBeNull()
     expect(state.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
     expect(state.mine).toEqual({ floor: 1, lastClaimAt: null })
     expect(state.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })

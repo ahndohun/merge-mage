@@ -1,13 +1,16 @@
 import {
   BOSS_REWARD_MULTIPLIER,
   BOSS_WAVE,
+  GOLDEN_RIFT_REWARD_MULTIPLIER,
   GOLD_GAIN_PER_POINT,
   GOLD_REWARD_BASE,
   GOLD_REWARD_GROWTH,
+  TRIAL_RIFT_BOSS_MULTIPLIERS,
   WIZARD_XP_PER_LEVEL,
   XP_PER_BOSS_KILL,
   XP_PER_KILL,
 } from "./constants.js"
+import { getEquippedRelicEffects } from "./relics.js"
 import { createWaveEnemies, sumHp } from "./state.js"
 import type { EngineEvent, EngineState } from "./types.js"
 
@@ -25,12 +28,12 @@ export function finalizeDamage(
   const survivors = damaged.filter((hp) => hp > 0)
   const killed = damaged.length - survivors.length
   const boss = state.wave === BOSS_WAVE
-  const reward = getKillReward(state.stage, boss, state.skills.goldGain)
+  const reward = getKillReward(state, boss)
   const gold = reward * killed
   // XP is kill-count based, NOT gold based: gold grows exponentially per stage
   // while the level threshold is linear, so gold-XP floods skill points late
   // game (measured: 22 unspent points in 3 minutes) and erases the choice.
-  const xpPerKill = boss ? XP_PER_BOSS_KILL : XP_PER_KILL
+  const xpPerKill = Math.ceil((boss ? XP_PER_BOSS_KILL : XP_PER_KILL) * getEquippedRelicEffects(state.relics).xpMultiplier)
   const withRewards = addWizardXp({ ...state, gold: state.gold + gold }, xpPerKill * killed)
   const killEvents = Array.from({ length: killed }, () => ({
     type: "kill",
@@ -56,6 +59,53 @@ export function finalizeDamage(
 
 function advanceWave(state: EngineState, bossGold: number): { readonly state: EngineState; readonly events: readonly EngineEvent[] } {
   const clearEvent: EngineEvent = { type: "waveClear", stage: state.stage, wave: state.wave }
+
+  if (state.activeRift?.kind === "trial") {
+    const earnedSkillPoints = state.skillPoints + 1
+    const nextStep = state.activeRift.step + 1
+    if (nextStep >= TRIAL_RIFT_BOSS_MULTIPLIERS.length) {
+      return {
+        state: {
+          ...state,
+          ...state.activeRift.snapshot,
+          skillPoints: earnedSkillPoints,
+          activeRift: null,
+        },
+        events: [clearEvent, { type: "riftComplete", kind: "trial", reward: TRIAL_RIFT_BOSS_MULTIPLIERS.length }],
+      }
+    }
+
+    const enemiesHp = createTrialEnemies(state.activeRift.startedStage, nextStep)
+    return {
+      state: {
+        ...state,
+        skillPoints: earnedSkillPoints,
+        activeRift: { ...state.activeRift, step: nextStep },
+        enemiesHp,
+        stageHp: sumHp(enemiesHp),
+        bossElapsedMs: 0,
+        frostSlowMs: 0,
+      },
+      events: [clearEvent, { type: "bossSpawn", stage: state.stage }],
+    }
+  }
+
+  if (state.activeRift?.kind === "golden") {
+    const nextWave = state.wave === BOSS_WAVE ? 1 : state.wave + 1
+    const enemiesHp = createWaveEnemies(state.activeRift.startedStage, nextWave)
+    const bossSpawn = nextWave === BOSS_WAVE ? [{ type: "bossSpawn", stage: state.activeRift.startedStage } satisfies EngineEvent] : []
+    return {
+      state: {
+        ...state,
+        stage: state.activeRift.startedStage,
+        wave: nextWave,
+        enemiesHp,
+        stageHp: sumHp(enemiesHp),
+        bossElapsedMs: 0,
+      },
+      events: [clearEvent, ...bossSpawn],
+    }
+  }
 
   if (state.wave === BOSS_WAVE) {
     const nextStage = state.stage + 1
@@ -107,11 +157,25 @@ function addWizardXp(state: EngineState, xp: number): { readonly state: EngineSt
   }
 }
 
-function getKillReward(stage: number, boss: boolean, goldGain: number): number {
-  const reward = Math.ceil(GOLD_REWARD_BASE * GOLD_REWARD_GROWTH ** stage * (1 + GOLD_GAIN_PER_POINT * goldGain))
-  return boss ? reward * BOSS_REWARD_MULTIPLIER : reward
+function getKillReward(state: EngineState, boss: boolean): number {
+  const relicEffects = getEquippedRelicEffects(state.relics)
+  const riftMultiplier = state.activeRift?.kind === "golden" ? GOLDEN_RIFT_REWARD_MULTIPLIER : 1
+  const reward = Math.ceil(
+    GOLD_REWARD_BASE *
+      GOLD_REWARD_GROWTH ** state.stage *
+      (1 + GOLD_GAIN_PER_POINT * state.skills.goldGain) *
+      relicEffects.goldMultiplier *
+      riftMultiplier,
+  )
+  return boss ? Math.ceil(reward * BOSS_REWARD_MULTIPLIER * relicEffects.bossGoldMultiplier) : reward
 }
 
 function getWizardXpThreshold(wizardLevel: number): number {
   return WIZARD_XP_PER_LEVEL * wizardLevel
+}
+
+function createTrialEnemies(stage: number, step: number): readonly number[] {
+  const multiplier = TRIAL_RIFT_BOSS_MULTIPLIERS[step] ?? 2.2
+  const hp = createWaveEnemies(stage, BOSS_WAVE)[0] ?? 1
+  return [hp * multiplier]
 }

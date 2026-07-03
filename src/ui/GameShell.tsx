@@ -27,6 +27,7 @@ import { HelpModal } from "./HelpModal"
 import { HudOverlay } from "./HudOverlay"
 import { OfflineClaimModal } from "./OfflineClaimModal"
 import { renderTab, type TabId } from "./renderTab"
+import { RiftsOverlay } from "./RiftsOverlay"
 import { getContextHint } from "./hints"
 import { Toasts } from "./Toasts"
 import { Tutorial } from "./TutorialOverlay"
@@ -99,6 +100,14 @@ export function GameShell() {
       unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    for (const event of engine.events) {
+      if (event.type === "riftComplete") {
+        engine.notify(t("toastRiftComplete"), "notice")
+      }
+    }
+  }, [engine.events, engine.notify, t])
 
   const setSelectedSource = (source: BookSource | null) => {
     selectedRef.current = source
@@ -498,6 +507,9 @@ export function GameShell() {
       data-active-scene={activeSceneKey}
       data-gold={Math.floor(engine.state.gold)}
       data-inventory-count={engine.state.books.length}
+      data-rift-kind={engine.state.activeRift?.kind ?? "none"}
+      data-rift-runs-golden={engine.state.riftRuns.golden}
+      data-rift-runs-trial={engine.state.riftRuns.trial}
       data-stage={engine.state.stage}
       data-summon-level={engine.summonLevel}
       data-save-status={engine.saveIndicator}
@@ -520,6 +532,25 @@ export function GameShell() {
           onToggleMute={toggleSoundMuted}
           saveIndicator={engine.saveIndicator}
           state={engine.state}
+        />
+        <RiftsOverlay
+          state={engine.state}
+          onEnterRift={(kind) => {
+            const entered = engine.enterRift(kind)
+            if (entered) {
+              emitGameSfx("confirm")
+              return true
+            }
+            feedback.microToast(t("toastRiftBlocked"))
+            return false
+          }}
+          onExitRift={() => {
+            const exited = engine.exitRift()
+            if (exited) {
+              emitGameSfx("confirm")
+            }
+            return exited
+          }}
         />
         <div className="bottom-overlay">
           <div className="tab-content">

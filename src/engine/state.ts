@@ -15,7 +15,7 @@ import { assertNever, type EngineState, type EquippedBooks, type SkillAllocation
 export type { EngineState } from "./types.js"
 export type EngineV3ProgressionState = Pick<
   EngineState,
-  "quests" | "achievements" | "codex" | "traits" | "relics" | "pet" | "mine" | "dailyMissions" | "skins"
+  "quests" | "achievements" | "codex" | "traits" | "relics" | "riftRuns" | "activeRift" | "pet" | "mine" | "dailyMissions" | "skins"
 >
 
 export function createInitialState(seed: number): EngineState {
@@ -57,6 +57,8 @@ export function createInitialV3ProgressionState(): EngineV3ProgressionState {
     codex: { tiers: {} },
     traits: { picks: {} },
     relics: { owned: {}, equipped: [null, null, null] },
+    riftRuns: { date: "", golden: 0, trial: 0 },
+    activeRift: null,
     pet: { level: 1, xp: 0, evolution: 0 },
     mine: { floor: 1, lastClaimAt: null },
     dailyMissions: { date: "", progress: {}, claimed: [] },

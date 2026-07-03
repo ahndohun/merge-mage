@@ -6,7 +6,7 @@ import { LOCALE_STORAGE_KEY } from "./i18n"
 const SAVE_STATE_KEY = "merge-mage:engine-state"
 const SAVE_TOKEN_KEY = "merge-mage:save-token"
 const TUTORIAL_DONE_KEY = "merge-mage:tutorial-done"
-const V3_PROGRESS_KEYS = ["quests", "achievements", "codex", "traits", "relics", "pet", "mine", "dailyMissions", "skins"] as const
+const V3_PROGRESS_KEYS = ["quests", "achievements", "codex", "traits", "relics", "riftRuns", "activeRift", "pet", "mine", "dailyMissions", "skins"] as const
 
 function withoutV3Progression(state: ReturnType<typeof createInitialState>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(state).filter(([key]) => !V3_PROGRESS_KEYS.some((progressKey) => progressKey === key)))
@@ -107,6 +107,8 @@ describe("engineStorage save versioning", () => {
     expect(loaded.codex).toEqual({ tiers: {} })
     expect(loaded.traits).toEqual({ picks: {} })
     expect(loaded.relics).toEqual({ owned: {}, equipped: [null, null, null] })
+    expect(loaded.riftRuns).toEqual({ date: "", golden: 0, trial: 0 })
+    expect(loaded.activeRift).toBeNull()
     expect(loaded.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
     expect(loaded.mine).toEqual({ floor: 1, lastClaimAt: null })
     expect(loaded.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })

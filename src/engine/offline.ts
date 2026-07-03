@@ -1,4 +1,5 @@
 import { OFFLINE_CAP_MS, OFFLINE_EFFICIENCY } from "./constants.js"
+import { getEquippedRelicEffects } from "./relics.js"
 import type { EngineState } from "./types.js"
 
 export function computeOfflineGold(state: EngineState, nowServerTs: number): number {
@@ -9,5 +10,6 @@ export function computeOfflineGold(state: EngineState, nowServerTs: number): num
   const elapsedMs = Math.max(0, nowServerTs - state.lastSeenServerTs)
   const cappedMs = Math.min(elapsedMs, OFFLINE_CAP_MS)
 
-  return state.recentGoldPerSecond * (cappedMs / 1_000) * OFFLINE_EFFICIENCY
+  const efficiency = Math.min(1, OFFLINE_EFFICIENCY + getEquippedRelicEffects(state.relics).offlineEfficiencyBonus)
+  return state.recentGoldPerSecond * (cappedMs / 1_000) * efficiency
 }

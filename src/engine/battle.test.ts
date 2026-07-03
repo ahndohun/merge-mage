@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { enterRift } from "./actions.js"
 import { bookDamage, simulateTicks } from "./battle.js"
 import { createInitialState, type EngineState } from "./state.js"
 import type { Spellbook } from "./types.js"
@@ -90,5 +91,50 @@ describe("battle ticks", () => {
         targetsHit: 3,
       }),
     )
+  })
+
+  it("applies equipped relic damage, frost duration, and crit damage contracts", () => {
+    const spellbook = book("crit-fire", 2, "fire")
+    const state = {
+      ...createInitialState(99),
+      skills: { summonBonus: 0, castSpeed: 0, goldGain: 0, critChance: 95 },
+      relics: {
+        owned: { emberSigil: 2, abyssalEye: 3, frostLens: 1 },
+        equipped: ["emberSigil", "abyssalEye", "frostLens"],
+      },
+    } satisfies EngineState
+
+    const base = bookDamage(spellbook, 0, { ...state, relics: { owned: {}, equipped: [null, null, null] } })
+    const boosted = bookDamage(spellbook, 0, state)
+    const frost = simulateTicks(
+      {
+        ...state,
+        equipped: [book("frost", 20, "frost"), null, null, null, null, null],
+        enemiesHp: [10_000],
+        stageHp: 10_000,
+      },
+      10,
+    )
+
+    expect(boosted.damage).toBeGreaterThan(base.damage * 1.3)
+    expect(frost.events).toContainEqual(expect.objectContaining({ type: "slow", durationMs: 2_200 }))
+  })
+
+  it("keeps golden rift kills on the home stage and multiplies gold rewards", () => {
+    const state = {
+      ...createInitialState(4),
+      stage: 20,
+      wave: 4,
+      equipped: [book("holy", 30, "holy"), null, null, null, null, null],
+      enemiesHp: [1],
+      stageHp: 1,
+    } satisfies EngineState
+    const active = { ...enterRift(state, "golden", "2026-07-03"), enemiesHp: [1], stageHp: 1 }
+
+    const normal = simulateTicks(state, 10)
+    const rift = simulateTicks(active, 10)
+
+    expect(rift.state.stage).toBe(20)
+    expect(rift.state.gold - active.gold).toBeGreaterThan((normal.state.gold - state.gold) * 2)
   })
 })

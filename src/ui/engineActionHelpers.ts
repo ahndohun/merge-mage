@@ -2,8 +2,13 @@ import {
   BookNotFoundError,
   EmptySlotError,
   InsufficientGoldError,
+  InsufficientManaCrystalsError,
   InventoryFullError,
   PrestigeRequirementError,
+  RelicLevelCapError,
+  RelicNotOwnedError,
+  RelicSlotIndexError,
+  RiftEntryError,
   SlotIndexError,
 } from "../engine/actions"
 import { MergeLevelMismatchError } from "../engine/merge"
@@ -31,9 +36,14 @@ export function isExpectedEngineError(error: unknown): error is Error {
     error instanceof BookNotFoundError ||
     error instanceof EmptySlotError ||
     error instanceof InsufficientGoldError ||
+    error instanceof InsufficientManaCrystalsError ||
     error instanceof InventoryFullError ||
     error instanceof MergeLevelMismatchError ||
     error instanceof PrestigeRequirementError ||
+    error instanceof RelicLevelCapError ||
+    error instanceof RelicNotOwnedError ||
+    error instanceof RelicSlotIndexError ||
+    error instanceof RiftEntryError ||
     error instanceof SlotIndexError
   )
 }

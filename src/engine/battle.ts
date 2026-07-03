@@ -11,6 +11,7 @@ import {
   FIRE_TARGET_CAP,
   FROST_SLOW_FACTOR,
   FROST_SLOW_MS,
+  GOLDEN_RIFT_MS,
   MANA_DAMAGE_PER_CRYSTAL,
   MIN_CAST_INTERVAL_MS,
   SLOT_INDEXES,
@@ -18,6 +19,7 @@ import {
 } from "./constants.js"
 import { getSlotMultiplier } from "./actions.js"
 import { finalizeDamage, type DamageApplication } from "./battleRewards.js"
+import { getElementDamageMultiplier, getEquippedRelicEffects } from "./relics.js"
 import { nextRandomState } from "./rng.js"
 import { createWaveEnemies, setSlotTimer, sumHp } from "./state.js"
 import { assertNever, type Element, type EngineEvent, type EngineState, type SlotIndex, type Spellbook } from "./types.js"
@@ -40,12 +42,14 @@ export function bookDamage(book: Spellbook, slotTier: number, state: EngineState
   const roll = nextRandomState(state.rngState)
   const critChance = Math.min(1, BASE_CRIT_CHANCE + CRIT_CHANCE_PER_POINT * state.skills.critChance)
   const critical = roll.value < critChance
-  const critFactor = critical ? CRIT_DAMAGE_MULTIPLIER : 1
+  const relicEffects = getEquippedRelicEffects(state.relics)
+  const critFactor = critical ? CRIT_DAMAGE_MULTIPLIER + relicEffects.critDamageBonus : 1
   const damage =
     DMG_BASE *
     DMG_GROWTH ** book.level *
     getSlotMultiplier(slotTier) *
     (1 + MANA_DAMAGE_PER_CRYSTAL * state.manaCrystals) *
+    getElementDamageMultiplier(book.element, state.relics) *
     critFactor
 
   return {
@@ -66,6 +70,10 @@ export function simulateTicks(state: EngineState, nTicks: number): TickSimulatio
       ...current,
       elapsedMs: previousElapsedMs + TICK_MS,
       frostSlowMs: Math.max(0, current.frostSlowMs - TICK_MS),
+      activeRift:
+        current.activeRift?.kind === "golden"
+          ? { ...current.activeRift, remainingMs: Math.max(0, current.activeRift.remainingMs - TICK_MS) }
+          : current.activeRift,
     }
 
     if (shouldCastInnateStaff(previousElapsedMs, current.elapsedMs)) {
@@ -100,7 +108,7 @@ export function simulateTicks(state: EngineState, nTicks: number): TickSimulatio
     if (current.wave === BOSS_WAVE && current.enemiesHp.length > 0) {
       const bossElapsedMs = current.bossElapsedMs + TICK_MS
       current = { ...current, bossElapsedMs }
-      if (bossElapsedMs >= BOSS_ENRAGE_MS) {
+      if (current.activeRift?.kind !== "trial" && bossElapsedMs >= BOSS_ENRAGE_MS) {
         const enemiesHp = createWaveEnemies(current.stage, 1)
         current = {
           ...current,
@@ -112,6 +120,15 @@ export function simulateTicks(state: EngineState, nTicks: number): TickSimulatio
         }
         events = [...events, { type: "bossFail", stage: current.stage }]
       }
+    }
+
+    if (current.activeRift?.kind === "golden" && current.activeRift.remainingMs <= 0) {
+      current = {
+        ...current,
+        ...current.activeRift.snapshot,
+        activeRift: null,
+      }
+      events = [...events, { type: "riftComplete", kind: "golden", reward: goldEarned }]
     }
   }
 
@@ -173,9 +190,10 @@ function applyCastDamage(
     targetIndex: 0,
     targetsHit,
   }
+  const frostSlowMs = FROST_SLOW_MS + getEquippedRelicEffects(state.relics).frostSlowBonusMs
   const slowEvents: readonly EngineEvent[] =
-    book.element === "frost" ? [{ type: "slow", durationMs: FROST_SLOW_MS, factor: FROST_SLOW_FACTOR }] : []
-  const slowedState = book.element === "frost" ? { ...state, frostSlowMs: Math.max(state.frostSlowMs, FROST_SLOW_MS) } : state
+    book.element === "frost" ? [{ type: "slow", durationMs: frostSlowMs, factor: FROST_SLOW_FACTOR }] : []
+  const slowedState = book.element === "frost" ? { ...state, frostSlowMs: Math.max(state.frostSlowMs, frostSlowMs) } : state
   return finalizeDamage(slowedState, damaged, [castEvent, ...slowEvents])
 }
 
@@ -215,5 +233,7 @@ function getElementDamage(element: Element, damage: number, wave: number): numbe
 }
 
 function getCastIntervalMs(state: EngineState): number {
-  return Math.max(MIN_CAST_INTERVAL_MS, BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * state.skills.castSpeed)
+  const baseInterval = BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * state.skills.castSpeed
+  const riftMultiplier = state.activeRift?.kind === "golden" ? GOLDEN_RIFT_MS / (GOLDEN_RIFT_MS * 2) : 1
+  return Math.max(MIN_CAST_INTERVAL_MS, baseInterval * getEquippedRelicEffects(state.relics).castIntervalMultiplier * riftMultiplier)
 }

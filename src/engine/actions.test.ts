@@ -2,14 +2,22 @@ import { describe, expect, it } from "vitest"
 import {
   allocateSkill,
   autoMergeBooks,
+  enterRift,
+  equipRelic,
   equipBook,
+  exitRift,
   InsufficientGoldError,
+  InsufficientManaCrystalsError,
   InventoryFullError,
   mergeBooks,
   prestige,
+  RelicLevelCapError,
+  RelicNotOwnedError,
   refillEmptySlots,
   resetSkills,
+  RiftEntryError,
   SlotIndexError,
+  summonRelic,
   summonBook,
   swapBookPositions,
   unequipBook,
@@ -317,19 +325,21 @@ describe("prestige", () => {
       books: [book("a", 7, "fire")],
       equipped: [book("b", 6, "holy"), null, null, null, null, null],
       highestLevelEver: 7,
-      stage: 16,
+      stage: 20,
       wave: 8,
       wizardLevel: 4,
       skillPoints: 1,
       skills: { summonBonus: 1, castSpeed: 2, goldGain: 3, critChance: 4 },
       manaCrystals: 2,
+      relics: { owned: { crystalVial: 2, apprenticePurse: 1 }, equipped: ["crystalVial", "apprenticePurse", null] },
+      riftRuns: { date: "2026-07-03", golden: 1, trial: 0 },
     } satisfies EngineState
 
     const next = prestige(state)
 
-    expect(next.manaCrystals).toBe(8)
+    expect(next.manaCrystals).toBe(11)
+    expect(next.gold).toBe(createInitialState(4).gold + 5)
     expect(next.prestigeCount).toBe(1)
-    expect(next.gold).toBe(createInitialState(4).gold)
     expect(next.books).toEqual([])
     expect(next.equipped).toEqual([null, null, null, null, null, null])
     expect(next.stage).toBe(1)
@@ -337,11 +347,96 @@ describe("prestige", () => {
     expect(next.highestLevelEver).toBe(1)
     expect(next.wizardLevel).toBe(4)
     expect(next.skills.castSpeed).toBe(2)
+    expect(next.relics).toEqual(state.relics)
+    expect(next.riftRuns).toEqual(state.riftRuns)
   })
 
   it("requires stage 10 or higher", () => {
     const state = { ...createInitialState(1), stage: 9 }
 
     expect(() => prestige(state)).toThrow()
+  })
+})
+
+describe("relic reducers", () => {
+  it("summons a deterministic relic for 10 mana crystals and levels duplicates to cap", () => {
+    const state = { ...createInitialState(12), manaCrystals: 20 }
+
+    const first = summonRelic(state)
+    const relicId = Object.keys(first.relics.owned)[0]
+    const second = summonRelic(first)
+
+    expect(first.manaCrystals).toBe(10)
+    expect(relicId).toBeDefined()
+    expect(Object.values(second.relics.owned).reduce((total, level) => total + level, 0)).toBe(2)
+  })
+
+  it("rejects relic summons without crystals and when every relic is capped", () => {
+    const noCrystals = createInitialState(1)
+    const capped = {
+      ...createInitialState(1),
+      manaCrystals: 10,
+      relics: {
+        owned: {
+          emberSigil: 10,
+          frostLens: 10,
+          goldenBookmark: 10,
+          quickeningHourglass: 10,
+          abyssalEye: 10,
+          summonersSeal: 10,
+          sageInk: 10,
+          kingMint: 10,
+          moonlitLedger: 10,
+          craftsmanChisel: 10,
+          crystalVial: 10,
+          apprenticePurse: 10,
+        },
+        equipped: [null, null, null],
+      },
+    } satisfies EngineState
+
+    expect(() => summonRelic(noCrystals)).toThrow(InsufficientManaCrystalsError)
+    expect(() => summonRelic(capped)).toThrow(RelicLevelCapError)
+  })
+
+  it("equips owned relics into three replacement slots and rejects missing relics", () => {
+    const state = {
+      ...createInitialState(1),
+      relics: { owned: { emberSigil: 1, goldenBookmark: 2 }, equipped: [null, null, null] },
+    } satisfies EngineState
+
+    const equipped = equipRelic(equipRelic(state, "emberSigil", 0), "goldenBookmark", 0)
+
+    expect(equipped.relics.equipped).toEqual(["goldenBookmark", null, null])
+    expect(() => equipRelic(state, "abyssalEye", 1)).toThrow(RelicNotOwnedError)
+  })
+})
+
+describe("rift reducers", () => {
+  it("starts golden rifts, counts the local day, and restores the home stage on exit", () => {
+    const state = {
+      ...createInitialState(1),
+      stage: 22,
+      wave: 7,
+      enemiesHp: [12, 8],
+      stageHp: 20,
+    } satisfies EngineState
+
+    const active = enterRift(state, "golden", "2026-07-03")
+    const exited = exitRift({ ...active, stage: 22, wave: 3, enemiesHp: [1], stageHp: 1 })
+
+    expect(active.riftRuns).toEqual({ date: "2026-07-03", golden: 1, trial: 0 })
+    expect(active.activeRift?.kind).toBe("golden")
+    expect(exited.stage).toBe(22)
+    expect(exited.wave).toBe(7)
+    expect(exited.enemiesHp).toEqual([12, 8])
+    expect(exited.activeRift).toBeNull()
+  })
+
+  it("enforces two daily rift entries per kind and resets counts on a new date", () => {
+    const state = { ...createInitialState(1), riftRuns: { date: "2026-07-03", golden: 2, trial: 0 } }
+
+    expect(() => enterRift(state, "golden", "2026-07-03")).toThrow(RiftEntryError)
+    expect(enterRift(state, "golden", "2026-07-04").riftRuns).toEqual({ date: "2026-07-04", golden: 1, trial: 0 })
   })
 })

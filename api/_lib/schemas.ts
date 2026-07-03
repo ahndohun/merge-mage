@@ -2,7 +2,9 @@ import { z, type ZodType } from "zod"
 import { EQUIPMENT_SLOT_COUNT, INVENTORY_LIMIT } from "../../src/engine/constants.js"
 import {
   ELEMENTS,
+  type ActiveRiftState,
   type AchievementState,
+  type BattleSnapshot,
   type CodexState,
   type DailyMissionState,
   type EngineState,
@@ -12,6 +14,7 @@ import {
   type QuestState,
   type RelicEquipment,
   type RelicState,
+  type RiftRunsState,
   type SkillAllocations,
   type SkinState,
   type SlotTiers,
@@ -89,6 +92,33 @@ const relicSchema = z.object({
   owned: counterRecordSchema,
   equipped: relicEquipmentSchema,
 }) satisfies ZodType<RelicState>
+const riftRunsSchema = z.object({
+  date: shortLabelSchema,
+  golden: slotNumberSchema,
+  trial: slotNumberSchema,
+}) satisfies ZodType<RiftRunsState>
+const battleSnapshotSchema = z.object({
+  stage: stageSchema,
+  wave: levelSchema,
+  stageHp: nonNegativeNumber,
+  enemiesHp: z.array(nonNegativeNumber),
+  bossElapsedMs: nonNegativeNumber,
+  frostSlowMs: nonNegativeNumber,
+}) satisfies ZodType<BattleSnapshot>
+const activeRiftSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("golden"),
+    remainingMs: nonNegativeNumber,
+    startedStage: stageSchema,
+    snapshot: battleSnapshotSchema,
+  }),
+  z.object({
+    kind: z.literal("trial"),
+    step: slotNumberSchema,
+    startedStage: stageSchema,
+    snapshot: battleSnapshotSchema,
+  }),
+]) satisfies ZodType<ActiveRiftState>
 const petSchema = z.object({
   level: levelSchema,
   xp: nonNegativeNumber,
@@ -126,6 +156,10 @@ function defaultTraitState(): { picks: Record<string, string> } {
 
 function defaultRelicState(): { owned: Record<string, number>; equipped: [string | null, string | null, string | null] } {
   return { owned: {}, equipped: [null, null, null] }
+}
+
+function defaultRiftRunsState(): { date: string; golden: number; trial: number } {
+  return { date: "", golden: 0, trial: 0 }
 }
 
 function defaultPetState(): { level: number; xp: number; evolution: number } {
@@ -175,6 +209,8 @@ export const engineStateSchema: ZodType<EngineState> = z
     codex: codexSchema.default(defaultCodexState),
     traits: traitSchema.default(defaultTraitState),
     relics: relicSchema.default(defaultRelicState),
+    riftRuns: riftRunsSchema.default(defaultRiftRunsState),
+    activeRift: activeRiftSchema.nullable().default(null),
     pet: petSchema.default(defaultPetState),
     mine: mineSchema.default(defaultMineState),
     dailyMissions: dailyMissionSchema.default(defaultDailyMissionState),

@@ -47,7 +47,14 @@ export function renderTab(
     case "quests":
       return <QuestsPanel />
     case "rebirth":
-      return <RebirthPanel onPrestige={engine.prestige} state={engine.state} />
+      return (
+        <RebirthPanel
+          onEquipRelic={engine.equipRelic}
+          onPrestige={engine.prestige}
+          onSummonRelic={engine.summonRelic}
+          state={engine.state}
+        />
+      )
     case "ranks":
       return (
         <RanksPanel

@@ -144,6 +144,9 @@ export class BattleScene extends Phaser.Scene {
         this.slowFactor = event.factor
         this.slowUntil = this.time.now + event.durationMs
         return
+      case "riftComplete":
+        this.banner?.show(event.kind === "golden" ? `RIFT +${Math.floor(event.reward)}` : "TRIAL CLEAR", 0xe6b450)
+        return
       default:
         return assertNever(event)
     }
