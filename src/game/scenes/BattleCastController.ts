@@ -53,7 +53,7 @@ export class BattleCastController {
     }
 
     this.wizard.playCast(() => undefined)
-    this.orbitingTomes.playCast(input.event.slotIdx, (origin) => {
+    this.orbitingTomes.playCast(input.event.slotIdx, this.wizard.getStaffTip(), (origin) => {
       input.effects.fireProjectile({
         from: origin,
         target,

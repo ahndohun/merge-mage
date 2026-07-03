@@ -1,7 +1,7 @@
 import Phaser from "phaser"
 import type { Element } from "../../engine/types"
 import { AnimationKeys, ElementColors, type ActorAction, type BossKind, type MobKind, TextureKeys } from "../TextureKeys"
-import { BattleLayout, getMobSpawnPoint } from "./BattleLayout"
+import { BattleLayout, getActorHpBarY, getMobSpawnPoint } from "./BattleLayout"
 
 type MobSpawn = {
   readonly hp: number
@@ -19,6 +19,19 @@ type Knockback = {
 }
 
 const ENRAGE_BAR_HEIGHT = 3
+const MOB_VISIBLE_TOP_PADDING: Record<MobKind, Record<ActorAction, number>> = {
+  chort: { idle: 9, run: 7 },
+  goblin: { idle: 8, run: 6 },
+  imp: { idle: 6, run: 3 },
+  orc_warrior: { idle: 9, run: 7 },
+  skelet: { idle: 5, run: 2 },
+  wogol: { idle: 11, run: 9 },
+} as const
+const BOSS_VISIBLE_TOP_PADDING: Record<BossKind, Record<ActorAction, number>> = {
+  big_demon: { idle: 8, run: 8 },
+  big_zombie: { idle: 12, run: 10 },
+  ogre: { idle: 11, run: 10 },
+} as const
 
 export class BattleMobView {
   readonly container: Phaser.GameObjects.Container
@@ -76,9 +89,9 @@ export class BattleMobView {
     const texture = request.isBoss ? TextureKeys.boss(request.bossKind, "idle", 0) : TextureKeys.mob(request.mobKind, "idle", 0)
     this.sprite.setTexture(texture).setAlpha(1).setScale(request.isBoss ? BattleLayout.bossScale : BattleLayout.mobScale).clearTint()
     this.container.setAlpha(1).setScale(1).setVisible(true)
+    this.playMotion("run")
     this.syncHp(request.hp)
     this.syncBars(0)
-    this.playMotion("run")
     this.updatePosition()
   }
 
@@ -224,8 +237,12 @@ export class BattleMobView {
   // then sit the bar 6px above that, matching sprite scale changes (2x/3x)
   // automatically since displayHeight already includes scale.
   private getHpBarY(): number {
-    const top = -this.sprite.displayHeight * this.sprite.originY
-    return Math.floor(top) - 6
+    return getActorHpBarY({
+      displayHeight: this.sprite.displayHeight,
+      originY: this.sprite.originY,
+      scaleY: this.sprite.scaleY,
+      visibleTopPadding: this.getVisibleTopPadding(),
+    })
   }
 
   private playMotion(action: ActorAction): void {
@@ -236,6 +253,11 @@ export class BattleMobView {
     this.currentMotion = action
     const key = this.boss ? AnimationKeys.boss(this.bossKind, action) : AnimationKeys.mob(this.mobKind, action)
     this.sprite.play(key, true)
+  }
+
+  private getVisibleTopPadding(): number {
+    const motion = this.currentMotion ?? "idle"
+    return this.boss ? BOSS_VISIBLE_TOP_PADDING[this.bossKind][motion] : MOB_VISIBLE_TOP_PADDING[this.mobKind][motion]
   }
 }
 

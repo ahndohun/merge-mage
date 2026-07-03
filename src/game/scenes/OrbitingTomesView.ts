@@ -1,6 +1,7 @@
 import Phaser from "phaser"
 import type { EquippedBooks, SlotIndex, Spellbook } from "../../engine/types"
 import { ElementColors, TextureKeys } from "../TextureKeys"
+import { resolveTomeLaunchPoint } from "./BattleLayout"
 
 type Point = {
   readonly x: number
@@ -73,10 +74,10 @@ export class OrbitingTomesView {
     this.positionEntries(time)
   }
 
-  playCast(slotIdx: SlotIndex, onLaunch: (origin: Point) => void): void {
+  playCast(slotIdx: SlotIndex, fallbackOrigin: Point, onLaunch: (origin: Point) => void): void {
     const entry = this.tomes[slotIdx]
     if (entry === undefined || !entry.holder.visible) {
-      onLaunch(this.center)
+      onLaunch(resolveTomeLaunchPoint({ entryPoint: null, fallbackPoint: fallbackOrigin }))
       return
     }
 
@@ -90,7 +91,7 @@ export class OrbitingTomesView {
       yoyo: true,
       ease: "Quad.easeOut",
       onComplete: () => {
-        onLaunch(this.getEntryPoint(entry))
+        onLaunch(resolveTomeLaunchPoint({ entryPoint: this.getEntryPoint(entry), fallbackPoint: fallbackOrigin }))
         entry.sprite.setAlpha(0.35).setScale(TOME_SCALE).setTint(entry.tint).setTintMode(Phaser.TintModes.MULTIPLY)
         this.scene.tweens.add({
           targets: entry.sprite,
