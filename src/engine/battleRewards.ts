@@ -8,7 +8,9 @@ import {
   XP_PER_BOSS_KILL,
   XP_PER_KILL,
 } from "./constants.js"
+import { incrementAchievementCounter, refreshAchievementCounters } from "./achievements.js"
 import { createWaveEnemies, sumHp } from "./state.js"
+import { getTraitSkillGoldPoints } from "./traits.js"
 import type { EngineEvent, EngineState } from "./types.js"
 
 export type DamageApplication = {
@@ -25,7 +27,7 @@ export function finalizeDamage(
   const survivors = damaged.filter((hp) => hp > 0)
   const killed = damaged.length - survivors.length
   const boss = state.wave === BOSS_WAVE
-  const reward = getKillReward(state.stage, boss, state.skills.goldGain)
+  const reward = getKillReward(state.stage, boss, getTraitSkillGoldPoints(state))
   const gold = reward * killed
   // XP is kill-count based, NOT gold based: gold grows exponentially per stage
   // while the level threshold is linear, so gold-XP floods skill points late
@@ -40,8 +42,10 @@ export function finalizeDamage(
     xp: xpPerKill,
     boss,
   }) satisfies EngineEvent)
+  const countedState = killed > 0 ? incrementAchievementCounter(withRewards.state, "killsTotal", killed) : refreshAchievementCounters(withRewards.state)
+  const bossCountedState = boss && killed > 0 ? incrementAchievementCounter(countedState, "bossKills", killed) : countedState
   const stateWithEnemies = {
-    ...withRewards.state,
+    ...bossCountedState,
     enemiesHp: survivors,
     stageHp: sumHp(survivors),
   }

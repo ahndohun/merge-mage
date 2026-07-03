@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   allocateSkill as allocateSkillReducer,
   autoMergeBooks as autoMergeBooksReducer,
+  claimQuestReward as claimQuestRewardReducer,
   equipBook as equipBookReducer,
   mergeBooks as mergeBooksReducer,
   prestige as prestigeReducer,
   resetSkills as resetSkillsReducer,
+  selectTrait as selectTraitReducer,
   summonBook,
   swapBookPositions as swapBookPositionsReducer,
   unequipBook as unequipBookReducer,
@@ -13,6 +15,7 @@ import {
 } from "../engine/actions"
 import { INVENTORY_LIMIT } from "../engine/constants"
 import { getSummonCost, getSummonLevel } from "../engine/summon"
+import type { TraitId, TraitSlot } from "../engine/traits"
 import type { EngineEvent, EngineState, SkillName } from "../engine/types"
 import { EventBus } from "../bridge/EventBus"
 import { canMerge, isExpectedEngineError } from "./engineActionHelpers"
@@ -58,6 +61,8 @@ export type UseEngineResult = {
   readonly allocateSkill: (skill: SkillName) => boolean
   readonly resetSkills: () => boolean
   readonly prestige: () => boolean
+  readonly claimQuestReward: (questId: string) => boolean
+  readonly selectTrait: (slot: TraitSlot, traitId: TraitId) => boolean
   readonly setAutoMerge: (enabled: boolean) => void
   readonly setAutoBuy: (enabled: boolean) => void
   readonly setNickname: (nickname: string) => void
@@ -179,6 +184,16 @@ export function useEngine(): UseEngineResult {
 
   const prestige = useCallback(() => applyReducer({ reducer: prestigeReducer, successToast: t("toastRebirthComplete") }), [applyReducer, t])
 
+  const claimQuestReward = useCallback(
+    (questId: string) => applyReducer({ reducer: (current) => claimQuestRewardReducer(current, questId) }),
+    [applyReducer],
+  )
+
+  const selectTrait = useCallback(
+    (slot: TraitSlot, traitId: TraitId) => applyReducer({ reducer: (current) => selectTraitReducer(current, slot, traitId) }),
+    [applyReducer],
+  )
+
   const setAutoMerge = useCallback((enabled: boolean) => {
     autoMergeRef.current = enabled
     setAutoMergeState(enabled)
@@ -298,6 +313,8 @@ export function useEngine(): UseEngineResult {
     allocateSkill,
     resetSkills,
     prestige,
+    claimQuestReward,
+    selectTrait,
     setAutoMerge,
     setAutoBuy,
     setNickname,

@@ -41,11 +41,10 @@ const TABS: readonly {
   readonly id: TabId
   readonly labelKey: MessageKey
   readonly testId: string
-  readonly locked?: boolean
 }[] = [
   { id: "books", labelKey: "tabBooks", testId: "tab-books" },
   { id: "skills", labelKey: "tabSkills", testId: "tab-skills" },
-  { id: "quests", labelKey: "tabQuests", testId: "tab-quests", locked: true },
+  { id: "quests", labelKey: "tabQuests", testId: "tab-quests" },
   { id: "rebirth", labelKey: "tabRebirth", testId: "tab-rebirth" },
   { id: "ranks", labelKey: "tabRanks", testId: "tab-ranks" },
 ]
@@ -459,6 +458,16 @@ export function GameShell() {
     return upgraded
   }
 
+  const handleClaimQuest = (questId: string): boolean => {
+    const claimed = engine.claimQuestReward(questId)
+    if (claimed) {
+      const selector = `[data-testid="quest-claim-${questId}"]`
+      feedback.pulse(selector, "fb-pulse")
+      feedback.floatAbove(selector, t("toastQuestClaimed"), "gold")
+    }
+    return claimed
+  }
+
   const toggleSoundMuted = () => {
     const nextMuted = !soundMuted
     setSoundMuted(nextMuted)
@@ -484,10 +493,14 @@ export function GameShell() {
         return badges.books
       case "skills":
         return badges.skills
+      case "quests":
+        return badges.quests
       case "rebirth":
         return badges.rebirth
-      default:
+      case "ranks":
         return false
+      default:
+        return assertNever(tabId)
     }
   }
 
@@ -498,6 +511,7 @@ export function GameShell() {
       data-active-scene={activeSceneKey}
       data-gold={Math.floor(engine.state.gold)}
       data-inventory-count={engine.state.books.length}
+      data-quests-claimable={badges.quests ? "true" : "false"}
       data-stage={engine.state.stage}
       data-summon-level={engine.summonLevel}
       data-save-status={engine.saveIndicator}
@@ -537,6 +551,7 @@ export function GameShell() {
               handleEquipDrop,
               handleEquipClick,
               handleUpgradeSlot,
+              handleClaimQuest,
             )}
           </div>
           {contextHint === null ? null : (
@@ -589,20 +604,15 @@ export function GameShell() {
             {TABS.map((tab) => (
               <button
                 aria-pressed={activeTab === tab.id}
-                className={`tab-btn${activeTab === tab.id ? " is-active" : ""}${tab.locked === true ? " is-locked" : ""}`}
+                className={`tab-btn${activeTab === tab.id ? " is-active" : ""}`}
                 data-testid={tab.testId}
                 key={tab.id}
                 onClick={() => {
-                  if (tab.locked === true) {
-                    return
-                  }
                   setActiveTab(tab.id)
                   emitGameSfx("confirm")
                 }}
-                title={tab.locked === true ? t("questsLockedTooltip") : undefined}
                 type="button"
               >
-                {tab.locked === true ? <span aria-hidden="true" className="tab-lock-icon" /> : null}
                 {t(tab.labelKey)}
                 {tab.id === "skills" && engine.state.skillPoints > 0 ? (
                   <span className="tab-badge" data-testid="skills-badge">

@@ -318,14 +318,55 @@
 .books-panel {
   display: grid;
   height: 100%;
-  grid-template-rows: 84px 1fr auto;
+  grid-template-rows: 24px 24px 84px 1fr auto;
   gap: 4px;
   padding: 5px;
 }
 
 .books-panel.inventory-collapsed {
   align-content: start;
-  grid-template-rows: 84px 28px auto;
+  grid-template-rows: 24px 24px 84px 28px auto;
+}
+
+.subview-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.subview-toggle .is-active {
+  border-color: var(--mm-gold);
+  color: var(--mm-gold);
+}
+
+.resonance-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.resonance-badge {
+  overflow: hidden;
+  padding: 4px 3px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  background: var(--mm-bg);
+  color: var(--mm-muted);
+  font-size: 8px;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resonance-badge.is-active {
+  border-color: var(--element-accent);
+  color: var(--element-accent);
+  box-shadow: inset 0 0 0 2px rgb(255 255 255 / 12%);
+}
+
+.resonance-badge.is-mono {
+  color: var(--mm-gold);
 }
 
 .equip-row {
@@ -339,6 +380,58 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 4px;
+}
+
+.codex-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  min-height: 0;
+}
+
+.codex-cell {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  padding: 2px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  background: var(--mm-bg);
+  opacity: 0.62;
+}
+
+.codex-cell.is-unlocked {
+  border-color: var(--element-accent);
+  opacity: 1;
+}
+
+.codex-cell .tome-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.codex-silhouette {
+  width: 16px;
+  height: 18px;
+  background: var(--mm-panel-edge);
+  clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 100%, 12% 100%, 0 82%, 0 18%);
+}
+
+.codex-cell-label {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--mm-muted);
+  font-family: var(--mm-font-numeric);
+  font-size: 10px;
+  line-height: 1;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.codex-cell.is-unlocked .codex-cell-label {
+  color: var(--mm-gold);
 }
 
 .inventory-empty-row {
@@ -617,6 +710,7 @@
 }
 
 .toggle.is-on,
+.btn.is-active,
 .tab-btn.is-active {
   border-color: var(--mm-gold);
   color: var(--mm-gold);
@@ -686,7 +780,7 @@
   height: 100%;
   align-content: start;
   gap: 8px;
-  overflow: hidden;
+  overflow: auto;
   padding: 8px;
 }
 
@@ -1459,45 +1553,176 @@
 }
 
 .quests-panel {
-  place-items: center;
+  overflow: auto;
 }
 
-.quests-locked {
+.quest-list,
+.achievement-block,
+.traits-section {
   display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 16px 12px;
-  text-align: center;
+  gap: 5px;
+  min-width: 0;
 }
 
-.quests-lock-icon {
-  width: 18px;
-  height: 22px;
-  border: 2px solid var(--mm-muted);
-}
-
-.quests-lock-icon::before {
-  display: block;
-  width: 14px;
-  height: 8px;
-  margin: -10px 0 0 0;
-  border: 2px solid var(--mm-muted);
-  border-bottom: 0;
-  content: "";
-}
-
-.quests-locked-title {
-  color: var(--mm-muted);
-  font-family: var(--mm-font-label);
-  font-size: 12px;
-  letter-spacing: 0.5px;
-}
-
-.quests-locked-copy {
+.quest-section-label {
   color: var(--mm-gold);
-  font-family: var(--mm-font-label);
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 0.5px;
+}
+
+.quest-card {
+  display: grid;
+  grid-template-columns: 1fr 54px;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 5px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  background: var(--mm-bg);
+  box-shadow: inset 0 0 0 2px var(--mm-panel);
+}
+
+.quest-card.is-featured {
+  border-color: var(--mm-gold);
+}
+
+.quest-card.is-ready {
+  box-shadow:
+    inset 0 0 0 2px var(--mm-gold),
+    0 0 8px rgb(230 180 80 / 30%);
+}
+
+.quest-card.is-claimed {
+  opacity: 0.66;
+}
+
+.quest-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.quest-copy strong,
+.trait-card strong {
+  overflow: hidden;
+  color: var(--mm-ink);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quest-copy span {
+  overflow: hidden;
+  color: var(--mm-muted);
+  font-size: 8px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trait-card span {
+  overflow: hidden;
+  color: var(--mm-muted);
+  font-size: 8px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.quest-copy em {
+  color: var(--mm-gold);
+  font-size: 8px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.achievement-cell {
+  display: grid;
+  min-width: 0;
+  min-height: 38px;
+  align-content: center;
+  gap: 2px;
+  padding: 4px;
+  border: 2px solid var(--mm-panel-edge);
+  background: var(--mm-bg);
+  color: var(--mm-muted);
+}
+
+.achievement-cell.is-unlocked {
+  border-color: var(--mm-gold);
+  color: var(--mm-gold);
+}
+
+.achievement-cell span {
+  overflow: hidden;
+  font-size: 7px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.achievement-cell strong {
+  font-family: var(--mm-font-numeric);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.trait-slot-row {
+  display: grid;
+  gap: 4px;
+}
+
+.trait-slot-title {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  color: var(--mm-muted);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.trait-slot-title strong {
+  color: var(--mm-gold);
+  font-weight: 400;
+}
+
+.trait-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.trait-card {
+  display: grid;
+  min-width: 0;
+  min-height: 68px;
+  align-content: start;
+  gap: 3px;
+  padding: 5px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  background: var(--mm-bg);
+  color: var(--mm-ink);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px var(--mm-panel);
+}
+
+.trait-card:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+
+.trait-card.is-selected {
+  border-color: var(--mm-frost);
+  opacity: 1;
 }
 
 /* ---- Wave B: juice particles and action sequences ---- */

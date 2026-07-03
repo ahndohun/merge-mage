@@ -1,8 +1,10 @@
+import { useState } from "react"
 import { INVENTORY_LIMIT, SLOT_MULTIPLIER_PER_TIER } from "../engine/constants"
 import { getSlotMultiplier, getSlotUpgradeCost } from "../engine/actions"
 import type { EngineState, Spellbook } from "../engine/types"
 import { canAffordSlotUpgrade } from "./useBadges"
 import { canUpgradeSlotWhileSelected, type BookSource, type DragPreview } from "./bookInteractions"
+import { CodexGrid, InventoryView, ResonanceBadges, TomeIcon, type InventoryCellRenderProps } from "./BooksPanelViews"
 import { formatNumber } from "./formatNumber"
 import type { Translator } from "./i18n"
 import { NextGoalStrip } from "./NextGoalStrip"
@@ -27,6 +29,7 @@ type BooksPanelProps = {
 
 export function BooksPanel(props: BooksPanelProps) {
   const { t } = useLocale()
+  const [subview, setSubview] = useState<"books" | "codex">("books")
   const cells = Array.from({ length: INVENTORY_LIMIT }, (_, index) => props.state.books[index] ?? null)
   const inventoryCollapsed = props.state.books.length === 0 && props.state.equipped.some((book) => book === null)
 
@@ -36,6 +39,29 @@ export function BooksPanel(props: BooksPanelProps) {
       aria-label="Books"
       data-testid="tutorial-books-target"
     >
+      <div className="subview-toggle" role="tablist" aria-label="Books view">
+        <button
+          aria-selected={subview === "books"}
+          className={`btn btn-mini${subview === "books" ? " is-active" : ""}`}
+          data-testid="books-subview-books"
+          onClick={() => setSubview("books")}
+          role="tab"
+          type="button"
+        >
+          {t("subBooks")}
+        </button>
+        <button
+          aria-selected={subview === "codex"}
+          className={`btn btn-mini${subview === "codex" ? " is-active" : ""}`}
+          data-testid="books-subview-codex"
+          onClick={() => setSubview("codex")}
+          role="tab"
+          type="button"
+        >
+          {t("subCodex")}
+        </button>
+      </div>
+      <ResonanceBadges state={props.state} t={t} />
       <div className="equip-row" aria-label="Equipped books" data-testid="tutorial-equip-target">
         {props.state.equipped.map((book, index) => (
           <EquipSlot
@@ -58,28 +84,22 @@ export function BooksPanel(props: BooksPanelProps) {
         ))}
       </div>
 
-      {inventoryCollapsed ? (
-        <div className="inventory-empty-row" aria-label="Inventory">
-          {t("inventoryEmptyAutoEquip")}
-        </div>
+      {subview === "codex" ? (
+        <CodexGrid state={props.state} t={t} renderTomeIcon={(element) => <TomeIcon element={element} />} />
       ) : (
-        <div className="merge-grid" aria-label="Inventory">
-          {cells.map((book, index) => (
-            <InventoryCell
-              book={book}
-              index={index}
-              key={`cell-${index}`}
-              selected={props.selected}
-              onBookPointerDown={props.onBookPointerDown}
-              onBookClick={props.onBookClick}
-              dragActive={props.dragActive}
-              dragPreview={props.dragPreview}
-              draggingBookId={props.draggingBookId}
-              onBookDrop={props.onBookDrop}
-              t={t}
-            />
-          ))}
-        </div>
+        <InventoryView
+          cells={cells}
+          dragActive={props.dragActive}
+          dragPreview={props.dragPreview}
+          draggingBookId={props.draggingBookId}
+          inventoryCollapsed={inventoryCollapsed}
+          onBookClick={props.onBookClick}
+          onBookDrop={props.onBookDrop}
+          onBookPointerDown={props.onBookPointerDown}
+          selected={props.selected}
+          t={t}
+          renderCell={(cellProps) => <InventoryCell {...cellProps} key={`cell-${cellProps.index}`} />}
+        />
       )}
       <NextGoalStrip hint={props.nextGoalHint} />
     </section>
@@ -152,7 +172,7 @@ function EquipSlot(props: {
             ) : null}
           </>
         )}
-        <span className="slot-meta">{props.book === null ? props.t("slot") : elementLabel(props.book.element, props.t)}</span>
+        <span className="slot-meta">{props.book === null ? props.t("slot") : props.t(props.book.element)}</span>
       </div>
       <button
         aria-disabled={!canUpgrade}
@@ -184,18 +204,7 @@ function EquipSlot(props: {
   )
 }
 
-function InventoryCell(props: {
-  readonly book: Spellbook | null
-  readonly index: number
-  readonly selected: BookSource | null
-  readonly draggingBookId: string | null
-  readonly dragActive: boolean
-  readonly dragPreview: DragPreview | null
-  readonly onBookPointerDown: (source: BookSource) => void
-  readonly onBookDrop: (book: Spellbook) => void
-  readonly onBookClick: (source: BookSource, book: Spellbook) => void
-  readonly t: Translator
-}) {
+function InventoryCell(props: InventoryCellRenderProps) {
   const selected = props.book !== null && props.selected?.bookId === props.book.id
   const elementClass = props.book === null ? "empty" : props.book.element
   const isDraggingSource = props.dragActive && props.book !== null && props.draggingBookId === props.book.id
@@ -241,24 +250,9 @@ function InventoryCell(props: {
           {isMergeTarget && props.dragPreview?.previewLevel !== null ? (
             <span className="merge-preview-badge">{props.t.levelBadge(props.dragPreview.previewLevel)}</span>
           ) : null}
-          <span className="slot-meta">{elementLabel(props.book.element, props.t)}</span>
+          <span className="slot-meta">{props.t(props.book.element)}</span>
         </>
       )}
     </div>
   )
-}
-
-function TomeIcon(props: { readonly element: Spellbook["element"] }) {
-  return <img alt="" aria-hidden="true" className="tome-icon" draggable={false} src={`/assets/tomes/${props.element}.png`} />
-}
-
-function elementLabel(element: Spellbook["element"], t: Translator): string {
-  switch (element) {
-    case "fire":
-      return t("fire")
-    case "frost":
-      return t("frost")
-    case "holy":
-      return t("holy")
-  }
 }

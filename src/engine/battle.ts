@@ -18,8 +18,11 @@ import {
 } from "./constants.js"
 import { getSlotMultiplier } from "./actions.js"
 import { finalizeDamage, type DamageApplication } from "./battleRewards.js"
+import { getCodexBonusMultiplier } from "./codex.js"
+import { getFireTargetCap, getFrostSlow, getHolyBossMultiplier } from "./resonance.js"
 import { nextRandomState } from "./rng.js"
 import { createWaveEnemies, setSlotTimer, sumHp } from "./state.js"
+import { applyTraitCastInterval, getTraitCodexBonusPerTier, getTraitElementDamageMultiplier } from "./traits.js"
 import { assertNever, type Element, type EngineEvent, type EngineState, type SlotIndex, type Spellbook } from "./types.js"
 
 const INNATE_STAFF_INTERVAL_MS = 1_200
@@ -46,6 +49,7 @@ export function bookDamage(book: Spellbook, slotTier: number, state: EngineState
     DMG_GROWTH ** book.level *
     getSlotMultiplier(slotTier) *
     (1 + MANA_DAMAGE_PER_CRYSTAL * state.manaCrystals) *
+    getElementProgressionMultiplier(state, book.element) *
     critFactor
 
   return {
@@ -160,8 +164,8 @@ function applyCastDamage(
     return { state, events: [], goldEarned: 0 }
   }
 
-  const targetsHit = getTargetsHit(book.element, state.enemiesHp.length)
-  const damage = getElementDamage(book.element, baseDamage, state.wave)
+  const targetsHit = getTargetsHit(book.element, state.enemiesHp.length, state)
+  const damage = getElementDamage(book.element, baseDamage, state.wave, state)
   const damaged = state.enemiesHp.map((hp, index) => (index < targetsHit ? hp - damage : hp))
   const castEvent: EngineEvent = {
     type: "cast",
@@ -173,9 +177,10 @@ function applyCastDamage(
     targetIndex: 0,
     targetsHit,
   }
+  const frostSlow = getFrostSlow(state)
   const slowEvents: readonly EngineEvent[] =
-    book.element === "frost" ? [{ type: "slow", durationMs: FROST_SLOW_MS, factor: FROST_SLOW_FACTOR }] : []
-  const slowedState = book.element === "frost" ? { ...state, frostSlowMs: Math.max(state.frostSlowMs, FROST_SLOW_MS) } : state
+    book.element === "frost" ? [{ type: "slow", durationMs: frostSlow.durationMs, factor: frostSlow.factor }] : []
+  const slowedState = book.element === "frost" ? { ...state, frostSlowMs: Math.max(state.frostSlowMs, frostSlow.durationMs) } : state
   return finalizeDamage(slowedState, damaged, [castEvent, ...slowEvents])
 }
 
@@ -188,10 +193,10 @@ function normalizeBattleState(state: EngineState): EngineState {
   return { ...state, enemiesHp, stageHp: sumHp(enemiesHp) }
 }
 
-function getTargetsHit(element: Element, enemyCount: number): number {
+function getTargetsHit(element: Element, enemyCount: number, state: EngineState): number {
   switch (element) {
     case "fire":
-      return Math.min(FIRE_TARGET_CAP, enemyCount)
+      return Math.min(getFireTargetCap(state), enemyCount)
     case "frost":
       return Math.min(1, enemyCount)
     case "holy":
@@ -201,19 +206,24 @@ function getTargetsHit(element: Element, enemyCount: number): number {
   }
 }
 
-function getElementDamage(element: Element, damage: number, wave: number): number {
+function getElementDamage(element: Element, damage: number, wave: number, state: EngineState): number {
   switch (element) {
     case "fire":
       return damage
     case "frost":
       return damage
     case "holy":
-      return wave === BOSS_WAVE ? damage * 2 : damage
+      return wave === BOSS_WAVE ? damage * getHolyBossMultiplier(state) : damage
     default:
       return assertNever(element)
   }
 }
 
 function getCastIntervalMs(state: EngineState): number {
-  return Math.max(MIN_CAST_INTERVAL_MS, BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * state.skills.castSpeed)
+  return applyTraitCastInterval(state, Math.max(MIN_CAST_INTERVAL_MS, BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * state.skills.castSpeed))
+}
+
+function getElementProgressionMultiplier(state: EngineState, element: Element): number {
+  const codexTiers = state.codex.tiers[element] ?? 0
+  return getCodexBonusMultiplier(state, element) * (1 + getTraitCodexBonusPerTier(state) * codexTiers) * getTraitElementDamageMultiplier(state, element)
 }

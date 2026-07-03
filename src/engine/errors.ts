@@ -58,3 +58,14 @@ export class PrestigeRequirementError extends Error {
     super(`Prestige requires stage 10 or higher; current stage is ${stage}`)
   }
 }
+
+export class QuestClaimError extends Error {
+  readonly name = "QuestClaimError"
+
+  constructor(
+    readonly questId: string,
+    readonly reason: "missing" | "locked" | "incomplete" | "claimed",
+  ) {
+    super(`Quest ${questId} cannot be claimed: ${reason}`)
+  }
+}
