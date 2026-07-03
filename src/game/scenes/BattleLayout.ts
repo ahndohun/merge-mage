@@ -1,4 +1,5 @@
 import type { Element } from "../../engine/types"
+import { createTranslator, type Translator } from "../../ui/i18n"
 
 export const BOSS_WAVE_NUMBER = 10
 export const BOSS_ENRAGE_MS = 30_000
@@ -58,6 +59,8 @@ type WaveIndicator = {
   readonly tint: number
 }
 
+const defaultTranslator = createTranslator("en")
+
 export function getLaneY(index: number): number {
   const lane = LANES[index % LANES.length]
 
@@ -103,12 +106,12 @@ export function getMobSpawnPoint(input: MobSpawnInput): Point {
   }
 }
 
-export function getWaveIndicator(wave: number): WaveIndicator {
+export function getWaveIndicator(wave: number, t: Translator = defaultTranslator): WaveIndicator {
   if (isBossWave(wave)) {
-    return { text: "BOSS", tint: 0xc4344a }
+    return { text: t("battleBoss"), tint: 0xc4344a }
   }
 
-  return { text: `W ${wave}/${BOSS_WAVE_NUMBER}`, tint: 0xfff0a8 }
+  return { text: t.battleWaveIndicator(wave, BOSS_WAVE_NUMBER), tint: 0xfff0a8 }
 }
 
 function hashInt(left: number, middle: number, right: number): number {

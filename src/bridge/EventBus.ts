@@ -1,5 +1,6 @@
 import type Phaser from "phaser"
 import type { EngineEvent, EngineState } from "../engine/types"
+import type { Locale } from "../ui/i18n"
 
 export type GameBootedPayload = {
   readonly width: number
@@ -11,6 +12,7 @@ export type GameEvents = {
   readonly "engine:events": readonly EngineEvent[]
   readonly "engine:state": EngineState
   readonly "game-booted": GameBootedPayload
+  readonly "locale:changed": Locale
 }
 
 type GameEventName = keyof GameEvents
@@ -24,6 +26,7 @@ const listeners: ListenerMap = {
   "engine:events": new Set<Listener<"engine:events">>(),
   "engine:state": new Set<Listener<"engine:state">>(),
   "game-booted": new Set<Listener<"game-booted">>(),
+  "locale:changed": new Set<Listener<"locale:changed">>(),
 }
 
 export type Unsubscribe = () => void

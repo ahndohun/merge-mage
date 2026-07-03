@@ -5,6 +5,8 @@ import {
   GOLD_REWARD_BASE,
   GOLD_REWARD_GROWTH,
   WIZARD_XP_PER_LEVEL,
+  XP_PER_BOSS_KILL,
+  XP_PER_KILL,
 } from "./constants.js"
 import { createWaveEnemies, sumHp } from "./state.js"
 import type { EngineEvent, EngineState } from "./types.js"
@@ -22,16 +24,21 @@ export function finalizeDamage(
 ): DamageApplication {
   const survivors = damaged.filter((hp) => hp > 0)
   const killed = damaged.length - survivors.length
-  const reward = getKillReward(state.stage, state.wave === BOSS_WAVE, state.skills.goldGain)
+  const boss = state.wave === BOSS_WAVE
+  const reward = getKillReward(state.stage, boss, state.skills.goldGain)
   const gold = reward * killed
-  const withRewards = addWizardXp({ ...state, gold: state.gold + gold }, gold)
+  // XP is kill-count based, NOT gold based: gold grows exponentially per stage
+  // while the level threshold is linear, so gold-XP floods skill points late
+  // game (measured: 22 unspent points in 3 minutes) and erases the choice.
+  const xpPerKill = boss ? XP_PER_BOSS_KILL : XP_PER_KILL
+  const withRewards = addWizardXp({ ...state, gold: state.gold + gold }, xpPerKill * killed)
   const killEvents = Array.from({ length: killed }, () => ({
     type: "kill",
     stage: state.stage,
     wave: state.wave,
     gold: reward,
-    xp: reward,
-    boss: state.wave === BOSS_WAVE,
+    xp: xpPerKill,
+    boss,
   }) satisfies EngineEvent)
   const stateWithEnemies = {
     ...withRewards.state,

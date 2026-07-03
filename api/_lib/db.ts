@@ -79,9 +79,13 @@ export async function claimOffline(token: string): Promise<OfflineClaim | null> 
 
 export async function getLeaderboard(): Promise<readonly LeaderboardRow[]> {
   const sql = await getSql()
+  // The E2E% prefix is the automated-test nickname convention (E2EBOT,
+  // E2EWizard, ...). Test rows still upsert normally — they just never reach
+  // the public board, so CI runs can't pollute what players and judges see.
   return sql<LeaderboardRow>`
     select nickname, best_stage, prestige_count
     from leaderboard
+    where nickname not like 'E2E%'
     order by best_stage desc, updated_at asc
     limit 100
   `

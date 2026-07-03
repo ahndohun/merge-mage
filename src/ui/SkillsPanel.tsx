@@ -7,12 +7,14 @@ import {
   MIN_CAST_INTERVAL_MS,
 } from "../engine/constants"
 import type { EngineState, SkillName } from "../engine/types"
+import type { MessageKey, Translator } from "./i18n"
+import { useLocale } from "./useLocale"
 
-const SKILL_ROWS: readonly { readonly name: SkillName; readonly label: string }[] = [
-  { name: "summonBonus", label: "SUMMON FLOOR" },
-  { name: "castSpeed", label: "CAST SPEED" },
-  { name: "goldGain", label: "GOLD GAIN" },
-  { name: "critChance", label: "CRIT CHANCE" },
+const SKILL_ROWS: readonly { readonly name: SkillName; readonly labelKey: MessageKey }[] = [
+  { name: "summonBonus", labelKey: "skillSummonFloor" },
+  { name: "castSpeed", labelKey: "skillCastSpeed" },
+  { name: "goldGain", labelKey: "skillGoldGain" },
+  { name: "critChance", labelKey: "skillCritChance" },
 ] as const
 
 type SkillsPanelProps = {
@@ -28,37 +30,39 @@ function getCastIntervalMs(castSpeedPoints: number): number {
   return Math.max(MIN_CAST_INTERVAL_MS, BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * castSpeedPoints)
 }
 
-function getSkillEffectCopy(skill: SkillName, state: EngineState): string {
+function getSkillEffectCopy(skill: SkillName, state: EngineState, t: Translator): string {
   switch (skill) {
     case "summonBonus":
-      return `+1 summon level / pt (+${state.skills.summonBonus})`
+      return t.skillSummonBonusEffect(state.skills.summonBonus)
     case "castSpeed":
-      return `-${CAST_SPEED_REDUCTION_MS}ms cast / pt (now ${getCastIntervalMs(state.skills.castSpeed)}ms)`
+      return t.skillCastSpeedEffect(CAST_SPEED_REDUCTION_MS, getCastIntervalMs(state.skills.castSpeed))
     case "goldGain":
-      return `+${GOLD_GAIN_PER_POINT * 100}% gold / pt (+${Math.round(state.skills.goldGain * GOLD_GAIN_PER_POINT * 100)}%)`
+      return t.skillGoldGainEffect(GOLD_GAIN_PER_POINT * 100, Math.round(state.skills.goldGain * GOLD_GAIN_PER_POINT * 100))
     case "critChance":
-      return `+${CRIT_CHANCE_PER_POINT * 100}% crit / pt (${Math.round(
+      return t.skillCritChanceEffect(CRIT_CHANCE_PER_POINT * 100, Math.round(
         (BASE_CRIT_CHANCE + state.skills.critChance * CRIT_CHANCE_PER_POINT) * 100,
-      )}%)`
+      ))
   }
 }
 
 export function SkillsPanel(props: SkillsPanelProps) {
+  const { t } = useLocale()
+
   return (
     <section className="panel tab-panel" aria-label="Skills">
       <div className="panel-header">
-        <span>SKILL POINTS</span>
+        <span>{t("skillPoints")}</span>
         <strong>{props.state.skillPoints}</strong>
       </div>
       {props.state.skillPoints === 0 ? (
-        <div className="empty-copy">Level up your wizard (kill things) to earn skill points</div>
+        <div className="empty-copy">{t("skillEmpty")}</div>
       ) : null}
       <div className="skill-list">
         {SKILL_ROWS.map((skill) => (
           <div className="skill-row" key={skill.name}>
             <span className="skill-row-label">
-              {skill.label}
-              <span className="skill-row-effect">{getSkillEffectCopy(skill.name, props.state)}</span>
+              {t(skill.labelKey)}
+              <span className="skill-row-effect">{getSkillEffectCopy(skill.name, props.state, t)}</span>
             </span>
             <strong>{props.state.skills[skill.name]}</strong>
             <button
@@ -74,7 +78,7 @@ export function SkillsPanel(props: SkillsPanelProps) {
         ))}
       </div>
       <button className="btn btn-wide" data-testid="skill-reset" onClick={props.onResetSkills} type="button">
-        RESET
+        {t("reset")}
       </button>
     </section>
   )

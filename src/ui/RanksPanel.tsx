@@ -1,4 +1,6 @@
 import type { LeaderboardEntry } from "./apiClient"
+import type { Translator } from "./i18n"
+import { useLocale } from "./useLocale"
 import type { LeaderboardStatus } from "./useEngine"
 
 type RanksPanelProps = {
@@ -11,6 +13,8 @@ type RanksPanelProps = {
 }
 
 export function RanksPanel(props: RanksPanelProps) {
+  const { t } = useLocale()
+
   return (
     <section className="panel tab-panel ranks-panel" aria-label="Ranks">
       <div className="nickname-row">
@@ -22,41 +26,41 @@ export function RanksPanel(props: RanksPanelProps) {
           value={props.nickname}
         />
         <button className="btn btn-mini" data-testid="nickname-save" onClick={props.onSubmit} type="button">
-          SAVE
+          {t("save")}
         </button>
         <button className="btn btn-mini" data-testid="leaderboard-refresh" onClick={props.onRefresh} type="button">
-          R
+          {t("refreshShort")}
         </button>
       </div>
       <div className="leaderboard" data-status={props.status}>
-        {renderStatus(props.status, props.entries)}
+        {renderStatus(props.status, props.entries, t)}
       </div>
     </section>
   )
 }
 
-function renderStatus(status: LeaderboardStatus, entries: readonly LeaderboardEntry[]) {
+function renderStatus(status: LeaderboardStatus, entries: readonly LeaderboardEntry[], t: Translator) {
   if (status === "loading") {
-    return <div className="rank-empty">LOADING</div>
+    return <div className="rank-empty">{t("ranksLoading")}</div>
   }
 
   if (status === "unavailable") {
-    return <div className="rank-empty">RANKS OFFLINE</div>
+    return <div className="rank-empty">{t("ranksOffline")}</div>
   }
 
   if (status === "error") {
-    return <div className="rank-empty">RANKS ERROR</div>
+    return <div className="rank-empty">{t("ranksError")}</div>
   }
 
   if (entries.length === 0) {
-    return <div className="rank-empty">No ranks yet — set a nickname and be first</div>
+    return <div className="rank-empty">{t("noRanksYet")}</div>
   }
 
   return entries.map((entry) => (
     <div className="rank-row" data-testid={`rank-row-${entry.rank}`} key={`${entry.rank}-${entry.nickname}`}>
       <span>{entry.rank}</span>
       <strong>{entry.nickname}</strong>
-      <span>ST {entry.stage}</span>
+      <span>{t.rankStage(entry.stage)}</span>
     </div>
   ))
 }

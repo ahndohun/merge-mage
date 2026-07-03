@@ -15,6 +15,8 @@ declare const process: CliProcess | undefined
 export type SimulationOptions = {
   readonly minutes: number
   readonly seed?: number
+  /** Row sampling interval in minutes (default 10). */
+  readonly rowMinutes?: number
 }
 
 export type SimulationRow = {
@@ -42,7 +44,7 @@ export class CliArgumentError extends Error {
 export function runBalanceSimulation(options: SimulationOptions): SimulationResult {
   const seed = options.seed ?? 1
   const totalTicks = Math.floor((options.minutes * 60 * 1_000) / TICK_MS)
-  const rowIntervalTicks = Math.floor((10 * 60 * 1_000) / TICK_MS)
+  const rowIntervalTicks = Math.floor(((options.rowMinutes ?? 10) * 60 * 1_000) / TICK_MS)
   const policyIntervalTicks = 10
   let state = createInitialState(seed)
   let rows: readonly SimulationRow[] = []
@@ -213,6 +215,21 @@ function parseMinutes(argv: readonly string[]): number {
   return minutes
 }
 
+function parseRowMinutes(argv: readonly string[]): number | undefined {
+  const flagIndex = argv.findIndex((arg) => arg === "--row-minutes")
+  if (flagIndex === -1) {
+    return undefined
+  }
+
+  const raw = argv[flagIndex + 1]
+  const rowMinutes = Number(raw)
+  if (raw === undefined || !Number.isFinite(rowMinutes) || rowMinutes <= 0) {
+    throw new CliArgumentError(raw ?? "--row-minutes")
+  }
+
+  return rowMinutes
+}
+
 function isCliEntry(argv: readonly string[]): boolean {
   const entry = argv[1]
   return entry !== undefined && (entry.endsWith("simulate.ts") || entry.endsWith("simulate.js"))
@@ -220,5 +237,6 @@ function isCliEntry(argv: readonly string[]): boolean {
 
 if (typeof process !== "undefined" && isCliEntry(process.argv)) {
   const minutes = parseMinutes(process.argv)
-  process.stdout.write(formatSimulation(runBalanceSimulation({ minutes })))
+  const rowMinutes = parseRowMinutes(process.argv)
+  process.stdout.write(formatSimulation(runBalanceSimulation(rowMinutes === undefined ? { minutes } : { minutes, rowMinutes })))
 }

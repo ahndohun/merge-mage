@@ -1,5 +1,7 @@
 import Phaser from "phaser"
+import { EventBus, type Unsubscribe } from "../../bridge/EventBus"
 import type { CastElement } from "../../engine/types"
+import { createTranslator, getInitialLocale, type Translator } from "../../ui/i18n"
 import { CastColors, TextureKeys } from "../TextureKeys"
 import { BattleLayout } from "./BattleLayout"
 import { PixelTextLine } from "./PixelText"
@@ -15,6 +17,8 @@ export class BattleJuiceEffects {
   private readonly muzzleFlashes: Phaser.GameObjects.Image[]
   private readonly ringDots: Phaser.GameObjects.Image[]
   private readonly levelUpText: PixelTextLine
+  private t: Translator = createTranslator(getInitialLocale())
+  private unsubscribeLocale: Unsubscribe | null = null
 
   constructor(private readonly scene: Phaser.Scene) {
     this.coins = Array.from({ length: 36 }, () => makeImage(scene, 34))
@@ -22,9 +26,14 @@ export class BattleJuiceEffects {
     this.muzzleFlashes = Array.from({ length: 18 }, () => makeImage(scene, 31))
     this.ringDots = Array.from({ length: 32 }, () => makeImage(scene, 35))
     this.levelUpText = new PixelTextLine(scene, 8, 58)
+    this.unsubscribeLocale = EventBus.on("locale:changed", (locale) => {
+      this.t = createTranslator(locale)
+    })
   }
 
   clear(): void {
+    this.unsubscribeLocale?.()
+    this.unsubscribeLocale = null
     for (const image of [...this.coins, ...this.flashes, ...this.muzzleFlashes, ...this.ringDots]) {
       this.scene.tweens.killTweensOf(image)
       image.setVisible(false)
@@ -40,12 +49,15 @@ export class BattleJuiceEffects {
       return
     }
 
-    flash.setPosition(point.x + 3, point.y - 1).setTint(CastColors[element]).setAlpha(0.9).setScale(1).setVisible(true)
+    // A muzzle flash must read as a spark, not a balloon: with six books
+    // casting ~1/s each, a scale-5 (~155px) flash overlaps itself into a
+    // permanent giant orb covering the wizard.
+    flash.setPosition(point.x + 3, point.y - 1).setTint(CastColors[element]).setAlpha(0.75).setScale(0.6).setVisible(true)
     this.scene.tweens.add({
       targets: flash,
-      scale: 5,
+      scale: 2.2,
       alpha: 0,
-      duration: 120,
+      duration: 90,
       ease: "Quad.easeOut",
       onComplete: () => flash.setVisible(false),
     })
@@ -78,7 +90,7 @@ export class BattleJuiceEffects {
   levelUp(point: Point): void {
     this.ringBurst({ x: point.x, y: point.y - 42 })
     this.scene.tweens.killTweensOf(this.levelUpText.container)
-    this.levelUpText.setText("LEVEL UP", { tint: 0xe6b450, scale: 3 })
+    this.levelUpText.setText(this.t("battleLevelUp"), { tint: 0xe6b450, scale: 3 })
     this.levelUpText.show(point.x + 18, point.y - 86)
     this.levelUpText.container.setAlpha(1).setScale(0.8)
     this.scene.tweens.add({

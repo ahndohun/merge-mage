@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react"
 import { WIZARD_XP_PER_LEVEL } from "../engine/constants"
 import type { EngineState } from "../engine/types"
 import { formatNumber } from "./formatNumber"
+import { LOCALES } from "./i18n"
+import { useLocale } from "./useLocale"
 import type { SaveIndicatorState } from "./useSaveIndicator"
 
 type HudOverlayProps = {
@@ -14,6 +16,7 @@ type HudOverlayProps = {
 }
 
 export function HudOverlay(props: HudOverlayProps) {
+  const { locale, setLocaleOverride, t } = useLocale()
   const xpRequired = WIZARD_XP_PER_LEVEL * props.state.wizardLevel
   const xpProgress = Math.min(100, (props.state.wizardXp / xpRequired) * 100)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -27,6 +30,24 @@ export function HudOverlay(props: HudOverlayProps) {
       }
     }
   }, [])
+
+  // The popover must yield the screen the moment attention moves elsewhere:
+  // tap anywhere outside it (game canvas included) and it closes.
+  useEffect(() => {
+    if (!settingsOpen) {
+      return
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Element && target.closest(".settings-popover, .settings-btn") !== null) {
+        return
+      }
+      setSettingsOpen(false)
+      setNewGameArmed(false)
+    }
+    document.addEventListener("pointerdown", onPointerDown)
+    return () => document.removeEventListener("pointerdown", onPointerDown)
+  }, [settingsOpen])
 
   const armNewGame = () => {
     if (newGameArmed) {
@@ -48,21 +69,21 @@ export function HudOverlay(props: HudOverlayProps) {
     <>
     <header className="hud-strip" aria-label="Merge Mage HUD">
       <div className="hud-stat">
-        <span>GOLD</span>
+        <span>{t("gold")}</span>
         <strong>{formatNumber(props.state.gold)}</strong>
       </div>
       <div className="hud-stat">
-        <span>STAGE</span>
+        <span>{t("stage")}</span>
         <strong>
           {props.state.stage}-{props.state.wave}
         </strong>
       </div>
       <div className="hud-stat">
-        <span>MANA</span>
+        <span>{t("mana")}</span>
         <strong>{formatNumber(props.state.manaCrystals)}</strong>
       </div>
       <div className="hud-stat wizard-stat">
-        <span>WIZARD {props.state.wizardLevel}</span>
+        <span>{t.wizardLevel(props.state.wizardLevel)}</span>
         <div className="xp-bar" aria-label="Wizard XP">
           <div className="xp-fill" style={{ width: `${xpProgress}%` }} />
         </div>
@@ -73,13 +94,16 @@ export function HudOverlay(props: HudOverlayProps) {
           className={`save-chip is-${props.saveIndicator}`}
           data-testid="save-indicator"
         >
-          {getSaveIndicatorLabel(props.saveIndicator)}
+          {getSaveIndicatorLabel(props.saveIndicator, t)}
         </div>
         <button
-          aria-label="How to play"
+          aria-label={t("howToPlay")}
           className="help-btn"
           data-testid="help-btn"
-          onClick={props.onOpenHelp}
+          onClick={() => {
+            setSettingsOpen(false)
+            props.onOpenHelp()
+          }}
           type="button"
         >
           ?
@@ -87,7 +111,7 @@ export function HudOverlay(props: HudOverlayProps) {
         <button
           aria-controls="settings-popover"
           aria-expanded={settingsOpen}
-          aria-label="Open settings"
+          aria-label={t("openSettings")}
           className="settings-btn"
           data-testid="settings-btn"
           onClick={() => setSettingsOpen((open) => !open)}
@@ -98,7 +122,7 @@ export function HudOverlay(props: HudOverlayProps) {
       </div>
     </header>
       {settingsOpen ? (
-        <div className="settings-popover" id="settings-popover" role="dialog" aria-label="Settings">
+        <div className="settings-popover" id="settings-popover" role="dialog" aria-label={t("settings")}>
             <button
               aria-pressed={!props.muted}
               className={`settings-sound${props.muted ? " is-muted" : ""}`}
@@ -106,15 +130,29 @@ export function HudOverlay(props: HudOverlayProps) {
               onClick={props.onToggleMute}
               type="button"
             >
-              SOUND {props.muted ? "OFF" : "ON"}
+              {t.soundState(props.muted)}
             </button>
+            <div className="settings-language" aria-label={t("language")}>
+              {LOCALES.map((item) => (
+                <button
+                  aria-pressed={locale === item}
+                  className={`settings-locale${locale === item ? " is-active" : ""}`}
+                  data-testid={`settings-locale-${item}`}
+                  key={item}
+                  onClick={() => setLocaleOverride(item)}
+                  type="button"
+                >
+                  {item === "en" ? "EN" : "한국어"}
+                </button>
+              ))}
+            </div>
             <button
               className={`settings-new-game${newGameArmed ? " is-armed" : ""}`}
               data-testid="settings-new-game"
               onClick={armNewGame}
               type="button"
             >
-              {newGameArmed ? "TAP AGAIN TO WIPE" : "NEW GAME"}
+              {newGameArmed ? t("tapAgainToWipe") : t("newGame")}
             </button>
             <a
               className="settings-credits"
@@ -123,7 +161,7 @@ export function HudOverlay(props: HudOverlayProps) {
               rel="noreferrer"
               target="_blank"
             >
-              Credits
+              {t("credits")}
             </a>
           </div>
       ) : null}
@@ -131,12 +169,12 @@ export function HudOverlay(props: HudOverlayProps) {
   )
 }
 
-function getSaveIndicatorLabel(state: SaveIndicatorState): string {
+function getSaveIndicatorLabel(state: SaveIndicatorState, t: ReturnType<typeof useLocale>["t"]): string {
   switch (state) {
     case "saved":
-      return "SAVED"
+      return t("saved")
     case "offline":
-      return "OFFLINE"
+      return t("offline")
     case "idle":
       return ""
   }

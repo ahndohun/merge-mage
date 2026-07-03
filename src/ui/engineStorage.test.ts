@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { createInitialState } from "../engine/state"
 import { loadInitialState, saveLocalState, SAVE_VERSION } from "./engineStorage"
+import { LOCALE_STORAGE_KEY } from "./i18n"
 
 const SAVE_STATE_KEY = "merge-mage:engine-state"
 const SAVE_TOKEN_KEY = "merge-mage:save-token"
@@ -87,5 +88,14 @@ describe("engineStorage save versioning", () => {
     const loaded = loadInitialState()
     expect(loaded.gold).toBe(500)
     expect(loaded.wave).toBe(3)
+  })
+
+  it("forces English locale override for deterministic fresh E2E runs", () => {
+    vi.stubGlobal("window", { localStorage: storage, location: { search: "?fresh=1" } })
+    storage.setItem(LOCALE_STORAGE_KEY, "ko")
+
+    loadInitialState()
+
+    expect(storage.getItem(LOCALE_STORAGE_KEY)).toBe("en")
   })
 })

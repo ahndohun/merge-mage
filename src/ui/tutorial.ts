@@ -1,6 +1,7 @@
 // Pure first-run tutorial state machine. No React / DOM here — it takes an
 // observation of the current game each tick and returns the next step. The
 // overlay component (Tutorial.tsx) drives it and renders the spotlight.
+import { createTranslator, type Translator } from "./i18n"
 
 export type TutorialStep = "summon" | "fight" | "merge" | "done"
 
@@ -91,14 +92,16 @@ export function tutorialStepTarget(state: TutorialState): string | null {
   }
 }
 
-export function tutorialStepCopy(state: TutorialState): string | null {
+const defaultTranslator = createTranslator("en")
+
+export function tutorialStepCopy(state: TutorialState, t: Translator = defaultTranslator): string | null {
   switch (state.step) {
     case "summon":
-      return "Tap SUMMON to arm your first spellbook"
+      return t("tutorialSummon")
     case "fight":
-      return "Your books fight for you. Summon more!"
+      return t("tutorialFight")
     case "merge":
-      return "Tap one book, then another of the same level to MERGE — works in slots too"
+      return t("tutorialMerge")
     case "done":
       return null
   }
@@ -112,8 +115,11 @@ function tutorialStorage(): Storage | null {
   }
   try {
     return window.localStorage
-  } catch {
-    return null
+  } catch (error) {
+    if (error instanceof Error) {
+      return null
+    }
+    throw error
   }
 }
 

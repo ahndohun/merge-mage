@@ -1,8 +1,8 @@
 {
   "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
   "type": "frontend",
-  "name": "Summoning arms a spellbook and spends gold",
-  "description": "Clicking SUMMON adds a Lv1 book (auto-equipped). Cost arithmetic is engine unit-test territory (46 tests); idle combat income makes any E2E gold assertion racy.",
+  "name": "Summoning arms a spellbook (auto-equip)",
+  "description": "Clicking SUMMON adds a Lv1 book (auto-equipped into an empty slot). Cost arithmetic is engine unit-test territory; idle combat income changes gold in real time, so gold values are not part of this test.",
   "priority": "p0",
   "planSteps": [
     {
@@ -11,7 +11,7 @@
     },
     {
       "type": "assertion",
-      "description": "Verify all six equip slots are empty (fresh save)"
+      "description": "Verify the inventory strip shows the text 'INVENTORY — empty' (fresh save has no books)"
     },
     {
       "type": "action",
@@ -19,7 +19,7 @@
     },
     {
       "type": "assertion",
-      "description": "Verify a book with a Lv1 badge appeared in the first equip slot (summons auto-equip into empty slots)"
+      "description": "Verify a book with a Lv1 badge appeared in one of the six equip slots (summons auto-equip into empty slots)"
     },
     {
       "type": "action",
@@ -27,7 +27,7 @@
     },
     {
       "type": "assertion",
-      "description": "Verify a second book now occupies another equip slot"
+      "description": "Verify two books with Lv1 badges are now visible in the equip slots (the page contains two 'Lv1' badges)"
     }
   ]
 }

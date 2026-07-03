@@ -1,5 +1,7 @@
 import { useState } from "react"
+import { MANA_DAMAGE_PER_CRYSTAL } from "../engine/constants"
 import type { EngineState } from "../engine/types"
+import { useLocale } from "./useLocale"
 
 type RebirthPanelProps = {
   readonly state: EngineState
@@ -7,6 +9,7 @@ type RebirthPanelProps = {
 }
 
 export function RebirthPanel(props: RebirthPanelProps) {
+  const { t } = useLocale()
   const [confirming, setConfirming] = useState(false)
   const preview = Math.floor(props.state.stage ** 1.5 / 10)
   const ready = props.state.stage >= 10
@@ -14,25 +17,30 @@ export function RebirthPanel(props: RebirthPanelProps) {
   return (
     <section className="panel tab-panel rebirth-panel" aria-label="Rebirth">
       <div className="panel-header">
-        <span>ARCANE REBIRTH</span>
-        <strong>{preview} MC</strong>
+        <span>{t("arcaneRebirth")}</span>
+        <strong>{t.rebirthPreview(preview)}</strong>
       </div>
       <div className="rebirth-readout">
-        <span>STAGE</span>
+        <span>{t("stage")}</span>
         <strong>{props.state.stage}</strong>
-        <span>MANA CRYSTALS</span>
+        <span>{t("manaCrystals")}</span>
         <strong>{props.state.manaCrystals}</strong>
       </div>
+      <div className="rebirth-terms" data-testid="rebirth-terms">
+        <div>{t("rebirthKeep")}</div>
+        <div>{t("rebirthReset")}</div>
+        <div className="rebirth-terms-gain">{t.rebirthGain(preview, Math.round(MANA_DAMAGE_PER_CRYSTAL * 100))}</div>
+      </div>
       <button className="btn btn-wide" data-testid="prestige-open" disabled={!ready} onClick={() => setConfirming(true)} type="button">
-        REBIRTH
+        {t("rebirth")}
       </button>
-      {ready ? null : <div className="empty-copy rebirth-lock-copy">Unlocks at stage 10 (now: {props.state.stage})</div>}
+      {ready ? null : <div className="empty-copy rebirth-lock-copy">{t.rebirthUnlock(props.state.stage)}</div>}
       {confirming ? (
         <div className="modal-shade" role="presentation">
           <div aria-modal="true" className="modal panel" role="dialog">
             <div className="panel-header">
-              <span>CONFIRM</span>
-              <strong>+{preview} MC</strong>
+              <span>{t("confirm")}</span>
+              <strong>+{t.rebirthPreview(preview)}</strong>
             </div>
             <div className="modal-actions">
               <button
@@ -44,10 +52,10 @@ export function RebirthPanel(props: RebirthPanelProps) {
                 }}
                 type="button"
               >
-                CONFIRM
+                {t("confirm")}
               </button>
               <button className="btn" data-testid="prestige-cancel" onClick={() => setConfirming(false)} type="button">
-                CANCEL
+                {t("cancel")}
               </button>
             </div>
           </div>

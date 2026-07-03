@@ -31,5 +31,6 @@
 - Pixel Magic Effects — Foozle, CC0
 - Holy Spell Effect — pimen, free (크레딧 권장)
 - DungeonFont — vrtxrry, CC0
+- Galmuri9 — quiple/galmuri, SIL Open Font License 1.1, https://github.com/quiple/galmuri
 - SFX ×25 — JDWasabi, free (크레딧 권장)
 - 8-bit Musics — HydroGene, CC0

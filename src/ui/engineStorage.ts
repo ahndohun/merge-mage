@@ -1,5 +1,6 @@
 import { createInitialState } from "../engine/state"
 import type { EngineState, Spellbook } from "../engine/types"
+import { writeLocaleOverride } from "./i18n"
 
 const SAVE_STATE_KEY = "merge-mage:engine-state"
 const SAVE_TOKEN_KEY = "merge-mage:save-token"
@@ -42,6 +43,7 @@ export function loadInitialState(): EngineState {
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("fresh")) {
     getStorage()?.removeItem(SAVE_STATE_KEY)
     getStorage()?.removeItem(SAVE_TOKEN_KEY)
+    writeLocaleOverride("en")
     getStorage()?.setItem(TUTORIAL_DONE_KEY, "1")
     const fresh = createInitialState(createSeed())
     saveLocalState(fresh)

@@ -1,10 +1,11 @@
 import Phaser from "phaser"
 import { TextureKeys } from "../TextureKeys"
-import { toPixelGlyph } from "../PixelGlyphs"
+import { isPixelGlyph, toPixelGlyph } from "../PixelGlyphs"
 
 const GLYPH_WIDTH = 3
 const GLYPH_HEIGHT = 5
 const GLYPH_GAP = 1
+const FALLBACK_FONT_FAMILY = '"Silkscreen", "VT323", "Galmuri9", "Galmuri11", monospace'
 
 type PixelTextOptions = {
   readonly tint: number
@@ -15,6 +16,7 @@ export class PixelTextLine {
   readonly container: Phaser.GameObjects.Container
 
   private readonly glyphs: readonly Phaser.GameObjects.Image[]
+  private readonly fallbackText: Phaser.GameObjects.Text
 
   constructor(scene: Phaser.Scene, maxGlyphs: number, depth: number) {
     this.container = scene.add.container(0, 0).setDepth(depth).setVisible(false)
@@ -23,9 +25,30 @@ export class PixelTextLine {
       this.container.add(image)
       return image
     })
+    this.fallbackText = scene.add
+      .text(0, 0, "", {
+        color: "#ffffff",
+        fontFamily: FALLBACK_FONT_FAMILY,
+        fontSize: "15px",
+        resolution: 2,
+      })
+      .setOrigin(0.5)
+      .setVisible(false)
+    this.container.add(this.fallbackText)
   }
 
   setText(value: string, options: PixelTextOptions): void {
+    if (!canRenderWithPixelGlyphs(value)) {
+      this.glyphs.forEach((image) => image.setVisible(false))
+      this.fallbackText
+        .setText(value)
+        .setFontSize(GLYPH_HEIGHT * options.scale)
+        .setColor(tintToCssColor(options.tint))
+        .setVisible(true)
+      return
+    }
+
+    this.fallbackText.setVisible(false)
     const glyphs = [...value].map(toPixelGlyph).slice(0, this.glyphs.length)
     const width = glyphs.length * GLYPH_WIDTH + Math.max(0, glyphs.length - 1) * GLYPH_GAP
     const left = (-width * options.scale) / 2
@@ -54,6 +77,20 @@ export class PixelTextLine {
   hide(): void {
     this.container.setVisible(false)
   }
+}
+
+function canRenderWithPixelGlyphs(value: string): boolean {
+  for (const char of value) {
+    const normalized = char === "—" ? "-" : char.toUpperCase()
+    if (!isPixelGlyph(normalized)) {
+      return false
+    }
+  }
+  return true
+}
+
+function tintToCssColor(tint: number): string {
+  return `#${tint.toString(16).padStart(6, "0")}`
 }
 
 type DamageTextRequest = {

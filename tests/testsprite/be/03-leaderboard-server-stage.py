@@ -8,7 +8,11 @@ def test_leaderboard_uses_server_stage():
     requests.post(f"{TARGET_URL}/api/save", json={"token": TOK, "state": STATE})
     r = requests.post(f"{TARGET_URL}/api/leaderboard", json={"token": TOK, "nickname": "E2EWizard"})
     assert r.status_code == 200, r.text
+    # The server must derive bestStage from the stored save, not trust the client.
     assert r.json()["bestStage"] == STATE["stage"], "bestStage must come from the stored save"
+    # E2E% nicknames are the automated-test convention: the upsert succeeds
+    # (asserted above via bestStage) but the public board filters them out,
+    # so CI runs never pollute what players see.
     lb = requests.get(f"{TARGET_URL}/api/leaderboard").json()
-    assert any(i["nickname"] == "E2EWizard" for i in lb["items"])
+    assert not any(i["nickname"].startswith("E2E") for i in lb["items"]), "E2E% rows must be hidden from the public leaderboard"
 test_leaderboard_uses_server_stage()

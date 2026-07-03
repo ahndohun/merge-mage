@@ -1,6 +1,7 @@
 import Phaser from "phaser"
 import { EventBus, type Unsubscribe } from "../../bridge/EventBus"
 import { assertNever, type EngineEvent, type EngineState } from "../../engine/types"
+import { createTranslator, getInitialLocale, type Translator } from "../../ui/i18n"
 import { EngineEventBridge } from "../GameEventBridge"
 import {
   createBattleAnimations,
@@ -28,7 +29,9 @@ export class BattleScene extends Phaser.Scene {
   private effects: BattleEffects | null = null
   private unsubscribeState: Unsubscribe | null = null
   private unsubscribeEvents: Unsubscribe | null = null
+  private unsubscribeLocale: Unsubscribe | null = null
   private currentState: EngineState | null = null
+  private t: Translator = createTranslator(getInitialLocale())
   private lastStage = 0
   private lastWave = 0
   private slowUntil = 0
@@ -61,11 +64,16 @@ export class BattleScene extends Phaser.Scene {
     this.banner = new BattleBanner(this)
     this.audio = new BattleAudio(this)
     this.waveIndicator = new BattleWaveIndicator(this)
-    this.waveIndicator.update(1)
+    this.t = createTranslator(getInitialLocale())
+    this.waveIndicator.update(1, this.t)
     this.prewarmMobs()
-    this.banner.show(`STAGE 1 — WAVE 1/${BOSS_WAVE_NUMBER}`, 0xfff0a8)
+    this.banner.show(this.t.battleStageWave(1, 1, BOSS_WAVE_NUMBER), 0xfff0a8)
     this.unsubscribeState = EngineEventBridge.onState((state) => this.handleState(state))
     this.unsubscribeEvents = EngineEventBridge.onEvents((events) => this.handleEvents(events))
+    this.unsubscribeLocale = EventBus.on("locale:changed", (locale) => {
+      this.t = createTranslator(locale)
+      this.waveIndicator?.update(this.currentState?.wave ?? 1, this.t)
+    })
     this.events.once("shutdown", () => this.cleanup())
 
     EventBus.emit("current-scene-ready", this)
@@ -92,16 +100,16 @@ export class BattleScene extends Phaser.Scene {
     this.currentState = state
     mirrorBattleState(state)
     this.audio?.syncMusic(state)
-    this.waveIndicator?.update(state.wave)
+    this.waveIndicator?.update(state.wave, this.t)
 
     if (waveChanged) {
       const stageChanged = this.lastStage > 0 && state.stage !== this.lastStage
       this.resetWave(state)
       if (stageChanged) {
         this.effects?.stageFlash()
-        this.banner?.showSlide(`STAGE ${state.stage}`, 0xe6b450)
+        this.banner?.showSlide(this.t.battleStage(state.stage), 0xe6b450)
       } else {
-        this.banner?.show(`STAGE ${state.stage} — WAVE ${state.wave}/${BOSS_WAVE_NUMBER}`, 0xfff0a8)
+        this.banner?.show(this.t.battleStageWave(state.stage, state.wave, BOSS_WAVE_NUMBER), 0xfff0a8)
       }
       this.lastStage = state.stage
       this.lastWave = state.wave
@@ -131,13 +139,13 @@ export class BattleScene extends Phaser.Scene {
       case "kill":
         return
       case "waveClear":
-        this.banner?.pop("WAVE CLEAR", 0xe6b450)
+        this.banner?.pop(this.t("battleWaveClear"), 0xe6b450)
         return
       case "bossSpawn":
         this.playBossEntrance()
         return
       case "bossKill":
-        this.banner?.show(`BOSS DOWN +${event.gold}`, 0xfff06a)
+        this.banner?.show(this.t.battleBossDown(event.gold), 0xfff06a)
         return
       case "bossFail":
         this.playBossFail(event.stage)
@@ -258,7 +266,7 @@ export class BattleScene extends Phaser.Scene {
   private playBossFail(stage: number): void {
     this.wizard?.playFail()
     this.cameras.main.shake(150, 0.004)
-    this.banner?.show(`STAGE ${stage} — WAVE RESET`, 0xff6a6a)
+    this.banner?.show(this.t.battleStageWaveReset(stage), 0xff6a6a)
   }
 
   private syncBossEnrage(): void {
@@ -278,8 +286,10 @@ export class BattleScene extends Phaser.Scene {
   private cleanup(): void {
     this.unsubscribeState?.()
     this.unsubscribeEvents?.()
+    this.unsubscribeLocale?.()
     this.unsubscribeState = null
     this.unsubscribeEvents = null
+    this.unsubscribeLocale = null
     this.audio?.destroy()
     this.audio = null
     this.waveIndicator?.hide()

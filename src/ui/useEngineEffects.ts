@@ -101,8 +101,10 @@ export function useSaveCadence(input: {
   readonly saveIssueRef: MutableRef<string | null>
   readonly saveFailureCountRef: MutableRef<number>
   readonly addToast: (text: string, kind: ToastMessage["kind"]) => void
+  readonly cloudSaveUnavailableMessage: string
   readonly onCloudSaveOk: () => void
   readonly onCloudSaveOffline: () => void
+  readonly saveFailed: (message: string) => string
 }): void {
   useEffect(() => {
     const save = () => {
@@ -134,7 +136,7 @@ export function useSaveCadence(input: {
         }
 
         input.onCloudSaveOffline()
-        const message = result.kind === "unavailable" ? "Cloud save unavailable; local save active." : `Save failed: ${result.message}`
+        const message = result.kind === "unavailable" ? input.cloudSaveUnavailableMessage : input.saveFailed(result.message)
         if (input.saveIssueRef.current !== message) {
           input.saveIssueRef.current = message
           input.addToast(message, "error")
@@ -153,6 +155,7 @@ export function useSaveCadence(input: {
     }
   }, [
     input.addToast,
+    input.cloudSaveUnavailableMessage,
     input.nicknameRef,
     input.onCloudSaveOffline,
     input.onCloudSaveOk,
@@ -160,6 +163,7 @@ export function useSaveCadence(input: {
     input.saveIssueRef,
     input.saveTokenRef,
     input.stateRef,
+    input.saveFailed,
   ])
 }
 

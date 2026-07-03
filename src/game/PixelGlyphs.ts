@@ -101,6 +101,6 @@ export function toPixelGlyph(value: string): PixelGlyph {
   return " "
 }
 
-function isPixelGlyph(value: string): value is PixelGlyph {
+export function isPixelGlyph(value: string): value is PixelGlyph {
   return PIXEL_GLYPHS.some((glyph) => glyph === value)
 }

@@ -1,5 +1,6 @@
 import { formatNumber } from "./formatNumber"
 import type { OfflineClaim } from "./apiClient"
+import { useLocale } from "./useLocale"
 
 type OfflineClaimModalProps = {
   readonly claim: OfflineClaim | null
@@ -7,6 +8,8 @@ type OfflineClaimModalProps = {
 }
 
 export function OfflineClaimModal(props: OfflineClaimModalProps) {
+  const { t } = useLocale()
+
   if (props.claim === null) {
     return null
   }
@@ -15,15 +18,15 @@ export function OfflineClaimModal(props: OfflineClaimModalProps) {
     <div className="modal-shade" role="presentation">
       <div aria-modal="true" className="modal panel" role="dialog">
         <div className="panel-header">
-          <span>OFFLINE CLAIM</span>
+          <span>{t("offlineClaim")}</span>
           <strong>{formatNumber(props.claim.gold)}</strong>
         </div>
         <div className="modal-actions">
           <button className="btn" data-testid="offline-claim-accept" onClick={props.onClose} type="button">
-            CLAIM
+            {t("claim")}
           </button>
           <button className="btn" data-testid="offline-claim-close" onClick={props.onClose} type="button">
-            CLOSE
+            {t("close")}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { GameShell } from "./ui/GameShell"
+import { LocaleProvider } from "./ui/useLocale"
 import "@fontsource/silkscreen/400.css"
 import "@fontsource/silkscreen/700.css"
 import "@fontsource/vt323/400.css"
@@ -15,6 +16,8 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <GameShell />
+    <LocaleProvider>
+      <GameShell />
+    </LocaleProvider>
   </StrictMode>,
 )

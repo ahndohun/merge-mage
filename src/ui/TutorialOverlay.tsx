@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react"
 import { tutorialStepCopy, tutorialStepTarget, type TutorialState } from "./tutorial"
+import { useLocale } from "./useLocale"
 
 type Rect = { readonly top: number; readonly left: number; readonly width: number; readonly height: number }
 
@@ -16,8 +17,9 @@ const SPOTLIGHT_PAD = 6
  * instruction card with a blinking pixel arrow pointing at it.
  */
 export function Tutorial(props: TutorialProps) {
+  const { t } = useLocale()
   const target = tutorialStepTarget(props.state)
-  const copy = tutorialStepCopy(props.state)
+  const copy = tutorialStepCopy(props.state, t)
   const rect = useSpotlightRect(target)
 
   if (target === null || copy === null) {
@@ -59,7 +61,7 @@ export function Tutorial(props: TutorialProps) {
         <div className={`tutorial-arrow tutorial-arrow-${arrowDirection}`} aria-hidden="true" />
         <p className="tutorial-copy">{copy}</p>
         <button className="tutorial-skip" data-testid="tutorial-skip" onClick={props.onSkip} type="button">
-          SKIP
+          {t("skip")}
         </button>
       </div>
     </div>

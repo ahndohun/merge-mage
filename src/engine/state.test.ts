@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { HP_BASE, HP_GROWTH } from "./constants.js"
 import { createInitialState, getMobHp } from "./state.js"
 
 describe("createInitialState", () => {
@@ -15,7 +16,8 @@ describe("createInitialState", () => {
     expect(state.slotTiers).toEqual([0, 0, 0, 0, 0, 0])
   })
 
-  it("uses the lowered early pacing HP base for wave one", () => {
-    expect(getMobHp(1)).toBeCloseTo(12.8)
+  it("derives wave-one mob HP from the tuning constants", () => {
+    // Derived, not pinned: balance tuning changes HP_GROWTH on purpose.
+    expect(getMobHp(1)).toBeCloseTo(HP_BASE * HP_GROWTH)
   })
 })

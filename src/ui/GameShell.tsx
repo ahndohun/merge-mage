@@ -19,11 +19,19 @@ import { Toasts } from "./Toasts"
 import { Tutorial } from "./TutorialOverlay"
 import { useActionFeedback } from "./useActionFeedback"
 import { useEngine } from "./useEngine"
+import { useLocale } from "./useLocale"
 import { useTutorial } from "./useTutorial"
+import type { MessageKey } from "./i18n"
 
-const TABS: readonly { readonly id: TabId; readonly label: string; readonly testId: string }[] = [{ id: "books", label: "BOOKS", testId: "tab-books" }, { id: "skills", label: "SKILLS", testId: "tab-skills" }, { id: "rebirth", label: "REBIRTH", testId: "tab-rebirth" }, { id: "ranks", label: "RANKS", testId: "tab-ranks" }]
+const TABS: readonly { readonly id: TabId; readonly labelKey: MessageKey; readonly testId: string }[] = [
+  { id: "books", labelKey: "tabBooks", testId: "tab-books" },
+  { id: "skills", labelKey: "tabSkills", testId: "tab-skills" },
+  { id: "rebirth", labelKey: "tabRebirth", testId: "tab-rebirth" },
+  { id: "ranks", labelKey: "tabRanks", testId: "tab-ranks" },
+]
 
 export function GameShell() {
+  const { t } = useLocale()
   const hostRef = useRef<HTMLDivElement | null>(null)
   const gameRef = useRef<Phaser.Game | null>(null)
   const selectedRef = useRef<BookSource | null>(null)
@@ -38,7 +46,7 @@ export function GameShell() {
   const engine = useEngine()
   const feedback = useActionFeedback()
   const tutorial = useTutorial(engine.state, {
-    onComplete: () => engine.notify("You know everything. Ascend!", "notice"),
+    onComplete: () => engine.notify(t("toastTutorialComplete"), "notice"),
   })
 
   useEffect(() => {
@@ -99,7 +107,7 @@ export function GameShell() {
       emitGameSfx("merge")
       if (targetSelector !== null) {
         if (mergedLevel !== null) {
-          feedback.floatAbove(targetSelector, `MERGED! Lv ${mergedLevel}`, "gold")
+          feedback.floatAbove(targetSelector, t.mergedLv(mergedLevel), "gold")
         }
         feedback.pulse(targetSelector, "fb-flash")
       }
@@ -114,7 +122,7 @@ export function GameShell() {
       if (targetSelector !== null) {
         feedback.pulse(targetSelector, "fb-shake")
       }
-      feedback.microToast("Levels must match")
+      feedback.microToast(t("toastLevelsMustMatch"))
       return
     }
 
@@ -240,7 +248,7 @@ export function GameShell() {
     tutorial.replay()
   }
 
-  const contextHint = getContextHint({ state: engine.state, summonCost: engine.summonCost })
+  const contextHint = getContextHint({ state: engine.state, summonCost: engine.summonCost }, t)
 
   return (
     <main
@@ -258,8 +266,8 @@ export function GameShell() {
       {activeSceneKey !== "booting" ? null : (
         <div className="preboot-splash" aria-live="polite">
           <div className="preboot-copy">
-            <div className="preboot-title">MERGE MAGE</div>
-            <div className="preboot-loading">loading...</div>
+            <div className="preboot-title">{t("appTitle")}</div>
+            <div className="preboot-loading">{t("loading")}</div>
           </div>
         </div>
       )}
@@ -316,7 +324,7 @@ export function GameShell() {
               const inventoryFull =
                 engine.state.equipped.every((book) => book !== null) &&
                 engine.state.books.length >= INVENTORY_LIMIT
-              feedback.microToast(inventoryFull ? "Inventory full" : "Not enough gold")
+              feedback.microToast(inventoryFull ? t("toastInventoryFull") : t("toastNotEnoughGold"))
             }}
             summonCost={engine.summonCost}
             summonLevel={engine.summonLevel}
@@ -334,7 +342,12 @@ export function GameShell() {
                 }}
                 type="button"
               >
-                {tab.label}
+                {t(tab.labelKey)}
+                {tab.id === "skills" && engine.state.skillPoints > 0 ? (
+                  <span className="tab-badge" data-testid="skills-badge">
+                    {engine.state.skillPoints}
+                  </span>
+                ) : null}
               </button>
             ))}
           </nav>

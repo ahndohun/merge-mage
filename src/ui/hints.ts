@@ -1,33 +1,36 @@
 import { BOSS_WAVE } from "../engine/constants"
 import type { EngineState, Spellbook } from "../engine/types"
+import { createTranslator, type Translator } from "./i18n"
 
 type HintInput = {
   readonly state: EngineState
   readonly summonCost: number
 }
 
-export function getContextHint(input: HintInput): string | null {
+const defaultTranslator = createTranslator("en")
+
+export function getContextHint(input: HintInput, t: Translator = defaultTranslator): string | null {
   const allBooks = collectBooks(input.state)
   const hasBook = allBooks.length > 0
 
   if (!hasBook && input.state.gold >= input.summonCost) {
-    return "Tap SUMMON to arm your first spellbook"
+    return t("hintSummonFirst")
   }
 
   if (hasSameLevelPair(allBooks)) {
-    return "Tap a book, then another of the same level — works in slots too"
+    return t("hintMergePair")
   }
 
   if (input.state.books.length > 0 && hasEmptyEquipSlot(input.state)) {
-    return "Tap a book, then an empty slot to equip"
+    return t("hintEquipEmptySlot")
   }
 
   if (input.state.wave === BOSS_WAVE) {
-    return "Boss! Holy books deal double damage"
+    return t("hintBossHoly")
   }
 
   if (input.state.stage >= 10 && input.state.prestigeCount === 0) {
-    return "REBIRTH is unlocked — permanent power"
+    return t("hintRebirthUnlocked")
   }
 
   return null

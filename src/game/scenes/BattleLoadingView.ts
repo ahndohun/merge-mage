@@ -1,6 +1,7 @@
 import Phaser from "phaser"
 import { BattleLayout } from "./BattleLayout"
 import { PixelTextLine } from "./PixelText"
+import { createTranslator, getInitialLocale } from "../../ui/i18n"
 
 const BAR_WIDTH = 168
 const BAR_HEIGHT = 12
@@ -16,7 +17,7 @@ export class BattleLoadingView {
     this.track = scene.add.graphics().setDepth(90)
     this.fill = scene.add.graphics().setDepth(91)
     this.label = new PixelTextLine(scene, 10, 92)
-    this.label.setText("LOADING", { tint: 0xe8e0d8, scale: 3 })
+    this.label.setText(createTranslator(getInitialLocale())("battleLoading"), { tint: 0xe8e0d8, scale: 3 })
     this.label.show(BattleLayout.width / 2, BAR_Y - 28)
     this.render(0)
 

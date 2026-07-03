@@ -3,8 +3,10 @@ import { getSlotMultiplier, getSlotUpgradeCost } from "../engine/actions"
 import type { EngineState, Spellbook } from "../engine/types"
 import { canUpgradeSlotWhileSelected, type BookSource } from "./bookInteractions"
 import { formatNumber } from "./formatNumber"
+import type { Translator } from "./i18n"
+import { useLocale } from "./useLocale"
 
-const SLOT_UPGRADE_BONUS_LABEL = `(+${Math.round(SLOT_MULTIPLIER_PER_TIER * 100)}%)`
+const SLOT_UPGRADE_BONUS_PERCENT = Math.round(SLOT_MULTIPLIER_PER_TIER * 100)
 
 type BooksPanelProps = {
   readonly state: EngineState
@@ -18,6 +20,7 @@ type BooksPanelProps = {
 }
 
 export function BooksPanel(props: BooksPanelProps) {
+  const { t } = useLocale()
   const cells = Array.from({ length: INVENTORY_LIMIT }, (_, index) => props.state.books[index] ?? null)
   const inventoryCollapsed = props.state.books.length === 0 && props.state.equipped.some((book) => book === null)
 
@@ -40,13 +43,14 @@ export function BooksPanel(props: BooksPanelProps) {
             onEquipClick={props.onEquipClick}
             onEquipDrop={props.onEquipDrop}
             onUpgradeSlot={props.onUpgradeSlot}
+            t={t}
           />
         ))}
       </div>
 
       {inventoryCollapsed ? (
         <div className="inventory-empty-row" aria-label="Inventory">
-          INVENTORY — empty (summons auto-equip)
+          {t("inventoryEmptyAutoEquip")}
         </div>
       ) : (
         <div className="merge-grid" aria-label="Inventory">
@@ -59,6 +63,7 @@ export function BooksPanel(props: BooksPanelProps) {
               onBookPointerDown={props.onBookPointerDown}
               onBookClick={props.onBookClick}
               onBookDrop={props.onBookDrop}
+              t={t}
             />
           ))}
         </div>
@@ -77,6 +82,7 @@ function EquipSlot(props: {
   readonly onEquipDrop: (slotIdx: number, source: BookSource | null) => void
   readonly onEquipClick: (slotIdx: number, source: BookSource | null) => void
   readonly onUpgradeSlot: (slotIdx: number) => boolean
+  readonly t: Translator
 }) {
   const upgradeCost = getSlotUpgradeCost(props.tier)
   const elementClass = props.book === null ? "empty" : props.book.element
@@ -107,13 +113,13 @@ function EquipSlot(props: {
         ) : (
           <>
             <TomeIcon element={props.book.element} />
-            <span className="level-badge">Lv{props.book.level}</span>
+            <span className="level-badge">{props.t.levelBadge(props.book.level)}</span>
             {props.tier > 0 ? (
               <span className="slot-tier-badge">x{getSlotMultiplier(props.tier).toFixed(2)}</span>
             ) : null}
           </>
         )}
-        <span className="slot-meta">{props.book === null ? "SLOT" : props.book.element.toUpperCase()}</span>
+        <span className="slot-meta">{props.book === null ? props.t("slot") : elementLabel(props.book.element, props.t)}</span>
       </div>
       <button
         aria-disabled={!canUpgrade}
@@ -138,7 +144,7 @@ function EquipSlot(props: {
         }}
         type="button"
       >
-        UP {formatNumber(upgradeCost)} {SLOT_UPGRADE_BONUS_LABEL}
+        {props.t.slotUpgrade(formatNumber(upgradeCost), SLOT_UPGRADE_BONUS_PERCENT)}
       </button>
     </div>
   )
@@ -151,6 +157,7 @@ function InventoryCell(props: {
   readonly onBookPointerDown: (source: BookSource) => void
   readonly onBookDrop: (book: Spellbook) => void
   readonly onBookClick: (source: BookSource, book: Spellbook) => void
+  readonly t: Translator
 }) {
   const selected = props.book !== null && props.selected?.bookId === props.book.id
   const elementClass = props.book === null ? "empty" : props.book.element
@@ -182,8 +189,8 @@ function InventoryCell(props: {
       ) : (
         <>
           <TomeIcon element={props.book.element} />
-          <span className="level-badge">Lv{props.book.level}</span>
-          <span className="slot-meta">{props.book.element.toUpperCase()}</span>
+          <span className="level-badge">{props.t.levelBadge(props.book.level)}</span>
+          <span className="slot-meta">{elementLabel(props.book.element, props.t)}</span>
         </>
       )}
     </div>
@@ -192,4 +199,15 @@ function InventoryCell(props: {
 
 function TomeIcon(props: { readonly element: Spellbook["element"] }) {
   return <img alt="" aria-hidden="true" className="tome-icon" draggable={false} src={`/assets/tomes/${props.element}.png`} />
+}
+
+function elementLabel(element: Spellbook["element"], t: Translator): string {
+  switch (element) {
+    case "fire":
+      return t("fire")
+    case "frost":
+      return t("frost")
+    case "holy":
+      return t("holy")
+  }
 }

@@ -19,6 +19,7 @@ import { canMerge, isExpectedEngineError } from "./engineActionHelpers"
 import { ensureSaveToken, loadInitialState, loadNickname, saveNickname } from "./engineStorage"
 import { useAutoEngineActions, useEngineClock, useOfflineClaim, useSaveCadence, useVisibilityPause } from "./useEngineEffects"
 import { useToasts, type ToastMessage } from "./useToasts"
+import { useLocale } from "./useLocale"
 import { useSaveIndicator, type SaveIndicatorState } from "./useSaveIndicator"
 import {
   fetchLeaderboard,
@@ -70,6 +71,7 @@ type ReducerInput = {
 }
 
 export function useEngine(): UseEngineResult {
+  const { t } = useLocale()
   const [state, setState] = useState(loadInitialState)
   const [events, setEvents] = useState<readonly EngineEvent[]>([])
   const [autoMerge, setAutoMergeState] = useState(false)
@@ -112,7 +114,7 @@ export function useEngine(): UseEngineResult {
 
         const afterSummonLevel = getSummonLevel(next.highestLevelEver) + next.skills.summonBonus
         if (input.floorToast === true && afterSummonLevel > beforeSummonLevel) {
-          addToast("Summon level up!", "notice")
+          addToast(t("toastSummonLevelUp"), "notice")
         }
         if (input.successToast !== undefined) {
           addToast(input.successToast, "notice")
@@ -125,7 +127,7 @@ export function useEngine(): UseEngineResult {
         throw error
       }
     },
-    [addToast, commitState],
+    [addToast, commitState, t],
   )
 
   const summon = useCallback(() => applyReducer({ reducer: summonBook, floorToast: true }), [applyReducer])
@@ -172,7 +174,7 @@ export function useEngine(): UseEngineResult {
 
   const resetSkills = useCallback(() => applyReducer({ reducer: resetSkillsReducer }), [applyReducer])
 
-  const prestige = useCallback(() => applyReducer({ reducer: prestigeReducer, successToast: "Rebirth complete." }), [applyReducer])
+  const prestige = useCallback(() => applyReducer({ reducer: prestigeReducer, successToast: t("toastRebirthComplete") }), [applyReducer, t])
 
   const setAutoMerge = useCallback((enabled: boolean) => {
     autoMergeRef.current = enabled
@@ -244,8 +246,10 @@ export function useEngine(): UseEngineResult {
     saveIssueRef,
     saveFailureCountRef,
     addToast,
+    cloudSaveUnavailableMessage: t("toastCloudSaveUnavailable"),
     onCloudSaveOk: saveIndicator.flashCloudSaved,
     onCloudSaveOffline: saveIndicator.markCloudOffline,
+    saveFailed: t.saveFailed,
   })
   useOfflineClaim({ saveTokenRef, stateRef, commitState, setOfflineClaim })
 

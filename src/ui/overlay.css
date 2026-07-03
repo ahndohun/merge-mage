@@ -241,6 +241,35 @@
   color: var(--mm-muted);
 }
 
+.settings-language {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.settings-locale {
+  display: grid;
+  min-height: 25px;
+  min-width: 0;
+  padding: 4px 2px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  place-items: center;
+  background: var(--mm-bg);
+  color: var(--mm-muted);
+  cursor: pointer;
+  font-family: var(--mm-font-label);
+  font-size: 9px;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+}
+
+.settings-locale.is-active {
+  border-color: var(--mm-gold);
+  color: var(--mm-gold);
+}
+
 .settings-new-game.is-armed {
   border-color: var(--mm-danger);
   color: var(--mm-danger);
@@ -520,6 +549,7 @@
 
 .btn,
 .tab-btn {
+  position: relative;
   display: inline-grid;
   min-height: 32px;
   padding: 4px 6px;
@@ -683,6 +713,40 @@
   letter-spacing: 0.5px;
 }
 
+.rebirth-terms {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 2px solid var(--mm-panel-edge);
+  background: var(--mm-bg);
+  box-shadow: inset 0 0 0 2px var(--mm-panel);
+  color: var(--mm-ink);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+.rebirth-terms-gain {
+  color: var(--mm-gold);
+}
+
+/* Sits inside the button's top-right corner: .tab-btn is clip-pathed, so
+   anything hanging outside its box would be sliced off. */
+.tab-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 14px;
+  padding: 1px 2px;
+  background: var(--mm-danger);
+  color: #fff;
+  font-family: var(--mm-font-numeric);
+  font-size: 10px;
+  line-height: 1;
+  text-align: center;
+}
+
 .rebirth-readout strong {
   color: var(--mm-gold);
   font-family: var(--mm-font-numeric);
@@ -771,7 +835,7 @@
   z-index: 9;
   display: grid;
   place-items: center;
-  background: rgb(16 14 20 / 78%);
+  background: rgb(16 14 20 / 88%);
   pointer-events: auto;
 }
 

@@ -20,7 +20,7 @@ concurrency:
 env:
   TESTSPRITE_API_KEY: ${{ secrets.TESTSPRITE_API_KEY }}
   BE_PROJECT_ID: 83edef2d-3534-491d-9529-929416c41499
-  FE_SMOKE_TEST_ID: 767706ae-35da-47cb-a1f0-6e5ec92dbe54
+  FE_SMOKE_TEST_ID: c1a547c1-0c47-4063-aa15-415ac64796f0
 
 jobs:
   verify-live:

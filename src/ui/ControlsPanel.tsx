@@ -1,4 +1,5 @@
 import { formatNumber } from "./formatNumber"
+import { useLocale } from "./useLocale"
 
 type ControlsPanelProps = {
   readonly summonLevel: number
@@ -12,6 +13,8 @@ type ControlsPanelProps = {
 }
 
 export function ControlsPanel(props: ControlsPanelProps) {
+  const { t } = useLocale()
+
   return (
     <section className="panel controls-panel" aria-label="Controls">
       {/* aria-disabled (not disabled) so a blocked summon still fires onClick —
@@ -23,7 +26,7 @@ export function ControlsPanel(props: ControlsPanelProps) {
         onClick={props.onSummon}
         type="button"
       >
-        SUMMON L{props.summonLevel} {formatNumber(props.summonCost)}
+        {t.summonButton(props.summonLevel, formatNumber(props.summonCost))}
       </button>
       <button
         aria-pressed={props.autoMerge}
@@ -32,7 +35,7 @@ export function ControlsPanel(props: ControlsPanelProps) {
         onClick={() => props.onAutoMerge(!props.autoMerge)}
         type="button"
       >
-        AUTO MERGE
+        {t("autoMerge")}
       </button>
       <button
         aria-pressed={props.autoBuy}
@@ -41,7 +44,7 @@ export function ControlsPanel(props: ControlsPanelProps) {
         onClick={() => props.onAutoBuy(!props.autoBuy)}
         type="button"
       >
-        AUTO BUY
+        {t("autoBuy")}
       </button>
     </section>
   )
