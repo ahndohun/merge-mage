@@ -63,3 +63,21 @@ merge-mage/  (public GitHub repo — 커밋 히스토리가 루프 증거)
 
 ## 5. 컷 (명시적 제외)
 펫/요정/유물/스킨/레이드/광산/IAP/광고/계정 로그인. 다국어 없음(영어).
+
+## 밸런스 v2 (2026-07-03, 시뮬 검증)
+
+장르 근거: 비용 지수 > 생산(선형+멀티) 시소, 첫 벽 15~60분, 첫 환생 Day 1 (Pecorella/Kongregate).
+
+| 상수 | v1 | v2 | 근거 |
+|---|---|---|---|
+| HP_GROWTH | 1.28 | 1.38 | 화력 멀티 곱연산을 이기는 벽 생성 |
+| BOSS_HP_MULTIPLIER | 12 | 20 | 10웨이브 주기 DPS 체크 |
+| GOLD_REWARD_GROWTH | 1.25 | 1.30 | 수입이 HP를 근사 추적 |
+| SUMMON_COST_GROWTH | 1.22 | 1.32 | 수입(1.30) 위 — 후반 잉여 폭주 차단 |
+| MANA_DAMAGE_PER_CRYSTAL | 0.10 | 0.25 | 첫 환생 ≈ +100% 화력 (slide-up) |
+| XP | 골드값 | 킬당 1, 보스 15 | 지수 XP × 선형 요구치 = 포인트 인플레 제거 |
+
+그리디 봇 시뮬 (`npx tsx src/engine/simulate.ts --minutes N [--row-minutes M]`):
+환생 해금 ~9분 → st16@50분 → 첫 STALL 130분 → st28@180분 (환생 없이).
+v1 기준선은 st47@60분로 가속 폭주 — 벽 부재.
+재튜닝 시 이 표와 시뮬 곡선을 함께 갱신할 것.
