@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type KeyboardEvent } from "react"
 import { INVENTORY_LIMIT, SLOT_MULTIPLIER_PER_TIER } from "../engine/constants"
 import { getSlotMultiplier, getSlotUpgradeCost } from "../engine/actions"
 import type { EngineState, Spellbook } from "../engine/types"
@@ -11,6 +11,13 @@ import { NextGoalStrip } from "./NextGoalStrip"
 import { useLocale } from "./useLocale"
 
 const SLOT_UPGRADE_BONUS_PERCENT = Math.round(SLOT_MULTIPLIER_PER_TIER * 100)
+
+function handleRoleButtonKeyDown(event: KeyboardEvent<HTMLDivElement>, activate: () => void) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault()
+    activate()
+  }
+}
 
 type BooksPanelProps = {
   readonly state: EngineState
@@ -135,6 +142,8 @@ function EquipSlot(props: {
     props.dragPreview.valid
   const isMergeTarget = isDropTarget && props.dragPreview?.mergeable === true
   const isEquipTarget = isDropTarget && props.dragPreview?.equipEmpty === true
+  const slotSource: BookSource | null = props.book === null ? null : { kind: "equipped", bookId: props.book.id }
+  const activate = () => props.onEquipClick(props.index, slotSource)
 
   return (
     <div
@@ -143,17 +152,14 @@ function EquipSlot(props: {
       data-book-id={props.book?.id}
       data-book-level={props.book?.level}
       data-testid={`equip-slot-${props.index}`}
-      onClick={() =>
-        props.onEquipClick(props.index, props.book === null ? null : { kind: "equipped", bookId: props.book.id })
-      }
+      onClick={activate}
+      onKeyDown={(event) => handleRoleButtonKeyDown(event, activate)}
       onPointerDown={() => {
         if (props.book !== null) {
           props.onBookPointerDown({ kind: "equipped", bookId: props.book.id })
         }
       }}
-      onPointerUp={() =>
-        props.onEquipDrop(props.index, props.book === null ? null : { kind: "equipped", bookId: props.book.id })
-      }
+      onPointerUp={() => props.onEquipDrop(props.index, slotSource)}
       role="button"
       tabIndex={0}
     >
@@ -215,6 +221,8 @@ function InventoryCell(props: InventoryCellRenderProps) {
     props.dragPreview.targetTestId === targetTestId &&
     props.dragPreview.valid
   const isMergeTarget = isDropTarget && props.dragPreview?.mergeable === true
+  const activate = () =>
+    props.book === null ? undefined : props.onBookClick({ kind: "inventory", bookId: props.book.id }, props.book)
 
   return (
     <div
@@ -223,21 +231,14 @@ function InventoryCell(props: InventoryCellRenderProps) {
       data-book-id={props.book?.id}
       data-book-level={props.book?.level}
       data-testid={targetTestId}
-      onClick={() => {
-        if (props.book !== null) {
-          props.onBookClick({ kind: "inventory", bookId: props.book.id }, props.book)
-        }
-      }}
+      onClick={activate}
+      onKeyDown={(event) => handleRoleButtonKeyDown(event, activate)}
       onPointerDown={() => {
         if (props.book !== null) {
           props.onBookPointerDown({ kind: "inventory", bookId: props.book.id })
         }
       }}
-      onPointerUp={() => {
-        if (props.book !== null) {
-          props.onBookDrop(props.book)
-        }
-      }}
+      onPointerUp={() => (props.book === null ? undefined : props.onBookDrop(props.book))}
       role="button"
       tabIndex={0}
     >
