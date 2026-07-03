@@ -5,8 +5,12 @@
 }
 
 :root {
+  /* Readable bitmap UI fonts. DungeonFont (blackletter) is illegible at small
+     sizes, so it is confined to the large preboot splash title only. */
+  --mm-font-label: "Silkscreen", "Courier New", monospace;
+  --mm-font-numeric: "VT323", "Courier New", monospace;
   color-scheme: dark;
-  font-family: "DungeonFont", monospace;
+  font-family: var(--mm-font-label);
   background: #100e14;
   font-synthesis: none;
   letter-spacing: 0;
@@ -110,8 +114,10 @@ canvas {
 
 .preboot-loading {
   color: #9a8fa8;
-  font-family: "DungeonFont", monospace;
+  font-family: var(--mm-font-label);
   font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   line-height: 1;
   animation: splashPulse 900ms steps(2, end) infinite;
 }

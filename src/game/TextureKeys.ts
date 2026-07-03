@@ -106,6 +106,7 @@ export const AnimationKeys = {
     holy: "battle:anim:projectile:holy",
   },
   impact: "battle:anim:impact:explosion",
+  holyImpact: "battle:anim:impact:holy",
 } as const
 
 export function preloadBattleAssets(scene: Phaser.Scene): void {
@@ -193,6 +194,7 @@ export function createBattleAnimations(scene: Phaser.Scene): void {
   createAnimation(scene, AnimationKeys.projectile.frost, sequenceFrames(VFX_PROJECTILE_FRAMES.map((frame) => TextureKeys.vfxFrame("frost", frame))), 18, -1)
   createAnimation(scene, AnimationKeys.projectile.holy, scene.anims.generateFrameNumbers(TextureKeys.vfx.holy, { start: 0, end: HOLY_FRAME_COUNT - 1 }), 18, -1)
   createAnimation(scene, AnimationKeys.impact, sequenceFrames(VFX_EXPLOSION_FRAMES.map((frame) => TextureKeys.vfxFrame("explosion", frame))), 20, 0)
+  createAnimation(scene, AnimationKeys.holyImpact, scene.anims.generateFrameNumbers(TextureKeys.vfx.holy, { start: 0, end: HOLY_FRAME_COUNT - 1 }), 24, 0)
 }
 
 export function getMobKindForStage(stage: number): MobKind {

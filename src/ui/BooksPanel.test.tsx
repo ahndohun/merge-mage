@@ -66,4 +66,35 @@ describe("BooksPanel", () => {
 
     expect(markup).toContain("data-testid=\"merge-cell-14\"")
   })
+
+  it("shows the upgrade bonus percentage on the slot upgrade button", () => {
+    const state = createInitialState(1)
+
+    const markup = renderBooksPanel(state)
+
+    expect(markup).toContain("(+15%)")
+  })
+
+  it("shows the current tier multiplier badge only once a slot has been upgraded", () => {
+    const upgraded = {
+      ...createInitialState(1),
+      equipped: [book("a", 1, "fire"), null, null, null, null, null],
+      slotTiers: [2, 0, 0, 0, 0, 0] as EngineState["slotTiers"],
+    } satisfies EngineState
+
+    const markup = renderBooksPanel(upgraded)
+
+    expect(markup).toContain("x1.30")
+  })
+
+  it("omits the tier badge for a book in an un-upgraded slot", () => {
+    const state = {
+      ...createInitialState(1),
+      equipped: [book("a", 1, "fire"), null, null, null, null, null],
+    } satisfies EngineState
+
+    const markup = renderBooksPanel(state)
+
+    expect(markup).not.toContain("slot-tier-badge")
+  })
 })

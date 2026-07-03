@@ -112,6 +112,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private handleEvents(events: readonly EngineEvent[]): void {
+    // The engine can report several "cast" events in the same tick (one per
+    // equipped book firing at once). BattleWizardView.playCast() queues them
+    // so the cast animation, its projectile, and its hit-flash always play
+    // out one at a time instead of stacking on top of each other at the
+    // same target point (that stacking is what read as a "stuck" pink
+    // wizard and an oversized holy impact blob).
     for (const event of events) {
       this.handleEvent(event)
     }

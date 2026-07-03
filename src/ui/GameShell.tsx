@@ -12,7 +12,9 @@ import { OfflineClaimModal } from "./OfflineClaimModal"
 import { renderTab, type TabId } from "./renderTab"
 import { getContextHint } from "./hints"
 import { Toasts } from "./Toasts"
+import { Tutorial } from "./TutorialOverlay"
 import { useEngine } from "./useEngine"
+import { useTutorial } from "./useTutorial"
 
 const TABS: readonly { readonly id: TabId; readonly label: string; readonly testId: string }[] = [{ id: "books", label: "BOOKS", testId: "tab-books" }, { id: "skills", label: "SKILLS", testId: "tab-skills" }, { id: "rebirth", label: "REBIRTH", testId: "tab-rebirth" }, { id: "ranks", label: "RANKS", testId: "tab-ranks" }]
 
@@ -28,6 +30,9 @@ export function GameShell() {
   const [, setDragging] = useState<BookSource | null>(null)
   const [soundMuted, setSoundMuted] = useState(readAudioMutedPreference)
   const engine = useEngine()
+  const tutorial = useTutorial(engine.state, {
+    onComplete: () => engine.notify("You know everything. Ascend!", "notice"),
+  })
 
   useEffect(() => {
     const host = hostRef.current
@@ -78,6 +83,7 @@ export function GameShell() {
       if (mergeSfx) {
         emitGameSfx("merge")
       }
+      tutorial.notifyMerge()
       clearHeldBook()
       return
     }
@@ -254,6 +260,7 @@ export function GameShell() {
             onSummon={() => {
               if (engine.summon()) {
                 emitGameSfx("confirm")
+                tutorial.notifySummon()
               }
             }}
             summonCost={engine.summonCost}
@@ -279,6 +286,7 @@ export function GameShell() {
         </div>
         <Toasts toasts={engine.toasts} />
         <OfflineClaimModal claim={engine.offlineClaim} onClose={engine.closeOfflineClaim} />
+        <Tutorial state={tutorial.state} onSkip={tutorial.skip} />
       </div>
     </main>
   )

@@ -44,6 +44,7 @@ export type UseEngineResult = {
   readonly nickname: string
   readonly offlineClaim: OfflineClaim | null
   readonly saveIndicator: SaveIndicatorState
+  readonly notify: (text: string, kind: ToastMessage["kind"]) => void
   readonly summon: () => boolean
   readonly mergeBooks: (leftId: string, rightId: string) => boolean
   readonly swapBooks: (leftId: string, rightId: string) => boolean
@@ -270,6 +271,7 @@ export function useEngine(): UseEngineResult {
     nickname,
     offlineClaim,
     saveIndicator: saveIndicator.state,
+    notify: addToast,
     summon,
     mergeBooks,
     swapBooks,

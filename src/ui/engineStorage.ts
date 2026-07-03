@@ -13,9 +13,13 @@ export type SaveToken = {
 export function loadInitialState(): EngineState {
   // ?fresh=1 starts a brand-new run: E2E tests need isolation from state the
   // previous test left in this browser profile, and players get a reset URL.
+  // A fresh-param visitor already knows the game, so the first-run tutorial is
+  // marked done too (it would dim-block E2E agents otherwise); only organic
+  // first visits (no param) see the tutorial.
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("fresh")) {
     getStorage()?.removeItem(SAVE_STATE_KEY)
     getStorage()?.removeItem(SAVE_TOKEN_KEY)
+    getStorage()?.setItem("merge-mage:tutorial-done", "1")
     return createInitialState(createSeed())
   }
 
@@ -48,7 +52,17 @@ export function saveNickname(nickname: string): void {
   getStorage()?.setItem(NICKNAME_KEY, nickname)
 }
 
+let wipeInProgress = false
+
+/** True after clearSavedRun(): unload-time autosave must not resurrect the run. */
+export function isWipeInProgress(): boolean {
+  return wipeInProgress
+}
+
 export function clearSavedRun(): void {
+  // NEW GAME was broken: the beforeunload/pagehide autosave re-wrote the old
+  // state between the wipe and the reload, so the "fresh" run loaded stage N.
+  wipeInProgress = true
   const storage = getStorage()
   storage?.removeItem(SAVE_STATE_KEY)
   storage?.removeItem(SAVE_TOKEN_KEY)

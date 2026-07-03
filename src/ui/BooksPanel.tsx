@@ -1,8 +1,10 @@
-import { INVENTORY_LIMIT } from "../engine/constants"
-import { getSlotUpgradeCost } from "../engine/actions"
+import { INVENTORY_LIMIT, SLOT_MULTIPLIER_PER_TIER } from "../engine/constants"
+import { getSlotMultiplier, getSlotUpgradeCost } from "../engine/actions"
 import type { EngineState, Spellbook } from "../engine/types"
 import { canUpgradeSlotWhileSelected, type BookSource } from "./bookInteractions"
 import { formatNumber } from "./formatNumber"
+
+const SLOT_UPGRADE_BONUS_LABEL = `(+${Math.round(SLOT_MULTIPLIER_PER_TIER * 100)}%)`
 
 type BooksPanelProps = {
   readonly state: EngineState
@@ -20,8 +22,12 @@ export function BooksPanel(props: BooksPanelProps) {
   const inventoryCollapsed = props.state.books.length === 0 && props.state.equipped.some((book) => book === null)
 
   return (
-    <section className={`panel books-panel${inventoryCollapsed ? " inventory-collapsed" : ""}`} aria-label="Books">
-      <div className="equip-row" aria-label="Equipped books">
+    <section
+      className={`panel books-panel${inventoryCollapsed ? " inventory-collapsed" : ""}`}
+      aria-label="Books"
+      data-testid="tutorial-books-target"
+    >
+      <div className="equip-row" aria-label="Equipped books" data-testid="tutorial-equip-target">
         {props.state.equipped.map((book, index) => (
           <EquipSlot
             book={book}
@@ -102,6 +108,9 @@ function EquipSlot(props: {
           <>
             <TomeIcon element={props.book.element} />
             <span className="level-badge">Lv{props.book.level}</span>
+            {props.tier > 0 ? (
+              <span className="slot-tier-badge">x{getSlotMultiplier(props.tier).toFixed(2)}</span>
+            ) : null}
           </>
         )}
         <span className="slot-meta">{props.book === null ? "SLOT" : props.book.element.toUpperCase()}</span>
@@ -129,7 +138,7 @@ function EquipSlot(props: {
         }}
         type="button"
       >
-        UP {formatNumber(upgradeCost)}
+        UP {formatNumber(upgradeCost)} {SLOT_UPGRADE_BONUS_LABEL}
       </button>
     </div>
   )

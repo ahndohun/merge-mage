@@ -4,7 +4,7 @@ import { TICK_MS } from "../engine/constants"
 import type { EngineEvent, EngineState } from "../engine/types"
 import { postOfflineClaim, postSave, type OfflineClaim } from "./apiClient"
 import { advanceFixedStepDriver } from "./engineDriver"
-import { saveLocalState, type SaveToken } from "./engineStorage"
+import { isWipeInProgress, saveLocalState, type SaveToken } from "./engineStorage"
 import type { ToastMessage } from "./useToasts"
 
 type MutableRef<T> = {
@@ -106,6 +106,9 @@ export function useSaveCadence(input: {
 }): void {
   useEffect(() => {
     const save = () => {
+      if (isWipeInProgress()) {
+        return
+      }
       saveLocalState(input.stateRef.current)
       void postSave({
         token: input.saveTokenRef.current.token,

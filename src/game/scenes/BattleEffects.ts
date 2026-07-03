@@ -17,6 +17,11 @@ type ProjectileRequest = {
   readonly onImpact: () => void
 }
 
+// The holy VFX sheet's native frame is 48x48 vs. the 64x64 fire/frost
+// explosion frames, so it renders smaller at the same Phaser scale. Scale it
+// up by the size ratio to read as the same visual weight as other impacts.
+const HOLY_IMPACT_SCALE = 64 / 48
+
 export class BattleEffects {
   readonly damageTexts: DamageTextPool
 
@@ -90,7 +95,7 @@ export class BattleEffects {
   impact(element: CastElement, point: Point): void {
     this.particles.setParticleTint(CastColors[element])
     this.particles.explode(14, point.x, point.y)
-    this.playImpact(point)
+    this.playImpact(point, 1, element)
   }
 
   death(point: Point, element: Element): void {
@@ -147,17 +152,26 @@ export class BattleEffects {
     this.juice.levelUp(point)
   }
 
-  private playImpact(point: Point, scale = 1): void {
-    const impact = this.borrowSprite(this.impacts, TextureKeys.vfxFrame("explosion", 1))
+  private playImpact(point: Point, scale = 1, element?: CastElement): void {
+    const useHoly = element === "holy"
+    const texture = useHoly ? TextureKeys.vfx.holy : TextureKeys.vfxFrame("explosion", 1)
+    const impact = this.borrowSprite(this.impacts, texture)
     if (impact === null) {
       return
     }
 
-    impact.setPosition(point.x, point.y).setAlpha(0.92).setScale(scale).setVisible(true)
+    // The holy VFX sheet's 48x48 frames render slightly smaller on screen
+    // than the 64x64 fire/frost explosion frames, so scale it up to match.
+    const elementScale = useHoly ? HOLY_IMPACT_SCALE : 1
+    impact
+      .setPosition(point.x, point.y)
+      .setAlpha(0.92)
+      .setScale(scale * elementScale)
+      .setVisible(true)
     impact.once("animationcomplete", () => {
       impact.setVisible(false)
     })
-    impact.play(AnimationKeys.impact)
+    impact.play(useHoly ? AnimationKeys.holyImpact : AnimationKeys.impact)
   }
 
   private goldBurst(point: Point, bonusCoins = 0): void {
@@ -184,7 +198,11 @@ export class BattleEffects {
     this.scene.tweens.killTweensOf(sprite)
     sprite.anims.stop()
     sprite.removeAllListeners("animationcomplete")
-    sprite.setTexture(texture)
+    // Pass frame 0 explicitly: for multi-frame spritesheets (e.g. the holy
+    // VFX sheet), setTexture(key) with no frame falls back to the sheet's
+    // whole-image __BASE frame, which briefly renders as one giant frame
+    // before play() takes over.
+    sprite.setTexture(texture, 0)
     return sprite
   }
 }
