@@ -42,6 +42,7 @@ export function renderTab(
         <RanksPanel
           entries={engine.leaderboard}
           nickname={engine.nickname}
+          nicknameSaved={engine.nicknameSaved}
           onNickname={engine.setNickname}
           onRefresh={engine.refreshLeaderboard}
           onSubmit={engine.submitLeaderboard}

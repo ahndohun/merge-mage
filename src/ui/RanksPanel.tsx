@@ -7,6 +7,7 @@ type RanksPanelProps = {
   readonly status: LeaderboardStatus
   readonly entries: readonly LeaderboardEntry[]
   readonly nickname: string
+  readonly nicknameSaved: boolean
   readonly onNickname: (nickname: string) => void
   readonly onSubmit: () => void
   readonly onRefresh: () => void
@@ -32,6 +33,11 @@ export function RanksPanel(props: RanksPanelProps) {
           {t("refreshShort")}
         </button>
       </div>
+      {props.nicknameSaved ? (
+        <div aria-live="polite" className="nickname-saved" data-testid="nickname-saved">
+          {t("saved")} ✓
+        </div>
+      ) : null}
       <div className="leaderboard" data-status={props.status}>
         {renderStatus(props.status, props.entries, t)}
       </div>

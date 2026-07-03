@@ -43,6 +43,8 @@ export type UseEngineResult = {
   readonly leaderboardStatus: LeaderboardStatus
   readonly leaderboard: readonly LeaderboardEntry[]
   readonly nickname: string
+  /** True after the last submit succeeded; cleared when the nickname is edited. */
+  readonly nicknameSaved: boolean
   readonly offlineClaim: OfflineClaim | null
   readonly saveIndicator: SaveIndicatorState
   readonly notify: (text: string, kind: ToastMessage["kind"]) => void
@@ -79,6 +81,7 @@ export function useEngine(): UseEngineResult {
   const [leaderboardStatus, setLeaderboardStatus] = useState<LeaderboardStatus>("idle")
   const [leaderboard, setLeaderboard] = useState<readonly LeaderboardEntry[]>([])
   const [nickname, setNicknameState] = useState(loadNickname)
+  const [nicknameSaved, setNicknameSaved] = useState(false)
   const [offlineClaim, setOfflineClaim] = useState<OfflineClaim | null>(null)
   const saveIndicator = useSaveIndicator()
   const { toasts, addToast } = useToasts()
@@ -190,6 +193,7 @@ export function useEngine(): UseEngineResult {
     const clean = nextNickname.slice(0, 18)
     nicknameRef.current = clean
     setNicknameState(clean)
+    setNicknameSaved(false)
     saveNickname(clean)
   }, [])
 
@@ -207,6 +211,7 @@ export function useEngine(): UseEngineResult {
 
   const submitLeaderboard = useCallback(() => {
     setLeaderboardStatus("loading")
+    setNicknameSaved(false)
     const token = saveTokenRef.current.token
     // The server derives bestStage from the stored save, so persist the
     // current state first — a brand-new token has no save yet (404 otherwise).
@@ -219,7 +224,9 @@ export function useEngine(): UseEngineResult {
         }
         // Visible confirmation is the only feedback the submitter gets: E2E%
         // nicknames never appear on the public board (server filter), and a
-        // real player's row can sit below the fold.
+        // real player's row can sit below the fold. The toast is transient, so
+        // nicknameSaved also drives a persistent SAVED chip in the panel.
+        setNicknameSaved(true)
         addToast(t("toastLeaderboardSaved"), "notice")
         return fetchLeaderboard().then((list) => {
           if (list.kind === "ok") {
@@ -277,6 +284,7 @@ export function useEngine(): UseEngineResult {
     leaderboardStatus,
     leaderboard,
     nickname,
+    nicknameSaved,
     offlineClaim,
     saveIndicator: saveIndicator.state,
     notify: addToast,

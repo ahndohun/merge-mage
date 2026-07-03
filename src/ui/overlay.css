@@ -1268,3 +1268,11 @@
   margin-top: 2px;
   color: var(--mm-gold);
 }
+
+.nickname-saved {
+  padding: 2px 4px;
+  color: var(--mm-gold);
+  font-family: var(--mm-font-label);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
