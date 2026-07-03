@@ -7,7 +7,7 @@ export const BOSS_ENRAGE_MS = 30_000
 export const BattleLayout = {
   width: 390,
   height: 844,
-  viewportHeight: 380,
+  viewportHeight: 844,
   wizardX: 64,
   wizardY: 226,
   castX: 78,
@@ -45,6 +45,18 @@ type StaffTipInput = {
   readonly displayHeight: number
   readonly originX: number
   readonly originY: number
+}
+
+type ActorHpBarInput = {
+  readonly displayHeight: number
+  readonly originY: number
+  readonly scaleY: number
+  readonly visibleTopPadding: number
+}
+
+type TomeLaunchInput = {
+  readonly entryPoint: Point | null
+  readonly fallbackPoint: Point
 }
 
 type MobSpawnInput = {
@@ -88,6 +100,17 @@ export function getStaffTipPoint(input: StaffTipInput): Point {
     x: Math.round(centerX + input.displayWidth * 0.52),
     y: Math.round(centerY - input.displayHeight * 0.48),
   }
+}
+
+export function getActorHpBarY(input: ActorHpBarInput): number {
+  const scaleY = Math.max(1, Math.abs(input.scaleY))
+  const frameHeight = input.displayHeight / scaleY
+  const visibleTop = (input.visibleTopPadding - frameHeight * input.originY) * scaleY
+  return Math.floor(visibleTop) - 6
+}
+
+export function resolveTomeLaunchPoint(input: TomeLaunchInput): Point {
+  return input.entryPoint ?? input.fallbackPoint
 }
 
 export function getMobSpawnPoint(input: MobSpawnInput): Point {

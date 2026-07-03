@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { BattleLayout, getMobSpawnPoint, getStaffTipPoint, getWaveIndicator } from "./BattleLayout"
+import {
+  BattleLayout,
+  getActorHpBarY,
+  getMobSpawnPoint,
+  getStaffTipPoint,
+  getWaveIndicator,
+  resolveTomeLaunchPoint,
+} from "./BattleLayout"
 
 describe("battle layout helpers", () => {
   it("places the projectile origin at the wizard staff tip instead of the feet", () => {
@@ -14,6 +21,37 @@ describe("battle layout helpers", () => {
 
     expect(point.x).toBeGreaterThan(BattleLayout.wizardX + 24)
     expect(point.y).toBeLessThan(BattleLayout.wizardY - 52)
+  })
+
+  it("places mob hp bars above the visible sprite top, not transparent frame padding", () => {
+    const frameTop = getActorHpBarY({
+      displayHeight: 32,
+      originY: 0.75,
+      scaleY: 2,
+      visibleTopPadding: 0,
+    })
+    const visibleTop = getActorHpBarY({
+      displayHeight: 32,
+      originY: 0.75,
+      scaleY: 2,
+      visibleTopPadding: 4,
+    })
+
+    expect(frameTop).toBe(-30)
+    expect(visibleTop).toBe(-22)
+  })
+
+  it("uses the staff tip as the default cast origin when no equipped tome is visible", () => {
+    const staffTip = { x: 103, y: 171 }
+
+    expect(resolveTomeLaunchPoint({ entryPoint: null, fallbackPoint: staffTip })).toEqual(staffTip)
+  })
+
+  it("uses the equipped tome origin when a tome is visible", () => {
+    const staffTip = { x: 103, y: 171 }
+    const tomePoint = { x: 116, y: 202 }
+
+    expect(resolveTomeLaunchPoint({ entryPoint: tomePoint, fallbackPoint: staffTip })).toEqual(tomePoint)
   })
 
   it("spreads regular mobs into loose columns with vertical jitter", () => {
