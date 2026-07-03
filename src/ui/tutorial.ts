@@ -124,3 +124,8 @@ export function isTutorialCompleted(): boolean {
 export function markTutorialCompleted(): void {
   tutorialStorage()?.setItem(TUTORIAL_DONE_KEY, "1")
 }
+
+/** Clears the done flag so the tutorial can be replayed (HOW TO PLAY). */
+export function clearTutorialCompleted(): void {
+  tutorialStorage()?.removeItem(TUTORIAL_DONE_KEY)
+}

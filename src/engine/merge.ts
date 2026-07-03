@@ -22,10 +22,11 @@ export function mergeSpellbooks(
     throw new MergeLevelMismatchError(left.level, right.level)
   }
 
-  // The merged book keeps the TARGET's (right) element. Deterministic merges
-  // give the three elements strategic weight: merge onto the element you want
-  // to keep. (Was random-of-two — pure luck, no player agency.)
-  const element: Element = right.element
+  // The merged book keeps LEFT's element — left is the anchor (the reducer is
+  // called as mergeBooks(targetId, sourceId) and the result lands in left's
+  // cell/slot). Deterministic merges give the three elements strategic weight:
+  // merge onto the element you want to keep. (Was random-of-two — pure luck.)
+  const element: Element = left.element
 
   return {
     id: `${left.id}+${right.id}`,

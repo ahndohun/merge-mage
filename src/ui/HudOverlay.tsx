@@ -9,6 +9,7 @@ type HudOverlayProps = {
   readonly muted: boolean
   readonly onToggleMute: () => void
   readonly onNewGame: () => void
+  readonly onOpenHelp: () => void
   readonly saveIndicator: SaveIndicatorState
 }
 
@@ -74,6 +75,15 @@ export function HudOverlay(props: HudOverlayProps) {
         >
           {getSaveIndicatorLabel(props.saveIndicator)}
         </div>
+        <button
+          aria-label="How to play"
+          className="help-btn"
+          data-testid="help-btn"
+          onClick={props.onOpenHelp}
+          type="button"
+        >
+          ?
+        </button>
         <button
           aria-controls="settings-popover"
           aria-expanded={settingsOpen}

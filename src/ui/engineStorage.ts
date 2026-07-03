@@ -4,10 +4,33 @@ import type { EngineState, Spellbook } from "../engine/types"
 const SAVE_STATE_KEY = "merge-mage:engine-state"
 const SAVE_TOKEN_KEY = "merge-mage:save-token"
 const NICKNAME_KEY = "merge-mage:nickname"
+const TUTORIAL_DONE_KEY = "merge-mage:tutorial-done"
+
+/**
+ * Bump when a save-format change should invalidate every existing local save.
+ * v2 wipes all pre-release saves (owner included): they predate the new
+ * onboarding, and no shipped players exist yet, so a clean first run is safest.
+ * Persisted saves are wrapped as {version, state}; a bare EngineState (or any
+ * value below the current version) is treated as legacy and reset.
+ */
+export const SAVE_VERSION = 2
+
+type VersionedSave = {
+  readonly version: number
+  readonly state: EngineState
+}
 
 export type SaveToken = {
   readonly token: string
   readonly existed: boolean
+}
+
+/** Drop the save, token, and tutorial flag — a clean-slate first experience. */
+function wipeLegacySave(): void {
+  const storage = getStorage()
+  storage?.removeItem(SAVE_STATE_KEY)
+  storage?.removeItem(SAVE_TOKEN_KEY)
+  storage?.removeItem(TUTORIAL_DONE_KEY)
 }
 
 export function loadInitialState(): EngineState {
@@ -19,17 +42,23 @@ export function loadInitialState(): EngineState {
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("fresh")) {
     getStorage()?.removeItem(SAVE_STATE_KEY)
     getStorage()?.removeItem(SAVE_TOKEN_KEY)
-    getStorage()?.setItem("merge-mage:tutorial-done", "1")
-    return createInitialState(createSeed())
+    getStorage()?.setItem(TUTORIAL_DONE_KEY, "1")
+    const fresh = createInitialState(createSeed())
+    saveLocalState(fresh)
+    return fresh
   }
 
   const raw = getStorage()?.getItem(SAVE_STATE_KEY)
   if (raw !== undefined && raw !== null) {
     try {
       const parsed: unknown = JSON.parse(raw)
-      if (isEngineState(parsed)) {
-        return parsed
+      const state = readVersionedSave(parsed)
+      if (state !== null) {
+        return state
       }
+      // A save exists but is legacy / below SAVE_VERSION: reset everything so
+      // pre-release visitors get the current first-run experience.
+      wipeLegacySave()
     } catch (error) {
       if (!(error instanceof SyntaxError)) {
         throw error
@@ -40,8 +69,25 @@ export function loadInitialState(): EngineState {
   return createInitialState(createSeed())
 }
 
+/**
+ * Returns the EngineState from a persisted value only when it is wrapped at the
+ * current SAVE_VERSION. Bare EngineState (unwrapped legacy) and older versions
+ * return null so the caller resets.
+ */
+function readVersionedSave(value: unknown): EngineState | null {
+  if (isVersionedSave(value)) {
+    return value.version >= SAVE_VERSION && isEngineState(value.state) ? value.state : null
+  }
+  return null
+}
+
+function isVersionedSave(value: unknown): value is VersionedSave {
+  return isRecord(value) && typeof value["version"] === "number" && "state" in value
+}
+
 export function saveLocalState(state: EngineState): void {
-  getStorage()?.setItem(SAVE_STATE_KEY, JSON.stringify(state))
+  const payload: VersionedSave = { version: SAVE_VERSION, state }
+  getStorage()?.setItem(SAVE_STATE_KEY, JSON.stringify(payload))
 }
 
 export function loadNickname(): string {

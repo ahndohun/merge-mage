@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { EngineState } from "../engine/types"
 import {
   advanceTutorial,
+  clearTutorialCompleted,
   createTutorialState,
   isTutorialActive,
   isTutorialCompleted,
@@ -16,6 +17,7 @@ type UseTutorialResult = {
   readonly notifySummon: () => void
   readonly notifyMerge: () => void
   readonly skip: () => void
+  readonly replay: () => void
 }
 
 function countBooks(state: EngineState): number {
@@ -90,6 +92,20 @@ export function useTutorial(state: EngineState, callbacks: TutorialCallbacks = {
     setTutorial({ step: "done" })
   }, [])
 
+  // REPLAY TUTORIAL (from HOW TO PLAY): clear the done flag and restart from the
+  // first step regardless of current progress. Reset the guards so a natural
+  // finish fires the completion callback again.
+  const replay = useCallback(() => {
+    clearTutorialCompleted()
+    skippedRef.current = false
+    completedFiredRef.current = false
+    wasActiveRef.current = false
+    summonCountRef.current = 0
+    mergeCountRef.current = 0
+    stepStartRef.current = Date.now()
+    setTutorial(createTutorialState())
+  }, [])
+
   // Persist completion when the machine reaches "done". Fire the completion
   // callback only for a natural finish (a real merge), never on skip.
   useEffect(() => {
@@ -132,5 +148,5 @@ export function useTutorial(state: EngineState, callbacks: TutorialCallbacks = {
     }
   }, [tutorial, state])
 
-  return { state: tutorial, notifySummon, notifyMerge, skip }
+  return { state: tutorial, notifySummon, notifyMerge, skip, replay }
 }

@@ -1,6 +1,25 @@
+import type { EngineState } from "../engine/types"
+
 export type BookSource = {
   readonly kind: "inventory" | "equipped"
   readonly bookId: string
+}
+
+/**
+ * CSS selector for the slot/cell a book currently occupies, for anchoring
+ * feedback (floating text, flash). Returns null when the book is no longer
+ * present (e.g. queried after a merge consumed it).
+ */
+export function bookElementSelector(state: EngineState, bookId: string): string | null {
+  const equippedIdx = state.equipped.findIndex((book) => book?.id === bookId)
+  if (equippedIdx >= 0) {
+    return `[data-testid="equip-slot-${equippedIdx}"]`
+  }
+  const inventoryIdx = state.books.findIndex((book) => book.id === bookId)
+  if (inventoryIdx >= 0) {
+    return `[data-testid="merge-cell-${inventoryIdx}"]`
+  }
+  return null
 }
 
 export type EquipSlotClickDecision =

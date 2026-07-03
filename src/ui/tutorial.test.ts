@@ -1,8 +1,11 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   advanceTutorial,
+  clearTutorialCompleted,
   createTutorialState,
   isTutorialActive,
+  isTutorialCompleted,
+  markTutorialCompleted,
   shouldStartTutorial,
   tutorialStepCopy,
   tutorialStepTarget,
@@ -155,5 +158,27 @@ describe("tutorialStepCopy", () => {
 
   it("returns null when done", () => {
     expect(tutorialStepCopy({ step: "done" })).toBeNull()
+  })
+})
+
+describe("tutorial completion flag", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("marks, reads, and clears the done flag (REPLAY TUTORIAL)", () => {
+    const map = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => (map.has(key) ? (map.get(key) as string) : null),
+      setItem: (key: string, value: string) => map.set(key, value),
+      removeItem: (key: string) => map.delete(key),
+    }
+    vi.stubGlobal("window", { localStorage: storage })
+
+    expect(isTutorialCompleted()).toBe(false)
+    markTutorialCompleted()
+    expect(isTutorialCompleted()).toBe(true)
+    clearTutorialCompleted()
+    expect(isTutorialCompleted()).toBe(false)
   })
 })

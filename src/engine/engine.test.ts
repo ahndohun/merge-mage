@@ -32,12 +32,12 @@ describe("merge spellbooks", () => {
     expect(merged.level).toBe(5)
   })
 
-  it("keeps the target (right) book's element deterministically", () => {
+  it("keeps the anchor (left/target) book's element deterministically", () => {
     const left: Spellbook = { id: "left", level: 4, element: "fire" }
     const right: Spellbook = { id: "right", level: 4, element: "holy" }
 
-    expect(mergeSpellbooks(left, right, () => 0.01).element).toBe("holy")
-    expect(mergeSpellbooks(right, left, () => 0.99).element).toBe("fire")
+    expect(mergeSpellbooks(left, right, () => 0.01).element).toBe("fire")
+    expect(mergeSpellbooks(right, left, () => 0.99).element).toBe("holy")
   })
 
   it("rejects different levels", () => {

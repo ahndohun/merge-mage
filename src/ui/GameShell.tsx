@@ -3,16 +3,21 @@ import type Phaser from "phaser"
 import { EventBus } from "../bridge/EventBus"
 import { emitGameSfx, readAudioMutedPreference, writeAudioMutedPreference } from "../game/GameAudio"
 import { createGame } from "../game/createGame"
+import { INVENTORY_LIMIT } from "../engine/constants"
 import { assertNever, type Spellbook } from "../engine/types"
-import { getEquipSlotClickDecision, type BookSource } from "./bookInteractions"
+import { ActionFeedbackLayer } from "./ActionFeedbackLayer"
+import { bookElementSelector, getEquipSlotClickDecision, type BookSource } from "./bookInteractions"
 import { ControlsPanel } from "./ControlsPanel"
+import { canMerge } from "./engineActionHelpers"
 import { clearSavedRun } from "./engineStorage"
+import { HelpModal } from "./HelpModal"
 import { HudOverlay } from "./HudOverlay"
 import { OfflineClaimModal } from "./OfflineClaimModal"
 import { renderTab, type TabId } from "./renderTab"
 import { getContextHint } from "./hints"
 import { Toasts } from "./Toasts"
 import { Tutorial } from "./TutorialOverlay"
+import { useActionFeedback } from "./useActionFeedback"
 import { useEngine } from "./useEngine"
 import { useTutorial } from "./useTutorial"
 
@@ -29,7 +34,9 @@ export function GameShell() {
   const [selected, setSelected] = useState<BookSource | null>(null)
   const [, setDragging] = useState<BookSource | null>(null)
   const [soundMuted, setSoundMuted] = useState(readAudioMutedPreference)
+  const [helpOpen, setHelpOpen] = useState(false)
   const engine = useEngine()
+  const feedback = useActionFeedback()
   const tutorial = useTutorial(engine.state, {
     onComplete: () => engine.notify("You know everything. Ascend!", "notice"),
   })
@@ -72,19 +79,42 @@ export function GameShell() {
     setSelectedSource(null); setDraggingSource(null)
   }
 
-  const applyBookTargetAction = (source: BookSource, target: BookSource, mergeSfx: boolean) => {
+  // allowSwap distinguishes intent: a drag-drop onto a different-level book
+  // falls back to a swap, but a tap-tap means "merge these two" — a silent swap
+  // on a level mismatch was the #1 source of "I don't know what happened".
+  const applyBookTargetAction = (source: BookSource, target: BookSource, allowSwap: boolean) => {
     if (source.bookId === target.bookId) {
       setSelectedSource(target)
       setDraggingSource(null)
       return
     }
 
+    // Anchor the merge feedback to the target slot before the merge mutates
+    // state (the merged book gets a new id at the same cell).
+    const targetSelector = bookElementSelector(engine.state, target.bookId)
+    const willMerge = canMerge(engine.state, target.bookId, source.bookId)
+    const mergedLevel = willMerge ? findBookLevel(target.bookId) + 1 : null
+
     if (engine.mergeBooks(target.bookId, source.bookId)) {
-      if (mergeSfx) {
-        emitGameSfx("merge")
+      emitGameSfx("merge")
+      if (targetSelector !== null) {
+        if (mergedLevel !== null) {
+          feedback.floatAbove(targetSelector, `MERGED! Lv ${mergedLevel}`, "gold")
+        }
+        feedback.pulse(targetSelector, "fb-flash")
       }
       tutorial.notifyMerge()
       clearHeldBook()
+      return
+    }
+
+    if (!allowSwap) {
+      // Tap-tap on a level mismatch: shake, tell the player why, keep the
+      // selection so they can pick a matching book instead of losing it.
+      if (targetSelector !== null) {
+        feedback.pulse(targetSelector, "fb-shake")
+      }
+      feedback.microToast("Levels must match")
       return
     }
 
@@ -92,6 +122,14 @@ export function GameShell() {
       emitGameSfx("confirm")
     }
     clearHeldBook()
+  }
+
+  const findBookLevel = (bookId: string): number => {
+    const equipped = engine.state.equipped.find((book) => book?.id === bookId)
+    if (equipped != null) {
+      return equipped.level
+    }
+    return engine.state.books.find((book) => book.id === bookId)?.level ?? 0
   }
 
   const handleBookPointerDown = (source: BookSource) => {
@@ -126,7 +164,7 @@ export function GameShell() {
       return
     }
 
-    applyBookTargetAction(selectedSource, { kind: "inventory", bookId: targetBook.id }, true)
+    applyBookTargetAction(selectedSource, { kind: "inventory", bookId: targetBook.id }, false)
   }
 
   const handleEquipDrop = (slotIdx: number, target: BookSource | null) => {
@@ -145,6 +183,7 @@ export function GameShell() {
     setDraggingSource(null)
     if (engine.equipBook(source.bookId, slotIdx)) {
       emitGameSfx("confirm")
+      feedback.pulse(`[data-testid="equip-slot-${slotIdx}"]`, "fb-pulse")
     }
     clearHeldBook()
   }
@@ -166,11 +205,12 @@ export function GameShell() {
       case "equip-selected-book":
         if (engine.equipBook(decision.source.bookId, slotIdx)) {
           emitGameSfx("confirm")
+          feedback.pulse(`[data-testid="equip-slot-${slotIdx}"]`, "fb-pulse")
         }
         clearHeldBook()
         return
       case "target-slot-book":
-        applyBookTargetAction(decision.source, decision.target, true)
+        applyBookTargetAction(decision.source, decision.target, false)
         return
       default:
         return assertNever(decision)
@@ -193,6 +233,11 @@ export function GameShell() {
 
   const handleNewGame = () => {
     clearSavedRun(); window.location.reload()
+  }
+
+  const handleReplayTutorial = () => {
+    setHelpOpen(false)
+    tutorial.replay()
   }
 
   const contextHint = getContextHint({ state: engine.state, summonCost: engine.summonCost })
@@ -222,6 +267,7 @@ export function GameShell() {
         <HudOverlay
           muted={soundMuted}
           onNewGame={handleNewGame}
+          onOpenHelp={() => setHelpOpen(true)}
           onToggleMute={toggleSoundMuted}
           saveIndicator={engine.saveIndicator}
           state={engine.state}
@@ -261,7 +307,16 @@ export function GameShell() {
               if (engine.summon()) {
                 emitGameSfx("confirm")
                 tutorial.notifySummon()
+                return
               }
+              // Blocked summon: shake the button and say why. Inventory-full is
+              // checked first (matches the engine's summonBook order); otherwise
+              // it's the gold shortfall.
+              feedback.pulse('[data-testid="summon-btn"]', "fb-shake")
+              const inventoryFull =
+                engine.state.equipped.every((book) => book !== null) &&
+                engine.state.books.length >= INVENTORY_LIMIT
+              feedback.microToast(inventoryFull ? "Inventory full" : "Not enough gold")
             }}
             summonCost={engine.summonCost}
             summonLevel={engine.summonLevel}
@@ -285,8 +340,10 @@ export function GameShell() {
           </nav>
         </div>
         <Toasts toasts={engine.toasts} />
+        <ActionFeedbackLayer floatingTexts={feedback.floatingTexts} microToasts={feedback.microToasts} />
         <OfflineClaimModal claim={engine.offlineClaim} onClose={engine.closeOfflineClaim} />
         <Tutorial state={tutorial.state} onSkip={tutorial.skip} />
+        {helpOpen ? <HelpModal onClose={() => setHelpOpen(false)} onReplayTutorial={handleReplayTutorial} /> : null}
       </div>
     </main>
   )
