@@ -504,6 +504,7 @@ function createInitialSimulationState(seed: number, config: SimulationConfig): E
     skillPoints: 0,
     skills: { summonBonus: 0, castSpeed: 0, goldGain: 0, critChance: 0 },
     manaCrystals: 0,
+    manaStone: 0,
     prestigeCount: 0,
     lastSeenServerTs: null,
     slotTiers: zeroSlots(),

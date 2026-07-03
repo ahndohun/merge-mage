@@ -141,7 +141,7 @@ function defaultDailyMissionState(): { date: string; progress: Record<string, nu
 }
 
 function defaultSkinState(): { owned: string[]; equipped: string | null } {
-  return { owned: [], equipped: null }
+  return { owned: ["apprentice"], equipped: "apprentice" }
 }
 
 export const engineStateSchema: ZodType<EngineState> = z
@@ -158,6 +158,7 @@ export const engineStateSchema: ZodType<EngineState> = z
     skillPoints: slotNumberSchema,
     skills: skillsSchema,
     manaCrystals: slotNumberSchema,
+    manaStone: slotNumberSchema.default(0),
     prestigeCount: slotNumberSchema,
     lastSeenServerTs: nonNegativeNumber.nullable(),
     slotTiers: slotsSchema,

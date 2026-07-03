@@ -42,6 +42,7 @@ describe("saveBodySchema", () => {
     if (parsed.success) {
       expect(parsed.data.state.gold).toBe(99)
       expect(parsed.data.state.stage).toBe(6)
+      expect(parsed.data.state.manaStone).toBe(0)
       expect(parsed.data.state.quests).toEqual({ completed: [], claimed: [] })
       expect(parsed.data.state.achievements).toEqual({ counters: {}, claimed: [] })
       expect(parsed.data.state.codex).toEqual({ tiers: {} })
@@ -50,7 +51,7 @@ describe("saveBodySchema", () => {
       expect(parsed.data.state.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
       expect(parsed.data.state.mine).toEqual({ floor: 1, lastClaimAt: null })
       expect(parsed.data.state.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
-      expect(parsed.data.state.skins).toEqual({ owned: [], equipped: null })
+      expect(parsed.data.state.skins).toEqual({ owned: ["apprentice"], equipped: "apprentice" })
     }
   })
 
@@ -58,6 +59,7 @@ describe("saveBodySchema", () => {
     const state = {
       ...createInitialState(7),
       achievements: { counters: { mergesTotal: 12, bossKills: 1 }, claimed: ["merge-10"] },
+      manaStone: 77,
       codex: { tiers: { fire: 3 } },
       relics: { owned: { emberSigil: 2 }, equipped: ["emberSigil", null, null] as const },
       skins: { owned: ["apprentice-blue"], equipped: "apprentice-blue" },
@@ -67,6 +69,7 @@ describe("saveBodySchema", () => {
 
     expect(parsed.achievements.counters["mergesTotal"]).toBe(12)
     expect(parsed.achievements.counters["bossKills"]).toBe(1)
+    expect(parsed.manaStone).toBe(77)
     expect(parsed.codex.tiers["fire"]).toBe(3)
     expect(parsed.relics).toEqual({ owned: { emberSigil: 2 }, equipped: ["emberSigil", null, null] })
     expect(parsed.skins).toEqual({ owned: ["apprentice-blue"], equipped: "apprentice-blue" })

@@ -92,6 +92,7 @@ export type EngineState = {
   readonly skillPoints: number
   readonly skills: SkillAllocations
   readonly manaCrystals: number
+  readonly manaStone: number
   readonly prestigeCount: number
   readonly lastSeenServerTs: number | null
   readonly slotTiers: SlotTiers
@@ -140,6 +141,12 @@ export type EngineEvent =
   | { readonly type: "bossFail"; readonly stage: number }
   | { readonly type: "levelUp"; readonly wizardLevel: number; readonly skillPoints: number }
   | { readonly type: "slow"; readonly durationMs: number; readonly factor: number }
+  | {
+      readonly type: "petCast"
+      readonly damage: number
+      readonly targetIndex: number
+      readonly evolution: number
+    }
 
 export class UnexpectedVariantError extends Error {
   readonly name = "UnexpectedVariantError"

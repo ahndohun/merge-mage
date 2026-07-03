@@ -624,7 +624,7 @@
 
 .tab-bar {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 3px;
 }
 
@@ -1498,6 +1498,226 @@
   font-family: var(--mm-font-label);
   font-size: 10px;
   letter-spacing: 0.5px;
+}
+
+.camp-panel {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 5px;
+  overflow: hidden;
+  padding: 6px;
+}
+
+.camp-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 5px;
+}
+
+.camp-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 6px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  background: var(--mm-bg);
+  box-shadow: inset 0 0 0 2px var(--mm-panel);
+}
+
+.camp-card-title {
+  overflow: hidden;
+  color: var(--mm-gold);
+  font-family: var(--mm-font-label);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.camp-pet-body {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 6px;
+  align-items: center;
+}
+
+.camp-pet-sprite {
+  width: 32px;
+  height: 32px;
+  background-image: url("/assets/mobs/imp_idle_anim_f0.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(2px 2px 0 var(--mm-shadow));
+}
+
+.camp-pet-sprite.evolution-1 {
+  filter:
+    sepia(0.65)
+    saturate(1.8)
+    hue-rotate(330deg)
+    drop-shadow(2px 2px 0 var(--mm-shadow));
+}
+
+.camp-pet-sprite.evolution-2 {
+  filter:
+    sepia(0.5)
+    saturate(2)
+    hue-rotate(150deg)
+    drop-shadow(2px 2px 0 var(--mm-shadow));
+}
+
+.camp-readouts {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  color: var(--mm-muted);
+  font-size: 8px;
+  letter-spacing: 0.2px;
+  line-height: 1.15;
+}
+
+.camp-readouts strong {
+  color: var(--mm-frost);
+  font-family: var(--mm-font-numeric);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 0.95;
+}
+
+.camp-progress {
+  height: 7px;
+  border: 1px solid var(--mm-panel-edge);
+  background: #120f19;
+}
+
+.camp-progress-fill {
+  height: 100%;
+  background: var(--mm-frost);
+}
+
+.camp-mine-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  align-items: baseline;
+  color: var(--mm-muted);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.camp-mine-row strong {
+  color: var(--mm-gold);
+  font-family: var(--mm-font-numeric);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.camp-muted {
+  overflow: hidden;
+  color: var(--mm-muted);
+  font-size: 8px;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.skin-cell {
+  display: grid;
+  min-width: 0;
+  min-height: 40px;
+  gap: 2px;
+  padding: 4px 2px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  place-items: center;
+  background: #120f19;
+  color: var(--mm-ink);
+  cursor: pointer;
+  font-family: var(--mm-font-label);
+  font-size: 8px;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.skin-cell small {
+  color: var(--mm-muted);
+  font-size: 7px;
+  line-height: 1;
+}
+
+.skin-cell.is-active {
+  border-color: var(--mm-gold);
+  color: var(--mm-gold);
+}
+
+.skin-cell.is-locked {
+  cursor: default;
+  opacity: 0.52;
+}
+
+.skin-swatch {
+  width: 14px;
+  height: 10px;
+  border: 2px solid var(--mm-shadow);
+  box-shadow: 1px 1px 0 var(--mm-shadow);
+}
+
+.camp-daily-card {
+  min-height: 0;
+}
+
+.daily-list {
+  display: grid;
+  gap: 3px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.daily-row {
+  display: grid;
+  grid-template-columns: 1fr 54px;
+  gap: 4px;
+  align-items: center;
+  min-height: 28px;
+  padding: 3px;
+  border: 1px solid var(--mm-panel-edge);
+  background: #120f19;
+}
+
+.daily-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.daily-copy span,
+.daily-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-copy span {
+  color: var(--mm-ink);
+  font-size: 9px;
+  letter-spacing: 0.2px;
+  line-height: 1;
+}
+
+.daily-copy small {
+  color: var(--mm-muted);
+  font-size: 8px;
+  line-height: 1;
 }
 
 /* ---- Wave B: juice particles and action sequences ---- */

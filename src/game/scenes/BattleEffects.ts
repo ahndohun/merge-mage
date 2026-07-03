@@ -124,19 +124,19 @@ export class BattleEffects {
     this.playImpact(point, 1, element)
   }
 
-  death(point: Point, element: Element): void {
+  death(point: Point, element: Element, coinTarget?: Point): void {
     this.particles.setParticleTint(ElementColors[element])
     this.particles.explode(20, point.x, point.y)
     this.juice.whitePop(point, 3)
-    this.goldBurst(point)
+    this.goldBurst(point, 0, coinTarget)
   }
 
-  bossDeath(point: Point, element: Element): void {
+  bossDeath(point: Point, element: Element, coinTarget?: Point): void {
     this.particles.setParticleTint(ElementColors[element])
     this.particles.explode(56, point.x, point.y)
     this.playImpact(point, 2)
     this.juice.whitePop(point, 6)
-    this.goldBurst(point, 5)
+    this.goldBurst(point, 5, coinTarget)
     this.playSlowMotion()
   }
 
@@ -201,10 +201,10 @@ export class BattleEffects {
     impact.play(useHoly ? AnimationKeys.holyImpact : AnimationKeys.impact)
   }
 
-  private goldBurst(point: Point, bonusCoins = 0): void {
+  private goldBurst(point: Point, bonusCoins = 0, coinTarget?: Point): void {
     this.particles.setParticleTint(0xe6b450)
     this.particles.explode(16, point.x, point.y - 4)
-    this.juice.flyCoins(point, bonusCoins)
+    this.juice.flyCoins(point, bonusCoins, coinTarget)
   }
 
   private playSlowMotion(): void {

@@ -3,6 +3,7 @@ import {
   allocateSkill as allocateSkillReducer,
   autoMergeBooks as autoMergeBooksReducer,
   equipBook as equipBookReducer,
+  equipSkin as equipSkinReducer,
   mergeBooks as mergeBooksReducer,
   prestige as prestigeReducer,
   resetSkills as resetSkillsReducer,
@@ -11,6 +12,13 @@ import {
   unequipBook as unequipBookReducer,
   upgradeSlot as upgradeSlotReducer,
 } from "../engine/actions"
+import {
+  claimDailyMission as claimDailyMissionReducer,
+  claimMine as claimMineReducer,
+  syncMineClock,
+  syncDailyMissions,
+  type DailyMissionId,
+} from "../engine/camp"
 import { INVENTORY_LIMIT } from "../engine/constants"
 import { getSummonCost, getSummonLevel } from "../engine/summon"
 import type { EngineEvent, EngineState, SkillName } from "../engine/types"
@@ -58,6 +66,9 @@ export type UseEngineResult = {
   readonly allocateSkill: (skill: SkillName) => boolean
   readonly resetSkills: () => boolean
   readonly prestige: () => boolean
+  readonly claimMine: () => boolean
+  readonly claimDailyMission: (missionId: DailyMissionId) => boolean
+  readonly equipSkin: (skinId: string) => boolean
   readonly setAutoMerge: (enabled: boolean) => void
   readonly setAutoBuy: (enabled: boolean) => void
   readonly setNickname: (nickname: string) => void
@@ -179,6 +190,21 @@ export function useEngine(): UseEngineResult {
 
   const prestige = useCallback(() => applyReducer({ reducer: prestigeReducer, successToast: t("toastRebirthComplete") }), [applyReducer, t])
 
+  const claimMine = useCallback(
+    () => applyReducer({ reducer: (current) => claimMineReducer(current, Date.now()), successToast: t("toastMineClaimed") }),
+    [applyReducer, t],
+  )
+
+  const claimDailyMission = useCallback(
+    (missionId: DailyMissionId) => applyReducer({ reducer: (current) => claimDailyMissionReducer(current, missionId, new Date()) }),
+    [applyReducer],
+  )
+
+  const equipSkin = useCallback(
+    (skinId: string) => applyReducer({ reducer: (current) => equipSkinReducer(current, skinId) }),
+    [applyReducer],
+  )
+
   const setAutoMerge = useCallback((enabled: boolean) => {
     autoMergeRef.current = enabled
     setAutoMergeState(enabled)
@@ -265,6 +291,19 @@ export function useEngine(): UseEngineResult {
   useOfflineClaim({ saveTokenRef, stateRef, commitState, setOfflineClaim })
 
   useEffect(() => {
+    const refreshDaily = () => {
+      const now = new Date()
+      const next = syncMineClock(syncDailyMissions(stateRef.current, now), now.getTime())
+      if (next !== stateRef.current) {
+        commitState(next, [])
+      }
+    }
+    refreshDaily()
+    const intervalId = window.setInterval(refreshDaily, 60_000)
+    return () => window.clearInterval(intervalId)
+  }, [commitState])
+
+  useEffect(() => {
     refreshLeaderboard()
   }, [refreshLeaderboard])
 
@@ -298,6 +337,9 @@ export function useEngine(): UseEngineResult {
     allocateSkill,
     resetSkills,
     prestige,
+    claimMine,
+    claimDailyMission,
+    equipSkin,
     setAutoMerge,
     setAutoBuy,
     setNickname,

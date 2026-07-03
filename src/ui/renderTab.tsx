@@ -1,13 +1,14 @@
 import { assertNever, type Spellbook } from "../engine/types"
 import { BooksPanel } from "./BooksPanel"
 import type { BookSource, DragPreview } from "./bookInteractions"
+import { CampPanel } from "./CampPanel"
 import { QuestsPanel } from "./QuestsPanel"
 import { RanksPanel } from "./RanksPanel"
 import { RebirthPanel } from "./RebirthPanel"
 import { SkillsPanel } from "./SkillsPanel"
 import type { UseEngineResult } from "./useEngine"
 
-export type TabId = "books" | "skills" | "quests" | "rebirth" | "ranks"
+export type TabId = "books" | "skills" | "quests" | "camp" | "rebirth" | "ranks"
 
 export function renderTab(
   activeTab: TabId,
@@ -46,6 +47,15 @@ export function renderTab(
       return <SkillsPanel onAllocateSkill={engine.allocateSkill} onResetSkills={engine.resetSkills} state={engine.state} />
     case "quests":
       return <QuestsPanel />
+    case "camp":
+      return (
+        <CampPanel
+          onClaimDailyMission={engine.claimDailyMission}
+          onClaimMine={engine.claimMine}
+          onEquipSkin={engine.equipSkin}
+          state={engine.state}
+        />
+      )
     case "rebirth":
       return <RebirthPanel onPrestige={engine.prestige} state={engine.state} />
     case "ranks":

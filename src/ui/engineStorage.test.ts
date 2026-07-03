@@ -110,7 +110,23 @@ describe("engineStorage save versioning", () => {
     expect(loaded.pet).toEqual({ level: 1, xp: 0, evolution: 0 })
     expect(loaded.mine).toEqual({ floor: 1, lastClaimAt: null })
     expect(loaded.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
-    expect(loaded.skins).toEqual({ owned: [], equipped: null })
+    expect(loaded.manaStone).toBe(0)
+    expect(loaded.skins).toEqual({ owned: ["apprentice"], equipped: "apprentice" })
+  })
+
+  it("migrates a current v3 save created before mana stones existed", () => {
+    const { manaStone: _manaStone, ...preManaStone } = {
+      ...createInitialState(17),
+      gold: 222,
+      skins: { owned: ["ember"], equipped: "ember" },
+    }
+    storage.setItem(SAVE_STATE_KEY, JSON.stringify({ version: SAVE_VERSION, state: preManaStone }))
+
+    const loaded = loadInitialState()
+
+    expect(loaded.gold).toBe(222)
+    expect(loaded.manaStone).toBe(0)
+    expect(loaded.skins).toEqual({ owned: ["ember"], equipped: "ember" })
   })
 
   it("round-trips a saved-then-loaded run at the current version", () => {

@@ -18,7 +18,8 @@ type VersionedSave = {
   readonly state: unknown
 }
 
-type EngineV2State = Omit<EngineState, keyof EngineV3ProgressionState>
+type EngineV2State = Omit<EngineState, keyof EngineV3ProgressionState | "manaStone">
+type EnginePreManaStoneState = Omit<EngineState, "manaStone">
 
 export type SaveToken = {
   readonly token: string
@@ -77,11 +78,16 @@ export function loadInitialState(): EngineState {
  */
 function readVersionedSave(value: unknown): EngineState | null {
   if (isVersionedSave(value)) {
-    if (value.version >= SAVE_VERSION && isEngineState(value.state)) {
-      return value.state
+    if (value.version >= SAVE_VERSION) {
+      if (isEngineState(value.state)) {
+        return value.state
+      }
+      if (isPreManaStoneState(value.state)) {
+        return { ...value.state, manaStone: 0 }
+      }
     }
     if (value.version === 2 && isV2EngineState(value.state)) {
-      return { ...value.state, ...createInitialV3ProgressionState() }
+      return { ...value.state, manaStone: 0, ...createInitialV3ProgressionState() }
     }
   }
   return null
@@ -162,6 +168,28 @@ function isEngineState(value: unknown): value is EngineState {
   if (!isRecord(value)) {
     return false
   }
+  const record: Record<string, unknown> = value
+
+  return (
+    isV2EngineState(value) &&
+    typeof record["manaStone"] === "number" &&
+    isQuestState(record["quests"]) &&
+    isAchievementState(record["achievements"]) &&
+    isCodexState(record["codex"]) &&
+    isTraitState(record["traits"]) &&
+    isRelicState(record["relics"]) &&
+    isPetState(record["pet"]) &&
+    isMineState(record["mine"]) &&
+    isDailyMissionState(record["dailyMissions"]) &&
+    isSkinState(record["skins"])
+  )
+}
+
+function isPreManaStoneState(value: unknown): value is EnginePreManaStoneState {
+  if (!isRecord(value)) {
+    return false
+  }
+
   const record: Record<string, unknown> = value
 
   return (

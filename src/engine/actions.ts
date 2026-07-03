@@ -35,6 +35,12 @@ import {
   sumHp,
   zeroTimers,
 } from "./state.js"
+import {
+  equipSkin as equipSkinReducer,
+  incrementAchievementCounter,
+  recordDailyProgress,
+  setAchievementCounterMax,
+} from "./camp.js"
 import { assertNever, type Element, type EngineState, type SkillName, type Spellbook } from "./types.js"
 
 export {
@@ -64,7 +70,7 @@ export function summonBook(state: EngineState): EngineState {
     element: pickElement(roll.value),
   }
 
-  return {
+  const next = {
     ...state,
     gold: state.gold - cost,
     books: emptySlot === undefined ? [...state.books, spellbook] : state.books,
@@ -73,6 +79,8 @@ export function summonBook(state: EngineState): EngineState {
     rngState: roll.state,
     nextBookId: state.nextBookId + 1,
   }
+
+  return recordDailyProgress(incrementAchievementCounter(next, "summonsTotal", 1), "summon30", 1)
 }
 
 export function mergeBooks(state: EngineState, idA: string, idB: string): EngineState {
@@ -114,8 +122,9 @@ export function mergeBooks(state: EngineState, idA: string, idB: string): Engine
     rngState: roll.state,
     nextBookId: state.nextBookId + 1,
   }
+  const refilled = right.kind === "equipped" ? refillSlotsFromInventory(next, [right.slot]) : next
 
-  return right.kind === "equipped" ? refillSlotsFromInventory(next, [right.slot]) : next
+  return recordDailyProgress(incrementAchievementCounter(refilled, "mergesTotal", 1), "merge20", 1)
 }
 
 export function equipBook(state: EngineState, bookId: string, slotIdx: number): EngineState {
@@ -239,7 +248,7 @@ export function prestige(state: EngineState): EngineState {
   const manaCrystals = Math.floor(state.stage ** 1.5 / 10)
   const enemiesHp = createWaveEnemies(initial.stage, initial.wave)
 
-  return {
+  return setAchievementCounterMax({
     ...initial,
     skills: state.skills,
     wizardLevel: state.wizardLevel,
@@ -254,7 +263,11 @@ export function prestige(state: EngineState): EngineState {
     enemiesHp,
     stageHp: sumHp(enemiesHp),
     lastSeenServerTs: state.lastSeenServerTs,
-  }
+  }, "prestigeCount", state.prestigeCount + 1)
+}
+
+export function equipSkin(state: EngineState, skinId: string): EngineState {
+  return equipSkinReducer(state, skinId)
 }
 
 export function getSlotUpgradeCost(currentTier: number): number {
