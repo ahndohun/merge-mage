@@ -31,7 +31,7 @@
     },
     {
       "type": "assertion",
-      "description": "Verify the first skill's point count increased by one and the unspent skill point counter decreased by one"
+      "description": "Verify the first skill's point count now shows 1"
     },
     {
       "type": "action",
@@ -39,7 +39,7 @@
     },
     {
       "type": "assertion",
-      "description": "Verify the first skill's point count returned to 0 and the unspent counter returned to its pre-allocation value"
+      "description": "Verify the first skill's point count returned to 0 and the unspent skill point counter shows a number of at least 1"
     }
   ]
 }

@@ -157,6 +157,11 @@ function EquipSlot(props: {
       data-book-id={props.book?.id}
       data-book-level={props.book?.level}
       data-testid={`equip-slot-${props.index}`}
+      aria-label={props.t.slotAriaLabel(
+        props.index + 1,
+        props.book?.level ?? null,
+        props.book === null ? null : props.t(props.book.element),
+      )}
       onClick={activate}
       onKeyDown={(event) => handleRoleButtonKeyDown(event, activate)}
       onPointerDown={() => {
@@ -187,6 +192,7 @@ function EquipSlot(props: {
       </div>
       <button
         aria-disabled={!canUpgrade}
+        aria-label={props.t.slotUpgradeAriaLabel(props.index + 1, formatNumber(upgradeCost))}
         className={`btn btn-mini slot-upgrade${props.selected !== null ? " is-selection-locked" : ""}`}
         data-testid={`slot-upgrade-${props.index}`}
         disabled={!canUpgrade}
