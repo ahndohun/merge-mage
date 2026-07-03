@@ -112,7 +112,7 @@ describe("BooksPanel", () => {
 
     const markup = renderBooksPanel(state)
 
-    expect(markup).toContain("INVENTORY — empty (summons auto-equip)")
+    expect(markup).toContain("INVENTORY — empty (new books auto-equip)")
     expect(markup).not.toContain("data-testid=\"merge-cell-0\"")
   })
 
@@ -126,7 +126,7 @@ describe("BooksPanel", () => {
     const markup = renderBooksPanel(state)
 
     expect(markup).toContain("data-testid=\"merge-cell-0\"")
-    expect(markup).not.toContain("summons auto-equip")
+    expect(markup).not.toContain("new books auto-equip)")
   })
 
   it("keeps inventory cells rendered when equipment is full", () => {

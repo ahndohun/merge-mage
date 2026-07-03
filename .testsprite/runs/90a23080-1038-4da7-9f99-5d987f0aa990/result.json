@@ -1,0 +1,18 @@
+{
+  "testId": "a3e61756-feac-4b87-8675-017a6125ff89",
+  "status": "blocked",
+  "startedAt": "2026-07-03T07:56:23.502Z",
+  "finishedAt": "2026-07-03T08:02:24.691Z",
+  "videoUrl": "https://testsprite-videos.s3.us-east-1.amazonaws.com/04484458-c031-705a-8abe-9c707dd14da5/1783065742740453//tmp/56fe4288-dc13-473d-b14a-da079161a7f3/result.webm",
+  "failureAnalysisUrl": null,
+  "snapshotId": "snap_a5c24faaba9d0887",
+  "runIdIfAvailable": "90a23080-1038-4da7-9f99-5d987f0aa990",
+  "codeVersion": "v1",
+  "targetUrl": "https://merge-mage.vercel.app",
+  "targetUrlSource": "run",
+  "failedStepIndex": 6,
+  "failureKind": null,
+  "verdict": "blocked",
+  "executionStatus": "completed",
+  "summary": "Blocked before a verdict could be produced: TEST BLOCKED: Test result for: RANKS tab fetches the leaderboard and lets the player set a nickname.\n\nSummary of required steps and verification (each requirement from the USER REQUEST is checked below):\n\n1) Navigate to the game with the URL path /?fresh=1 and wait for the game HUD showing GOLD to load\n- Observation: Navigation done. HUD is visible and shows GOLD = 148 in the current page state.\n- Verified: Yes.\n\n2) Verify the leaderboard area renders…"
+}

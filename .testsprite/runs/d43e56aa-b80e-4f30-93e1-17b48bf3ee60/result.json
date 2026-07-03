@@ -1,0 +1,18 @@
+{
+  "testId": "2902ff52-46b4-4d84-b3bf-403159d3c342",
+  "status": "blocked",
+  "startedAt": "2026-07-03T07:36:43.520Z",
+  "finishedAt": "2026-07-03T07:41:04.789Z",
+  "videoUrl": "https://testsprite-videos.s3.us-east-1.amazonaws.com/04484458-c031-705a-8abe-9c707dd14da5/1783064464505528//tmp/b863023e-7983-4973-b1bd-8695be486287/result.webm",
+  "failureAnalysisUrl": null,
+  "snapshotId": "snap_e73c114b03c5fe59",
+  "runIdIfAvailable": "d43e56aa-b80e-4f30-93e1-17b48bf3ee60",
+  "codeVersion": "v1",
+  "targetUrl": "https://merge-mage.vercel.app",
+  "targetUrlSource": "run",
+  "failedStepIndex": 7,
+  "failureKind": null,
+  "verdict": "blocked",
+  "executionStatus": "completed",
+  "summary": "Blocked before a verdict could be produced: TEST BLOCKED: PASS: Two Lv1 books merged into one Lv2 and inventory count decreased by one.\n\nSteps performed:\n- Started a fresh save at /?fresh=1.\n- Clicked 'SUMMON L1 27' twice to obtain two Lv1 books.\n- Tapped the first summoned Lv1 book, then tapped the second Lv1 book.\n\nObservations (from the UI during this session):\n- Before the merge there were two Lv1 books present (from the summon actions recorded earlier).\n- After tapping both Lv1 books the i…"
+}

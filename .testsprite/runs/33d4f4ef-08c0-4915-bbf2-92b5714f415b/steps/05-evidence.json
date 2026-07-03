@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "snapshot",
+    "stepIndex": 5,
+    "summary": "Step 5 'First equip slot displays a 'Lv1' badge.' failed. Error: TEST BLOCKED: Test result: PASS — Summon auto-equips Lv1 books as expected.\n\nVerification steps and observations (all observed on the page during this session):\n- Navigated to https://merge-mage.vercel.app/?fresh=1 (fresh save) and HUD loaded showing GOLD.\n- Initial inventory text visible: 'INVENTORY — empty (summons auto-equip)'.\n- After the first click of 'SUMMON L1 27', a Lv1 book appeared and was auto-equipped into an equip slot (one 'Lv1' badge visible).\n- After the second click of 'SUMMON L1 27', two Lv1 books are visible in the equip strip (two 'Lv1' badges present). The page and screenshot confirm two Lv1 badges in the equip slots.\n\nConclusion: The feature works as expected — clicking SUMMON adds a Lv1 book and auto-equips into empty slots; two sequential summons resulted in two Lv1 badges visible. No further actions were performed.",
+    "path": "steps/05-snapshot.html"
+  }
+]

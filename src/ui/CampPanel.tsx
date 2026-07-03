@@ -50,7 +50,7 @@ export function CampPanel(props: CampPanelProps) {
     <section className="panel tab-panel camp-panel" aria-label="Camp">
       <div className="panel-header">
         <span>{t("campTitle")}</span>
-        <strong>{formatNumber(props.state.manaStone)} MS</strong>
+        <strong>{formatNumber(props.state.manaStone)} {t.locale === "ko" ? "마나석" : "MANA"}</strong>
       </div>
 
       <div className="camp-grid">
@@ -124,7 +124,8 @@ export function CampPanel(props: CampPanelProps) {
                 <div className="daily-copy">
                   <span>{t(missionLabelKeys[mission.id])}</span>
                   <small>
-                    {formatNumber(status.progress)}/{formatNumber(status.goal)} +{formatNumber(status.rewardManaStone)} MS
+                    {formatNumber(status.progress)}/{formatNumber(status.goal)} +{formatNumber(status.rewardManaStone)}{" "}
+                    {t.locale === "ko" ? "마나석" : "MANA"}
                   </small>
                 </div>
                 <button

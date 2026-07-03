@@ -341,6 +341,20 @@ export function useEngine(): UseEngineResult {
     refreshLeaderboard()
   }, [refreshLeaderboard])
 
+  // A failed initial load gets exactly one automatic retry — a flaky request
+  // shouldn't strand the player on an error screen with only a manual button.
+  const leaderboardRetriedRef = useRef(false)
+  useEffect(() => {
+    if (leaderboardStatus !== "error" || leaderboardRetriedRef.current) {
+      return
+    }
+    leaderboardRetriedRef.current = true
+    const timeoutId = window.setTimeout(() => {
+      refreshLeaderboard()
+    }, 3_000)
+    return () => window.clearTimeout(timeoutId)
+  }, [leaderboardStatus, refreshLeaderboard])
+
   const summonLevel = getSummonLevel(state.highestLevelEver) + state.skills.summonBonus
   const summonCost = getSummonCost(summonLevel, getEquippedRelicEffects(state.relics).summonCostMultiplier)
   const canSummon = (state.equipped.some((book) => book === null) || state.books.length < INVENTORY_LIMIT) && state.gold >= summonCost

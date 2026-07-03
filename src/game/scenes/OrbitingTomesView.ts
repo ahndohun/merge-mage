@@ -21,13 +21,17 @@ type TomeEntry = {
 }
 
 const SLOT_INDEXES = [0, 1, 2, 3, 4, 5] as const
-const ORBIT_RX = 46
-const ORBIT_RY = 30
+export const ORBITING_TOME_VISUALS = {
+  orbitRx: 66,
+  orbitRy: 44,
+  scale: 1.2,
+  punchScale: 1.7,
+  glowSize: 14,
+  wizardBackDepth: 16,
+  wizardFrontDepth: 19,
+} as const
+
 const ORBIT_PERIOD_MS = 6_000
-const TOME_SCALE = 2
-const TOME_PUNCH_SCALE = 3
-const WIZARD_BACK_DEPTH = 17
-const WIZARD_FRONT_DEPTH = 21
 
 export class OrbitingTomesView {
   private readonly tomes: TomeEntry[]
@@ -37,9 +41,9 @@ export class OrbitingTomesView {
   constructor(private readonly scene: Phaser.Scene, center: Point) {
     this.center = center
     this.tomes = SLOT_INDEXES.map((slotIdx) => {
-      const glow = scene.add.image(0, 0, TextureKeys.pixel).setOrigin(0.5).setAlpha(0.24).setDisplaySize(24, 24)
-      const sprite = scene.add.image(0, 0, TextureKeys.tome.fire).setOrigin(0.5).setScale(TOME_SCALE)
-      const holder = scene.add.container(center.x, center.y, [glow, sprite]).setVisible(false).setDepth(WIZARD_BACK_DEPTH)
+      const glow = scene.add.image(0, 0, TextureKeys.pixel).setOrigin(0.5).setAlpha(0.2).setDisplaySize(ORBITING_TOME_VISUALS.glowSize, ORBITING_TOME_VISUALS.glowSize)
+      const sprite = scene.add.image(0, 0, TextureKeys.tome.fire).setOrigin(0.5).setScale(ORBITING_TOME_VISUALS.scale)
+      const holder = scene.add.container(center.x, center.y, [glow, sprite]).setVisible(false).setDepth(ORBITING_TOME_VISUALS.wizardBackDepth)
 
       return {
         slotIdx,
@@ -83,16 +87,16 @@ export class OrbitingTomesView {
 
     this.scene.tweens.killTweensOf(entry.sprite)
     this.scene.tweens.killTweensOf(entry.holder)
-    entry.sprite.setAlpha(1).setScale(TOME_SCALE).setTintMode(Phaser.TintModes.ADD)
+    entry.sprite.setAlpha(1).setScale(ORBITING_TOME_VISUALS.scale).setTintMode(Phaser.TintModes.ADD)
     this.scene.tweens.add({
       targets: entry.sprite,
-      scale: TOME_PUNCH_SCALE,
+      scale: ORBITING_TOME_VISUALS.punchScale,
       duration: 75,
       yoyo: true,
       ease: "Quad.easeOut",
       onComplete: () => {
         onLaunch(resolveTomeLaunchPoint({ entryPoint: this.getEntryPoint(entry), fallbackPoint: fallbackOrigin }))
-        entry.sprite.setAlpha(0.35).setScale(TOME_SCALE).setTint(entry.tint).setTintMode(Phaser.TintModes.MULTIPLY)
+        entry.sprite.setAlpha(0.35).setScale(ORBITING_TOME_VISUALS.scale).setTint(entry.tint).setTintMode(Phaser.TintModes.MULTIPLY)
         this.scene.tweens.add({
           targets: entry.sprite,
           alpha: 1,
@@ -122,7 +126,7 @@ export class OrbitingTomesView {
 
     if (bookChanged) {
       entry.holder.setAlpha(0).setVisible(true)
-      entry.sprite.setScale(TOME_SCALE)
+      entry.sprite.setScale(ORBITING_TOME_VISUALS.scale)
       this.scene.tweens.add({
         targets: entry.holder,
         alpha: 1,
@@ -149,7 +153,7 @@ export class OrbitingTomesView {
     this.scene.tweens.killTweensOf(entry.sprite)
     this.scene.tweens.killTweensOf(entry.holder)
     entry.holder.setVisible(false).setAlpha(1)
-    entry.sprite.setAlpha(1).setScale(TOME_SCALE).clearTint()
+    entry.sprite.setAlpha(1).setScale(ORBITING_TOME_VISUALS.scale).clearTint()
   }
 
   private positionEntries(time: number): void {
@@ -160,10 +164,10 @@ export class OrbitingTomesView {
       }
 
       const angle = baseAngle + entry.orbit.angle
-      const x = Math.round(this.center.x + Math.cos(angle) * ORBIT_RX)
-      const y = Math.round(this.center.y + Math.sin(angle) * ORBIT_RY)
+      const x = Math.round(this.center.x + Math.cos(angle) * ORBITING_TOME_VISUALS.orbitRx)
+      const y = Math.round(this.center.y + Math.sin(angle) * ORBITING_TOME_VISUALS.orbitRy)
       entry.holder.setPosition(x, y)
-      entry.holder.setDepth(y >= this.center.y ? WIZARD_FRONT_DEPTH : WIZARD_BACK_DEPTH)
+      entry.holder.setDepth(y >= this.center.y ? ORBITING_TOME_VISUALS.wizardFrontDepth : ORBITING_TOME_VISUALS.wizardBackDepth)
     }
   }
 

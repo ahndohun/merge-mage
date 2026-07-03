@@ -6,7 +6,7 @@
     },
     {
       "type": "action",
-      "description": "Click SUMMON once so at least one book exists in the inventory grid"
+      "description": "Click the BUY button once so at least one book exists in the inventory grid"
     },
     {
       "type": "action",

@@ -13,7 +13,7 @@ describe("HelpModal", () => {
 
   it("explains the core loop", () => {
     const markup = render()
-    expect(markup).toContain("SUMMON")
+    expect(markup).toContain("BUY")
     expect(markup).toContain("AUTO-EQUIP")
     expect(markup).toContain("MERGE same levels (tap-tap)")
     expect(markup).toContain("higher level = more damage")

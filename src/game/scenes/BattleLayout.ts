@@ -27,6 +27,8 @@ export const BattleLayout = {
   slowAlpha: 0.78,
 } as const
 
+const RIFT_BADGE_RESERVED_WIDTH = 188
+const TOP_OVERLAY_GUTTER = 8
 const LANES = [174, 210, 246, 282, 318] as const
 const ELEMENT_CYCLE: readonly Element[] = ["fire", "frost", "holy"]
 const MOB_COLUMN_WIDTH = 30
@@ -69,6 +71,11 @@ type MobSpawnInput = {
 type WaveIndicator = {
   readonly text: string
   readonly tint: number
+}
+
+type TopOverlayTextPlacement = {
+  readonly x: number
+  readonly maxWidth: number
 }
 
 const defaultTranslator = createTranslator("en")
@@ -135,6 +142,15 @@ export function getWaveIndicator(wave: number, t: Translator = defaultTranslator
   }
 
   return { text: t.battleWaveIndicator(wave, BOSS_WAVE_NUMBER), tint: 0xfff0a8 }
+}
+
+export function getTopOverlayTextPlacement(): TopOverlayTextPlacement {
+  const rightEdge = BattleLayout.width - RIFT_BADGE_RESERVED_WIDTH
+  const maxWidth = Math.max(1, rightEdge - TOP_OVERLAY_GUTTER * 2)
+  return {
+    x: TOP_OVERLAY_GUTTER + Math.round(maxWidth / 2),
+    maxWidth,
+  }
 }
 
 function hashInt(left: number, middle: number, right: number): number {

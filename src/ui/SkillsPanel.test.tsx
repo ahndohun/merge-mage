@@ -21,7 +21,7 @@ describe("SkillsPanel", () => {
 
     const markup = renderSkillsPanel(state)
 
-    expect(markup).toContain("+1 summon level / pt (+0)")
+    expect(markup).toContain("+1 buy level / pt (+0)")
     expect(markup).toContain("-40ms cast / pt (now 1000ms)")
     expect(markup).toContain("+10% gold / pt (+0%)")
     expect(markup).toContain("+1% crit / pt (5%)")

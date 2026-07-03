@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "snapshot",
+    "stepIndex": 19,
+    "summary": "Step 19 'The inventory slot where the merge happened now shows a Level 2 book.' failed. Error: TEST BLOCKED: Found 21 elements matching \"div[role=button]\":\n\n[0] <div> \"Lv2HOLYUP 50 (+15%)\" (2 children)\n[1] <div> \"Lv2FIREUP 50 (+15%)\" (2 children)\n[2] <div> \"Lv1FIREUP 50 (+15%)\" (2 children)\n[3] <div> \"Lv2HOLYUP 50 (+15%)\" (2 children)\n[4] <div> \"Lv1HOLYUP 50 (+15%)\" (2 children)\n[5] <div> \"Lv1FROSTUP 50 (+15%)\" (2 children)\n[6] <div> \"+\" (1 children)\n[7] <div> \"+\" (1 children)\n[8] <div> \"+\" (1 children)\n[9] <div> \"+\" (1 children)\n[10] <div> \"+\" (1 children)\n[11] <div> \"+\" (1 children)\n[12] <div> \"+\" (1 children)\n[13] <div> \"+\" (1 children)\n[14] <div> \"+\" (1 children)\n[15] <div> \"+\" (1 children)\n[16] <div> \"+\" (1 children)\n[17] <div> \"+\" (1 children)\n[18] <div> \"+\" (1 children)\n[19] <div> \"+\" (1 children)\n\nShowing 20 of 21 total elements. Increase max_results to see more.",
+    "path": "steps/19-snapshot.html"
+  }
+]

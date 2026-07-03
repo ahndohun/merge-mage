@@ -1,0 +1,5 @@
+{
+  "rootCauseHypothesis": "TEST BLOCKED: Task result: PASS — AUTO BUY auto-summons and auto-equips books into equip slots.\n\nVerification summary (observed in this session):\n- Navigated to: https://merge-mage.vercel.app/?fresh=1 (fresh save was used).\n- Fresh save check: initially observed six empty equip slots (fresh save) earlier in the session.\n- AUTO BUY action: AUTO BUY was clicked and shows pressed=true (browser_state index 209).\n- Evidence of auto-purchase: GOLD decreased to 83 (visible in HUD) after enabling AUTO BUY, and many 'Lv1' book tiles appeared (21 matches for 'Lv1').\n- Equip-slot assertion: the top equip slot row visible in the screenshot now displays book tiles labeled 'Lv1' (auto-equipped) without any manual SUMMON clicks; SUMMON button remained present (SUMMON L1 27) and was not manually used.\n\nOutcome: All requested assertions are met. The feature exists and works: AUTO BUY summons books automatically when gold is available and summoned books auto-equip into empty equip slots. SUCCESS = true.",
+  "recommendedFixTarget": null,
+  "evidence": []
+}

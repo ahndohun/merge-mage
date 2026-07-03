@@ -30,6 +30,7 @@ import { renderTab, type TabId } from "./renderTab"
 import { RiftsOverlay } from "./RiftsOverlay"
 import { getContextHint } from "./hints"
 import { Toasts } from "./Toasts"
+import { isTutorialActive } from "./tutorial"
 import { Tutorial } from "./TutorialOverlay"
 import { useActionFeedback } from "./useActionFeedback"
 import { useBadges } from "./useBadges"
@@ -105,6 +106,9 @@ export function GameShell() {
     for (const event of engine.events) {
       if (event.type === "riftComplete") {
         engine.notify(t("toastRiftComplete"), "notice")
+      }
+      if (event.type === "bossFail") {
+        engine.notify(t("toastBossFail"), "error")
       }
     }
   }, [engine.events, engine.notify, t])
@@ -591,23 +595,13 @@ export function GameShell() {
               handleClaimQuest,
             )}
           </div>
-          {contextHint === null ? null : (
+          {contextHint === null || activeTab === "books" || isTutorialActive(tutorial.state) ? null : (
             <div className="hint-strip" data-testid="hint-strip">
               {contextHint}
             </div>
           )}
           <ControlsPanel
-            autoBuy={engine.autoBuy}
-            autoMerge={engine.autoMerge}
             canSummon={engine.canSummon}
-            onAutoBuy={(enabled) => {
-              engine.setAutoBuy(enabled)
-              emitGameSfx("confirm")
-            }}
-            onAutoMerge={(enabled) => {
-              engine.setAutoMerge(enabled)
-              emitGameSfx("confirm")
-            }}
             onSummon={() => {
               const before = engine.state
               if (engine.summon()) {

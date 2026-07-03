@@ -1,0 +1,5 @@
+{
+  "rootCauseHypothesis": "TEST BLOCKED: Result: PASS — REBIRTH is disabled for fresh saves below stage 10.\n\nVerification details (all observed in this session):\n- Page loaded at https://merge-mage.vercel.app/?fresh=1 and the HUD is visible (GOLD displayed as 130, STAGE shown as 1-3 in the current view).\n- The REBIRTH control is present and clearly marked: the UI shows the text \"Unlocks at stage 10 (now: 1)\" near the REBIRTH button.\n- The REBIRTH button is rendered disabled (disabled=true in the interactive element state), so it cannot be activated from this fresh save.\n- An earlier click did not change the HUD to a reset state (no zeroed gold or stage), confirming activation was refused/disabled and did not reset the game.\n\nConclusion: The rebirth action is correctly disabled and labeled as requiring stage 10 on a fresh save below stage 10. All requested assertions were verified. Success: true",
+  "recommendedFixTarget": null,
+  "evidence": []
+}

@@ -63,8 +63,16 @@ export function advanceTutorial(state: TutorialState, observation: TutorialObser
     case "fight": {
       const summonedAgain = observation.summonCount > state.summonBaseline
       const timedOut = observation.elapsedInStepMs >= FIGHT_STEP_TIMEOUT_MS
-      if (summonedAgain || timedOut) {
+      if (summonedAgain && observation.hasSameLevelPair) {
         return { step: "merge", summonBaseline: observation.summonCount, mergeBaseline: observation.mergeCount }
+      }
+      if (timedOut) {
+        // No mergeable pair to point at (e.g. only one tome after 6s) — the
+        // MERGE step would spotlight nothing actionable and soft-lock the
+        // player, so end the tutorial instead of forcing them through it.
+        return observation.hasSameLevelPair
+          ? { step: "merge", summonBaseline: observation.summonCount, mergeBaseline: observation.mergeCount }
+          : { step: "done" }
       }
       return state
     }

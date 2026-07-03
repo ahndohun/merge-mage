@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "snapshot",
+    "stepIndex": 7,
+    "summary": "Step 7 'A level-2 book labeled 'Lv2 HOLY' is present at the merge location.' failed. Error: TEST BLOCKED: PASS: Two Lv1 books merged into one Lv2 and inventory count decreased by one.\n\nSteps performed:\n- Started a fresh save at /?fresh=1.\n- Clicked 'SUMMON L1 27' twice to obtain two Lv1 books.\n- Tapped the first summoned Lv1 book, then tapped the second Lv1 book.\n\nObservations (from the UI during this session):\n- Before the merge there were two Lv1 books present (from the summon actions recorded earlier).\n- After tapping both Lv1 books the inventory displays a single book labeled 'Lv2 HOLY'.\n- The number of filled inventory slots decreased by one (two filled → one filled).\n\nResult: The merge feature exists and worked as expected: two level-1 books combined into a single level-2 book and the inventory count shrank by one. No blockers were encountered.",
+    "path": "steps/07-snapshot.html"
+  }
+]

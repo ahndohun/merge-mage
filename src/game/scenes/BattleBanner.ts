@@ -1,5 +1,5 @@
 import Phaser from "phaser"
-import { BattleLayout } from "./BattleLayout"
+import { BattleLayout, getTopOverlayTextPlacement } from "./BattleLayout"
 import { PixelTextLine } from "./PixelText"
 
 export class BattleBanner {
@@ -12,9 +12,10 @@ export class BattleBanner {
   }
 
   show(text: string, tint: number): void {
+    const placement = getTopOverlayTextPlacement()
     this.scene.tweens.killTweensOf(this.line.container)
-    this.line.setText(text, { tint, scale: 3 })
-    this.line.show(BattleLayout.width / 2, BattleLayout.bannerY)
+    this.line.setText(text, { tint, scale: 3, maxWidth: placement.maxWidth })
+    this.line.show(placement.x, BattleLayout.bannerY)
     this.line.container.setAlpha(0).setScale(1)
     this.scene.tweens.add({
       targets: this.line.container,
@@ -29,13 +30,14 @@ export class BattleBanner {
   }
 
   showSlide(text: string, tint: number): void {
+    const placement = getTopOverlayTextPlacement()
     this.scene.tweens.killTweensOf(this.line.container)
-    this.line.setText(text, { tint, scale: 4 })
-    this.line.show(BattleLayout.width / 2, BattleLayout.bannerY)
+    this.line.setText(text, { tint, scale: 4, maxWidth: placement.maxWidth })
+    this.line.show(placement.x, BattleLayout.bannerY)
     this.line.container.setAlpha(0).setScale(1)
     this.scene.tweens.add({
       targets: this.line.container,
-      x: { from: -64, to: BattleLayout.width / 2 },
+      x: { from: -64, to: placement.x },
       alpha: { from: 0, to: 1 },
       duration: 220,
       hold: 520,

@@ -4,6 +4,7 @@ import {
   getActorHpBarY,
   getMobSpawnPoint,
   getStaffTipPoint,
+  getTopOverlayTextPlacement,
   getWaveIndicator,
   resolveTomeLaunchPoint,
 } from "./BattleLayout"
@@ -72,5 +73,12 @@ describe("battle layout helpers", () => {
   it("formats the persistent wave indicator and marks boss waves red", () => {
     expect(getWaveIndicator(7)).toEqual({ text: "W 7/10", tint: 0xfff0a8 })
     expect(getWaveIndicator(10)).toEqual({ text: "BOSS", tint: 0xc4344a })
+  })
+
+  it("keeps Phaser top text outside the right-side rift badge lane", () => {
+    const placement = getTopOverlayTextPlacement()
+
+    expect(placement.x - placement.maxWidth / 2).toBeGreaterThanOrEqual(8)
+    expect(placement.x + placement.maxWidth / 2).toBeLessThanOrEqual(202)
   })
 })

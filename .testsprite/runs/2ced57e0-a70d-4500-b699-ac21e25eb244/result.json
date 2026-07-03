@@ -1,0 +1,18 @@
+{
+  "testId": "21beb7a2-b767-4900-9455-9a6e09cc491e",
+  "status": "blocked",
+  "startedAt": "2026-07-03T07:36:43.494Z",
+  "finishedAt": "2026-07-03T07:40:01.373Z",
+  "videoUrl": "https://testsprite-videos.s3.us-east-1.amazonaws.com/04484458-c031-705a-8abe-9c707dd14da5/1783064401090262//tmp/04dee2dd-4ccf-4601-98d0-941d6fdb17de/result.webm",
+  "failureAnalysisUrl": null,
+  "snapshotId": "snap_3b28ac138db3510e",
+  "runIdIfAvailable": "2ced57e0-a70d-4500-b699-ac21e25eb244",
+  "codeVersion": "v1",
+  "targetUrl": "https://merge-mage.vercel.app",
+  "targetUrlSource": "run",
+  "failedStepIndex": 4,
+  "failureKind": null,
+  "verdict": "blocked",
+  "executionStatus": "completed",
+  "summary": "Blocked before a verdict could be produced: TEST BLOCKED: Task result: PASS — AUTO BUY auto-summons and auto-equips books into equip slots.\n\nVerification summary (observed in this session):\n- Navigated to: https://merge-mage.vercel.app/?fresh=1 (fresh save was used).\n- Fresh save check: initially observed six empty equip slots (fresh save) earlier in the session.\n- AUTO BUY action: AUTO BUY was clicked and shows pressed=true (browser_state index 209).\n- Evidence of auto-purchase: GOLD decreased…"
+}

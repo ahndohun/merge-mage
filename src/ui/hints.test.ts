@@ -11,7 +11,7 @@ describe("getContextHint", () => {
   it("asks a player with no books and enough gold to summon first", () => {
     const state = createInitialState(1)
 
-    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap SUMMON to arm your first spellbook")
+    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap BUY to arm your first spellbook")
   })
 
   it("prioritizes same-level merging across inventory and equipped books", () => {

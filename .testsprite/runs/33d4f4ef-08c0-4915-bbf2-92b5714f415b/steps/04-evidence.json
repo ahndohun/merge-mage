@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "snapshot",
+    "stepIndex": 4,
+    "summary": "Step 4 'Click the 'SUMMON L1 27' button to summon a second Lv1 book and auto-equip it into the next empty slot' passed.",
+    "path": "steps/04-snapshot.html"
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "testId": "e669db87-e5ca-44a3-ab33-6135172f4ecb",
+  "status": "failed",
+  "startedAt": "2026-07-03T07:36:44.262Z",
+  "finishedAt": "2026-07-03T07:46:09.596Z",
+  "videoUrl": "https://testsprite-videos.s3.us-east-1.amazonaws.com/04484458-c031-705a-8abe-9c707dd14da5/1783064766421889//tmp/c9cd0981-651f-4197-a1f6-f13c7a778ef1/result.webm",
+  "failureAnalysisUrl": null,
+  "snapshotId": "snap_53f28898d57092d4",
+  "runIdIfAvailable": "ddb509ee-49c0-436e-94fd-d3bff22eb3d1",
+  "codeVersion": "v1",
+  "targetUrl": "https://merge-mage.vercel.app",
+  "targetUrlSource": "run",
+  "failedStepIndex": 13,
+  "failureKind": "assertion",
+  "verdict": "failed",
+  "executionStatus": "completed",
+  "summary": "Failed (assertion): TEST FAILURE\n\nReset did not restore the skill allocations to the pre-allocation values recorded earlier.\n\nObservations:\n- After clicking RESET, the SUMMON FLOOR skill displays \"+0\" (it was 3 immediately before RESET).\n- After clicking RESET, the SKILLS tab shows an unspent skill-point badge \"4\" (expected 2, the pre-allocation value)."
+}

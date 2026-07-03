@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "snapshot",
+    "stepIndex": 13,
+    "summary": "Step 13 'Expected the SKILLS tab to show 4 skills.' failed. Error: TEST FAILURE\n\nReset did not restore the skill allocations to the pre-allocation values recorded earlier.\n\nObservations:\n- After clicking RESET, the SUMMON FLOOR skill displays \"+0\" (it was 3 immediately before RESET).\n- After clicking RESET, the SKILLS tab shows an unspent skill-point badge \"4\" (expected 2, the pre-allocation value).",
+    "path": "steps/13-snapshot.html"
+  }
+]

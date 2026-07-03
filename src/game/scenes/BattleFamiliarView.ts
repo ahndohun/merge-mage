@@ -7,11 +7,14 @@ type Point = {
   readonly y: number
 }
 
-const EVOLUTION_TINTS = [0xffffff, 0xff8a3d, 0x6ecbff] as const
-const FOLLOW_OFFSET_X = -34
-const FOLLOW_OFFSET_Y = 20
-const FLOAT_X = 5
-const FLOAT_Y = 4
+export const FAMILIAR_VISUALS = {
+  tints: [0x7fd6ff, 0xa875ff, 0xb7f3ff],
+  scale: 0.82,
+  followOffsetX: -24,
+  followOffsetY: 24,
+  floatX: 4,
+  floatY: 6,
+} as const
 
 export class BattleFamiliarView {
   readonly sprite: Phaser.GameObjects.Sprite
@@ -24,7 +27,7 @@ export class BattleFamiliarView {
       .sprite(this.lastPoint.x, this.lastPoint.y, TextureKeys.mob("imp", "idle", 0))
       .setOrigin(0.5, 0.82)
       .setDepth(20)
-      .setScale(1.35)
+      .setScale(FAMILIAR_VISUALS.scale)
     this.sprite.play(AnimationKeys.familiar.idle)
   }
 
@@ -34,8 +37,8 @@ export class BattleFamiliarView {
   }
 
   syncPet(pet: PetState): void {
-    const tint = EVOLUTION_TINTS[pet.evolution] ?? EVOLUTION_TINTS[0]
-    this.sprite.setTint(tint).setTintMode(Phaser.TintModes.MULTIPLY)
+    const tint = FAMILIAR_VISUALS.tints[pet.evolution] ?? FAMILIAR_VISUALS.tints[0]
+    this.sprite.setTint(tint).setTintMode(Phaser.TintModes.FILL)
   }
 
   playCast(onLaunch: (origin: Point) => void): void {
@@ -76,8 +79,8 @@ export class BattleFamiliarView {
 
   private getPoint(time: number, wizardCenter: Point): Point {
     return {
-      x: Math.round(wizardCenter.x + FOLLOW_OFFSET_X + Math.sin(time / 520) * FLOAT_X),
-      y: Math.round(wizardCenter.y + FOLLOW_OFFSET_Y + Math.sin(time / 680) * FLOAT_Y),
+      x: Math.round(wizardCenter.x + FAMILIAR_VISUALS.followOffsetX + Math.sin(time / 520) * FAMILIAR_VISUALS.floatX),
+      y: Math.round(wizardCenter.y + FAMILIAR_VISUALS.followOffsetY + Math.sin(time / 680) * FAMILIAR_VISUALS.floatY),
     }
   }
 }

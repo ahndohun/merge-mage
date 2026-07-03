@@ -16,7 +16,6 @@ import { BattleLoadingView } from "./BattleLoadingView"
 import { prewarmBattleMobs, spawnBattleMob } from "./BattleMobSpawner"
 import { BattleMobView } from "./BattleMobView"
 import { BattleWizardView } from "./BattleWizardView"
-import { BattleWaveIndicator } from "./BattleWaveIndicator"
 
 export class BattleScene extends Phaser.Scene {
   private wizard: BattleWizardView | null = null
@@ -32,7 +31,6 @@ export class BattleScene extends Phaser.Scene {
   private slowUntil = 0
   private slowFactor = 1
   private audio: BattleAudio | null = null
-  private waveIndicator: BattleWaveIndicator | null = null
   private castController: BattleCastController | null = null
 
   private readonly activeMobs: BattleMobView[] = []
@@ -60,16 +58,17 @@ export class BattleScene extends Phaser.Scene {
     this.effects = new BattleEffects(this)
     this.banner = new BattleBanner(this)
     this.audio = new BattleAudio(this)
-    this.waveIndicator = new BattleWaveIndicator(this)
     this.t = createTranslator(getInitialLocale())
-    this.waveIndicator.update(1, this.t)
     prewarmBattleMobs(this, this.mobPool)
     this.banner.show(this.t.battleStageWave(1, 1, BOSS_WAVE_NUMBER), 0xfff0a8)
     this.unsubscribeState = EngineEventBridge.onState((state) => this.handleState(state))
     this.unsubscribeEvents = EngineEventBridge.onEvents((events) => this.handleEvents(events))
     this.unsubscribeLocale = EventBus.on("locale:changed", (locale) => {
+      const state = this.currentState
       this.t = createTranslator(locale)
-      this.waveIndicator?.update(this.currentState?.wave ?? 1, this.t)
+      if (state !== null) {
+        this.banner?.show(this.t.battleStageWave(state.stage, state.wave, BOSS_WAVE_NUMBER), 0xfff0a8)
+      }
     })
     this.events.once("shutdown", () => this.cleanup())
 
@@ -93,7 +92,6 @@ export class BattleScene extends Phaser.Scene {
     mirrorBattleState(state)
     this.castController?.syncState(state)
     this.audio?.syncMusic(state)
-    this.waveIndicator?.update(state.wave, this.t)
 
     if (waveChanged) {
       const stageChanged = this.lastStage > 0 && state.stage !== this.lastStage
@@ -287,8 +285,6 @@ export class BattleScene extends Phaser.Scene {
     this.unsubscribeLocale = null
     this.audio?.destroy()
     this.audio = null
-    this.waveIndicator?.hide()
-    this.waveIndicator = null
     this.effects?.clear()
     this.castController?.destroy()
     this.castController = null

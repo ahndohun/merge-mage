@@ -1,5 +1,5 @@
 import Phaser from "phaser"
-import { PIXEL_GLYPHS, PixelGlyphPatterns, type PixelGlyph } from "./PixelGlyphs"
+import { getPixelGlyphPatternWidth, PIXEL_GLYPHS, PixelGlyphPatterns, type PixelGlyph } from "./PixelGlyphs"
 import { TextureKeys } from "./TextureKeys"
 
 export function registerUtilityTextures(scene: Phaser.Scene): void {
@@ -42,5 +42,5 @@ function generateGlyph(graphics: Phaser.GameObjects.Graphics, glyph: PixelGlyph)
     }
   }
 
-  graphics.generateTexture(TextureKeys.glyph(glyph), 3, 5)
+  graphics.generateTexture(TextureKeys.glyph(glyph), getPixelGlyphPatternWidth(glyph), pattern.length)
 }

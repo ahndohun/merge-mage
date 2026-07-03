@@ -384,22 +384,37 @@
 
 .codex-grid {
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-rows: minmax(44px, auto);
   gap: 3px;
+  overflow-y: auto;
   min-height: 0;
 }
 
 .codex-cell {
   display: grid;
   min-width: 0;
-  min-height: 0;
+  min-height: 44px;
+  aspect-ratio: 1;
   place-items: center;
   padding: 2px;
   border: 2px solid var(--mm-panel-edge);
   clip-path: var(--mm-corners);
   background: var(--mm-bg);
   opacity: 0.62;
+}
+
+/* >=768px: room for the full 10-column x 3-row grid without collapsing. */
+@media (min-width: 768px) {
+  .codex-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-auto-rows: minmax(44px, 1fr);
+    overflow-y: visible;
+  }
+
+  .codex-cell {
+    aspect-ratio: auto;
+  }
 }
 
 .codex-cell.is-unlocked {
@@ -467,7 +482,7 @@
 }
 
 .equip-slot {
-  grid-template-rows: 1fr 23px;
+  grid-template-rows: 1fr minmax(23px, auto);
   gap: 3px;
 }
 
@@ -577,11 +592,22 @@
     3px 3px 0 var(--mm-shadow);
 }
 
-.slot-upgrade {
+/* .btn-mini (defined later in this file) also sets font-size at the same
+   specificity — .btn-mini.slot-upgrade beats it via specificity so the
+   upgrade label reliably gets the smaller size it needs to avoid clipping.
+   The cost/bonus label ("UP 1.2K (+15%)") can outgrow the slot's width at
+   narrow viewports, so it wraps onto two lines instead of clipping. */
+.slot-upgrade,
+.btn-mini.slot-upgrade {
+  overflow: visible;
+  min-width: 100%;
   min-height: 0;
-  padding: 2px 2px;
-  font-size: 9px;
+  padding: 2px 1px;
+  font-size: 8px;
+  line-height: 1.3;
   letter-spacing: 0;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .slot-upgrade:disabled {
@@ -600,7 +626,7 @@
 
 .controls-panel {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 4px;
   padding: 5px;
 }
@@ -773,6 +799,14 @@
 .btn-mini .badge-dot {
   top: 0;
   right: 0;
+}
+
+/* The quest-claim button clips its top-right corner (.mm-corners), so a dot
+   pinned at top:0/right:0 sat in that cut triangle and poked out past the
+   button's visible edge. Pull it in past the 4px corner cut. */
+[data-testid^="quest-claim-"] .badge-dot {
+  top: 4px;
+  right: 4px;
 }
 
 .tab-panel {
@@ -1187,6 +1221,12 @@
   gap: 12px;
   width: min(320px, calc(100% - 32px));
   padding: 12px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  background: var(--mm-panel);
+  box-shadow:
+    inset 0 0 0 2px var(--mm-panel-hi),
+    3px 3px 0 var(--mm-shadow);
 }
 
 .modal-actions {
@@ -1209,7 +1249,9 @@
 .tutorial-dim {
   position: absolute;
   background: rgb(0 0 0 / 55%);
-  pointer-events: auto;
+  /* Guide-only overlay — never blocks gameplay clicks/taps underneath it
+     (previously ate the summon button and could soft-lock the merge step). */
+  pointer-events: none;
 }
 
 .tutorial-dim-full {

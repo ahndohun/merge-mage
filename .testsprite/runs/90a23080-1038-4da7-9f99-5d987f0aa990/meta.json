@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "cli-v1",
+  "snapshotId": "snap_a5c24faaba9d0887",
+  "testId": "a3e61756-feac-4b87-8675-017a6125ff89",
+  "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
+  "codeVersion": "v1",
+  "runIdIfAvailable": "90a23080-1038-4da7-9f99-5d987f0aa990",
+  "targetUrl": "https://merge-mage.vercel.app",
+  "failedStepIndex": 6,
+  "failureKind": null,
+  "capturedAt": "2026-07-03T08:02:24.691Z",
+  "fetchedAt": "2026-07-03T08:03:22.527Z"
+}

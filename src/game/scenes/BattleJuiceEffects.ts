@@ -64,20 +64,7 @@ export class BattleJuiceEffects {
   }
 
   whitePop(point: Point, scale: number): void {
-    const flash = this.borrowImage(this.flashes)
-    if (flash === null) {
-      return
-    }
-
-    flash.setPosition(point.x, point.y).setTint(0xffffff).setAlpha(0.95).setScale(1).setVisible(true)
-    this.scene.tweens.add({
-      targets: flash,
-      scale,
-      alpha: 0,
-      duration: 110,
-      ease: "Quad.easeOut",
-      onComplete: () => flash.setVisible(false),
-    })
+    this.pixelSparkBurst(point, 0xffffff, scale)
   }
 
   flyCoins(point: Point, bonusCoins = 0, target?: Point): void {
@@ -151,6 +138,32 @@ export class BattleJuiceEffects {
         duration: 420,
         ease: "Cubic.easeOut",
         onComplete: () => dot.setVisible(false),
+      })
+    }
+  }
+
+  private pixelSparkBurst(point: Point, tint: number, scale: number): void {
+    const count = Math.max(6, Math.min(14, Math.round(scale * 2)))
+    const radius = 5 + scale * 4
+    for (let index = 0; index < count; index += 1) {
+      const flash = this.borrowImage(this.flashes)
+      if (flash === null) {
+        return
+      }
+
+      const angle = (Math.PI * 2 * index) / count
+      const targetX = point.x + Math.cos(angle) * radius
+      const targetY = point.y + Math.sin(angle) * radius
+      flash.setPosition(point.x, point.y).setTint(tint).setAlpha(0.95).setScale(2).setVisible(true)
+      this.scene.tweens.add({
+        targets: flash,
+        x: targetX,
+        y: targetY,
+        scale: 1,
+        alpha: 0,
+        duration: 130,
+        ease: "Quad.easeOut",
+        onComplete: () => flash.setVisible(false),
       })
     }
   }

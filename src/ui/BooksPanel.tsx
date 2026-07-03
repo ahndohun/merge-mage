@@ -38,7 +38,12 @@ export function BooksPanel(props: BooksPanelProps) {
   const { t } = useLocale()
   const [subview, setSubview] = useState<"books" | "codex">("books")
   const cells = Array.from({ length: INVENTORY_LIMIT }, (_, index) => props.state.books[index] ?? null)
-  const inventoryCollapsed = props.state.books.length === 0 && props.state.equipped.some((book) => book === null)
+  // Collapsing the inventory-grid row only makes sense for the TOMES subview —
+  // it shrinks the row that would otherwise hold the merge grid. Applying it
+  // while CODEX is open squeezed the (unrelated) codex grid into the same
+  // shrunk row, collapsing it to an 8px sliver of grey stripes.
+  const inventoryCollapsed =
+    subview === "books" && props.state.books.length === 0 && props.state.equipped.some((book) => book === null)
 
   return (
     <section
@@ -185,6 +190,9 @@ function EquipSlot(props: {
         className={`btn btn-mini slot-upgrade${props.selected !== null ? " is-selection-locked" : ""}`}
         data-testid={`slot-upgrade-${props.index}`}
         disabled={!canUpgrade}
+        // Empty slots have nothing to upgrade — hide with visibility (not
+        // display:none) so the row's layout doesn't jump when a book lands.
+        style={props.book === null ? { visibility: "hidden" } : undefined}
         onPointerDown={(event) => {
           if (props.selected === null) {
             event.stopPropagation()
@@ -204,7 +212,7 @@ function EquipSlot(props: {
         type="button"
       >
         {props.t.slotUpgrade(formatNumber(upgradeCost), SLOT_UPGRADE_BONUS_PERCENT)}
-        {props.showUpgradeDot && canUpgrade ? <span aria-hidden="true" className="badge-dot" /> : null}
+        {props.book !== null && props.showUpgradeDot && canUpgrade ? <span aria-hidden="true" className="badge-dot" /> : null}
       </button>
     </div>
   )

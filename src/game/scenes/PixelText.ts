@@ -1,8 +1,7 @@
 import Phaser from "phaser"
 import { TextureKeys } from "../TextureKeys"
-import { isPixelGlyph, toPixelGlyph } from "../PixelGlyphs"
+import { getPixelGlyphPatternWidth, isPixelGlyph, toPixelGlyph } from "../PixelGlyphs"
 
-const GLYPH_WIDTH = 3
 const GLYPH_HEIGHT = 5
 const GLYPH_GAP = 1
 const FALLBACK_FONT_FAMILY = '"Silkscreen", "VT323", "Galmuri9", "Galmuri11", monospace'
@@ -10,6 +9,7 @@ const FALLBACK_FONT_FAMILY = '"Silkscreen", "VT323", "Galmuri9", "Galmuri11", mo
 type PixelTextOptions = {
   readonly tint: number
   readonly scale: number
+  readonly maxWidth?: number
 }
 
 export class PixelTextLine {
@@ -44,29 +44,38 @@ export class PixelTextLine {
         .setText(value)
         .setFontSize(GLYPH_HEIGHT * options.scale)
         .setColor(tintToCssColor(options.tint))
+        .setScale(getFitScale(this.fallbackText.width, options.maxWidth))
         .setVisible(true)
       return
     }
 
-    this.fallbackText.setVisible(false)
+    this.fallbackText.setVisible(false).setScale(1)
     const glyphs = [...value].map(toPixelGlyph).slice(0, this.glyphs.length)
-    const width = glyphs.length * GLYPH_WIDTH + Math.max(0, glyphs.length - 1) * GLYPH_GAP
-    const left = (-width * options.scale) / 2
-    const top = (-GLYPH_HEIGHT * options.scale) / 2
+    const glyphWidths = glyphs.map(getPixelGlyphPatternWidth)
+    const textWidth = glyphWidths.reduce((width, glyphWidth) => width + glyphWidth, 0) + Math.max(0, glyphs.length - 1) * GLYPH_GAP
+    const renderScale = options.scale * getFitScale(textWidth * options.scale, options.maxWidth)
+    let cursorX = (-textWidth * renderScale) / 2
+    const top = (-GLYPH_HEIGHT * renderScale) / 2
 
     this.glyphs.forEach((image, index) => {
       const glyph = glyphs[index]
+      const glyphWidth = glyphWidths[index]
       if (glyph === undefined) {
+        image.setVisible(false)
+        return
+      }
+      if (glyphWidth === undefined) {
         image.setVisible(false)
         return
       }
 
       image
         .setTexture(TextureKeys.glyph(glyph))
-        .setPosition(left + index * (GLYPH_WIDTH + GLYPH_GAP) * options.scale, top)
-        .setScale(options.scale)
+        .setPosition(cursorX, top)
+        .setScale(renderScale)
         .setTint(options.tint)
         .setVisible(true)
+      cursorX += (glyphWidth + GLYPH_GAP) * renderScale
     })
   }
 
@@ -91,6 +100,14 @@ function canRenderWithPixelGlyphs(value: string): boolean {
 
 function tintToCssColor(tint: number): string {
   return `#${tint.toString(16).padStart(6, "0")}`
+}
+
+function getFitScale(width: number, maxWidth: number | undefined): number {
+  if (maxWidth === undefined || width <= maxWidth || width <= 0) {
+    return 1
+  }
+
+  return maxWidth / width
 }
 
 type DamageTextRequest = {

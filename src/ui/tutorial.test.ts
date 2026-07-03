@@ -81,14 +81,24 @@ describe("advanceTutorial — FIGHT step", () => {
     expect(next.step).toBe("fight")
   })
 
-  it("advances to merge on the second summon", () => {
-    const next = advanceTutorial(fightState, obs({ summonCount: 2, elapsedInStepMs: 100 }))
+  it("advances to merge on the second summon when a mergeable pair exists", () => {
+    const next = advanceTutorial(fightState, obs({ summonCount: 2, hasSameLevelPair: true, elapsedInStepMs: 100 }))
     expect(next.step).toBe("merge")
   })
 
-  it("advances to merge after the 6s timeout even without a second summon", () => {
-    const next = advanceTutorial(fightState, obs({ summonCount: 1, elapsedInStepMs: 6000 }))
+  it("stays on fight on the second summon if no mergeable pair exists yet", () => {
+    const next = advanceTutorial(fightState, obs({ summonCount: 2, hasSameLevelPair: false, elapsedInStepMs: 100 }))
+    expect(next.step).toBe("fight")
+  })
+
+  it("advances to merge after the 6s timeout when a mergeable pair exists", () => {
+    const next = advanceTutorial(fightState, obs({ summonCount: 1, hasSameLevelPair: true, elapsedInStepMs: 6000 }))
     expect(next.step).toBe("merge")
+  })
+
+  it("ends the tutorial after the 6s timeout when no mergeable pair exists (avoids soft-lock)", () => {
+    const next = advanceTutorial(fightState, obs({ summonCount: 1, hasSameLevelPair: false, elapsedInStepMs: 6000 }))
+    expect(next.step).toBe("done")
   })
 })
 
@@ -147,7 +157,7 @@ describe("tutorialStepTarget", () => {
 
 describe("tutorialStepCopy", () => {
   it("gives each active step instruction copy", () => {
-    expect(tutorialStepCopy({ step: "summon" })).toContain("SUMMON")
+    expect(tutorialStepCopy({ step: "summon" })).toContain("BUY")
     expect(tutorialStepCopy({ step: "fight", summonBaseline: 1 })).toContain("fight")
     expect(tutorialStepCopy({ step: "merge", summonBaseline: 1, mergeBaseline: 0 })).toContain("MERGE")
   })

@@ -1,7 +1,7 @@
 {
   "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
   "type": "frontend",
-  "name": "Summoned books auto-equip and can be moved between slots",
+  "name": "Purchased books auto-equip and can be moved between slots",
   "description": "Summons auto-equip into empty slots; a selected book moves to an empty slot by tap-tap. Each slot card contains a small UP(grade) sub-button at its bottom — taps for selecting/moving must land on the large book/plus area of the card, never on the UP button.",
   "priority": "p0",
   "planSteps": [
@@ -11,11 +11,11 @@
     },
     {
       "type": "action",
-      "description": "Click SUMMON once"
+      "description": "Click the BUY button once"
     },
     {
       "type": "assertion",
-      "description": "Verify the first equip slot now shows a book with a level badge (like Lv1) — summons auto-equip into empty slots"
+      "description": "Verify the first equip slot now shows a book with a level badge (like Lv1) — purchased books auto-equip into empty slots"
     },
     {
       "type": "action",

@@ -1,0 +1,18 @@
+{
+  "testId": "2902ff52-46b4-4d84-b3bf-403159d3c342",
+  "status": "blocked",
+  "startedAt": "2026-07-03T07:56:23.443Z",
+  "finishedAt": "2026-07-03T08:08:51.855Z",
+  "videoUrl": "https://testsprite-videos.s3.us-east-1.amazonaws.com/04484458-c031-705a-8abe-9c707dd14da5/1783066131571231//tmp/8ab6c698-a44a-42c1-af0b-f808104b6662/result.webm",
+  "failureAnalysisUrl": null,
+  "snapshotId": "snap_3f3edbeef7b6eedb",
+  "runIdIfAvailable": "19f169f5-3aee-41dc-8c69-0bbf56cf5ad3",
+  "codeVersion": "v1",
+  "targetUrl": "https://merge-mage.vercel.app",
+  "targetUrlSource": "run",
+  "failedStepIndex": 19,
+  "failureKind": null,
+  "verdict": "blocked",
+  "executionStatus": "completed",
+  "summary": "Blocked before a verdict could be produced: TEST BLOCKED: Found 21 elements matching \"div[role=button]\":\n\n[0] <div> \"Lv2HOLYUP 50 (+15%)\" (2 children)\n[1] <div> \"Lv2FIREUP 50 (+15%)\" (2 children)\n[2] <div> \"Lv1FIREUP 50 (+15%)\" (2 children)\n[3] <div> \"Lv2HOLYUP 50 (+15%)\" (2 children)\n[4] <div> \"Lv1HOLYUP 50 (+15%)\" (2 children)\n[5] <div> \"Lv1FROSTUP 50 (+15%)\" (2 children)\n[6] <div> \"+\" (1 children)\n[7] <div> \"+\" (1 children)\n[8] <div> \"+\" (1 children)\n[9] <div> \"+\" (1 children)\n[10] <div> \"+\"…"
+}

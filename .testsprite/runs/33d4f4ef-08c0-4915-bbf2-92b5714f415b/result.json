@@ -1,0 +1,18 @@
+{
+  "testId": "c1a547c1-0c47-4063-aa15-415ac64796f0",
+  "status": "blocked",
+  "startedAt": "2026-07-03T08:17:36.272Z",
+  "finishedAt": "2026-07-03T08:20:09.417Z",
+  "videoUrl": "https://testsprite-videos.s3.us-east-1.amazonaws.com/04484458-c031-705a-8abe-9c707dd14da5/1783066809132511//tmp/5bb97975-7078-4ee1-8ced-0db1a5f0cae4/result.webm",
+  "failureAnalysisUrl": null,
+  "snapshotId": "snap_1dc86ec69433fe22",
+  "runIdIfAvailable": "33d4f4ef-08c0-4915-bbf2-92b5714f415b",
+  "codeVersion": "v1",
+  "targetUrl": "https://merge-mage.vercel.app",
+  "targetUrlSource": "run",
+  "failedStepIndex": 5,
+  "failureKind": null,
+  "verdict": "blocked",
+  "executionStatus": "completed",
+  "summary": "Blocked before a verdict could be produced: TEST BLOCKED: Test result: PASS — Summon auto-equips Lv1 books as expected.\n\nVerification steps and observations (all observed on the page during this session):\n- Navigated to https://merge-mage.vercel.app/?fresh=1 (fresh save) and HUD loaded showing GOLD.\n- Initial inventory text visible: 'INVENTORY — empty (summons auto-equip)'.\n- After the first click of 'SUMMON L1 27', a Lv1 book appeared and was auto-equipped into an equip slot (one 'Lv1' badge v…"
+}
