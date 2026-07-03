@@ -73,6 +73,7 @@ export function SkillsPanel(props: SkillsPanelProps) {
               type="button"
             >
               +
+              {props.state.skillPoints > 0 ? <span aria-hidden="true" className="badge-dot" /> : null}
             </button>
           </div>
         ))}

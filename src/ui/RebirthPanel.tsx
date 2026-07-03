@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { MANA_DAMAGE_PER_CRYSTAL } from "../engine/constants"
 import type { EngineState } from "../engine/types"
+import { useBadges } from "./useBadges"
 import { useLocale } from "./useLocale"
 
 type RebirthPanelProps = {
@@ -10,6 +11,7 @@ type RebirthPanelProps = {
 
 export function RebirthPanel(props: RebirthPanelProps) {
   const { t } = useLocale()
+  const badges = useBadges(props.state)
   const [confirming, setConfirming] = useState(false)
   const preview = Math.floor(props.state.stage ** 1.5 / 10)
   const ready = props.state.stage >= 10
@@ -33,6 +35,7 @@ export function RebirthPanel(props: RebirthPanelProps) {
       </div>
       <button className="btn btn-wide" data-testid="prestige-open" disabled={!ready} onClick={() => setConfirming(true)} type="button">
         {t("rebirth")}
+        {badges.rebirth ? <span aria-hidden="true" className="badge-dot" /> : null}
       </button>
       {ready ? null : <div className="empty-copy rebirth-lock-copy">{t.rebirthUnlock(props.state.stage)}</div>}
       {confirming ? (

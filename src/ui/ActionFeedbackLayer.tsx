@@ -1,8 +1,10 @@
-import type { FloatingText, MicroToast } from "./useActionFeedback"
+import type { CSSProperties } from "react"
+import type { FloatingText, JuiceParticle, MicroToast } from "./useActionFeedback"
 
 type ActionFeedbackLayerProps = {
   readonly floatingTexts: readonly FloatingText[]
   readonly microToasts: readonly MicroToast[]
+  readonly particles: readonly JuiceParticle[]
 }
 
 /**
@@ -23,6 +25,25 @@ export function ActionFeedbackLayer(props: ActionFeedbackLayerProps) {
           >
             {item.text}
           </div>
+        ))}
+      </div>
+      <div className="juice-particle-layer" aria-hidden="true">
+        {props.particles.map((item) => (
+          <div
+            className={`juice-particle juice-particle-${item.tier}`}
+            key={item.id}
+            style={
+              {
+                left: item.x,
+                top: item.y,
+                "--particle-color": item.color,
+                "--particle-angle": `${item.angle}deg`,
+                "--particle-distance": `${item.distance}px`,
+                width: item.size,
+                height: item.size,
+              } as CSSProperties
+            }
+          />
         ))}
       </div>
       <div className="micro-toast-stack" aria-live="polite">

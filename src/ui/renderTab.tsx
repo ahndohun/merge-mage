@@ -1,17 +1,22 @@
 import { assertNever, type Spellbook } from "../engine/types"
 import { BooksPanel } from "./BooksPanel"
-import type { BookSource } from "./bookInteractions"
+import type { BookSource, DragPreview } from "./bookInteractions"
+import { QuestsPanel } from "./QuestsPanel"
 import { RanksPanel } from "./RanksPanel"
 import { RebirthPanel } from "./RebirthPanel"
 import { SkillsPanel } from "./SkillsPanel"
 import type { UseEngineResult } from "./useEngine"
 
-export type TabId = "books" | "skills" | "rebirth" | "ranks"
+export type TabId = "books" | "skills" | "quests" | "rebirth" | "ranks"
 
 export function renderTab(
   activeTab: TabId,
   engine: UseEngineResult,
   selected: BookSource | null,
+  draggingBookId: string | null,
+  dragActive: boolean,
+  dragPreview: DragPreview | null,
+  nextGoalHint: string | null,
   onBookPointerDown: (source: BookSource) => void,
   onBookDrop: (book: Spellbook) => void,
   onBookClick: (source: BookSource, book: Spellbook) => void,
@@ -23,6 +28,10 @@ export function renderTab(
     case "books":
       return (
         <BooksPanel
+          dragActive={dragActive}
+          dragPreview={dragPreview}
+          draggingBookId={draggingBookId}
+          nextGoalHint={nextGoalHint}
           onBookClick={onBookClick}
           onBookDrop={onBookDrop}
           onBookPointerDown={onBookPointerDown}
@@ -35,6 +44,8 @@ export function renderTab(
       )
     case "skills":
       return <SkillsPanel onAllocateSkill={engine.allocateSkill} onResetSkills={engine.resetSkills} state={engine.state} />
+    case "quests":
+      return <QuestsPanel />
     case "rebirth":
       return <RebirthPanel onPrestige={engine.prestige} state={engine.state} />
     case "ranks":

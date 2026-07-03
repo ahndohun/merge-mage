@@ -1,9 +1,11 @@
 import { INVENTORY_LIMIT, SLOT_MULTIPLIER_PER_TIER } from "../engine/constants"
 import { getSlotMultiplier, getSlotUpgradeCost } from "../engine/actions"
 import type { EngineState, Spellbook } from "../engine/types"
-import { canUpgradeSlotWhileSelected, type BookSource } from "./bookInteractions"
+import { canAffordSlotUpgrade } from "./useBadges"
+import { canUpgradeSlotWhileSelected, type BookSource, type DragPreview } from "./bookInteractions"
 import { formatNumber } from "./formatNumber"
 import type { Translator } from "./i18n"
+import { NextGoalStrip } from "./NextGoalStrip"
 import { useLocale } from "./useLocale"
 
 const SLOT_UPGRADE_BONUS_PERCENT = Math.round(SLOT_MULTIPLIER_PER_TIER * 100)
@@ -11,6 +13,10 @@ const SLOT_UPGRADE_BONUS_PERCENT = Math.round(SLOT_MULTIPLIER_PER_TIER * 100)
 type BooksPanelProps = {
   readonly state: EngineState
   readonly selected: BookSource | null
+  readonly draggingBookId: string | null
+  readonly dragActive: boolean
+  readonly dragPreview: DragPreview | null
+  readonly nextGoalHint: string | null
   readonly onBookPointerDown: (source: BookSource) => void
   readonly onBookDrop: (book: Spellbook) => void
   readonly onBookClick: (source: BookSource, book: Spellbook) => void
@@ -34,6 +40,9 @@ export function BooksPanel(props: BooksPanelProps) {
         {props.state.equipped.map((book, index) => (
           <EquipSlot
             book={book}
+            dragActive={props.dragActive}
+            dragPreview={props.dragPreview}
+            draggingBookId={props.draggingBookId}
             index={index}
             key={`equip-${index}`}
             selected={props.selected}
@@ -43,6 +52,7 @@ export function BooksPanel(props: BooksPanelProps) {
             onEquipClick={props.onEquipClick}
             onEquipDrop={props.onEquipDrop}
             onUpgradeSlot={props.onUpgradeSlot}
+            showUpgradeDot={canAffordSlotUpgrade(props.state, index)}
             t={t}
           />
         ))}
@@ -62,12 +72,16 @@ export function BooksPanel(props: BooksPanelProps) {
               selected={props.selected}
               onBookPointerDown={props.onBookPointerDown}
               onBookClick={props.onBookClick}
+              dragActive={props.dragActive}
+              dragPreview={props.dragPreview}
+              draggingBookId={props.draggingBookId}
               onBookDrop={props.onBookDrop}
               t={t}
             />
           ))}
         </div>
       )}
+      <NextGoalStrip hint={props.nextGoalHint} />
     </section>
   )
 }
@@ -76,22 +90,38 @@ function EquipSlot(props: {
   readonly book: Spellbook | null
   readonly index: number
   readonly selected: BookSource | null
+  readonly draggingBookId: string | null
+  readonly dragActive: boolean
+  readonly dragPreview: DragPreview | null
   readonly tier: number
   readonly gold: number
   readonly onBookPointerDown: (source: BookSource) => void
   readonly onEquipDrop: (slotIdx: number, source: BookSource | null) => void
   readonly onEquipClick: (slotIdx: number, source: BookSource | null) => void
   readonly onUpgradeSlot: (slotIdx: number) => boolean
+  readonly showUpgradeDot: boolean
   readonly t: Translator
 }) {
   const upgradeCost = getSlotUpgradeCost(props.tier)
   const elementClass = props.book === null ? "empty" : props.book.element
   const selected = props.book !== null && props.selected?.bookId === props.book.id
   const canUpgrade = canUpgradeSlotWhileSelected(props.selected) && props.gold >= upgradeCost
+  const targetTestId = `equip-slot-${props.index}`
+  const isDraggingSource = props.dragActive && props.book !== null && props.draggingBookId === props.book.id
+  const isDropTarget =
+    props.dragActive &&
+    props.dragPreview !== null &&
+    props.dragPreview.targetTestId === targetTestId &&
+    props.dragPreview.valid
+  const isMergeTarget = isDropTarget && props.dragPreview?.mergeable === true
+  const isEquipTarget = isDropTarget && props.dragPreview?.equipEmpty === true
 
   return (
     <div
-      className={`slot equip-slot element-${elementClass}${selected ? " is-selected" : ""}`}
+      className={`slot equip-slot element-${elementClass}${selected ? " is-selected" : ""}${isDraggingSource ? " is-dragging-source" : ""}${isDropTarget ? " is-drop-target" : ""}${isMergeTarget ? " is-merge-target" : ""}${isEquipTarget ? " is-equip-target" : ""}`}
+      data-book-element={props.book?.element}
+      data-book-id={props.book?.id}
+      data-book-level={props.book?.level}
       data-testid={`equip-slot-${props.index}`}
       onClick={() =>
         props.onEquipClick(props.index, props.book === null ? null : { kind: "equipped", bookId: props.book.id })
@@ -116,6 +146,9 @@ function EquipSlot(props: {
             <span className="level-badge">{props.t.levelBadge(props.book.level)}</span>
             {props.tier > 0 ? (
               <span className="slot-tier-badge">x{getSlotMultiplier(props.tier).toFixed(2)}</span>
+            ) : null}
+            {isMergeTarget && props.dragPreview?.previewLevel !== null ? (
+              <span className="merge-preview-badge">{props.t.levelBadge(props.dragPreview.previewLevel)}</span>
             ) : null}
           </>
         )}
@@ -145,6 +178,7 @@ function EquipSlot(props: {
         type="button"
       >
         {props.t.slotUpgrade(formatNumber(upgradeCost), SLOT_UPGRADE_BONUS_PERCENT)}
+        {props.showUpgradeDot && canUpgrade ? <span aria-hidden="true" className="badge-dot" /> : null}
       </button>
     </div>
   )
@@ -154,6 +188,9 @@ function InventoryCell(props: {
   readonly book: Spellbook | null
   readonly index: number
   readonly selected: BookSource | null
+  readonly draggingBookId: string | null
+  readonly dragActive: boolean
+  readonly dragPreview: DragPreview | null
   readonly onBookPointerDown: (source: BookSource) => void
   readonly onBookDrop: (book: Spellbook) => void
   readonly onBookClick: (source: BookSource, book: Spellbook) => void
@@ -161,11 +198,22 @@ function InventoryCell(props: {
 }) {
   const selected = props.book !== null && props.selected?.bookId === props.book.id
   const elementClass = props.book === null ? "empty" : props.book.element
+  const isDraggingSource = props.dragActive && props.book !== null && props.draggingBookId === props.book.id
+  const targetTestId = `merge-cell-${props.index}`
+  const isDropTarget =
+    props.dragActive &&
+    props.dragPreview !== null &&
+    props.dragPreview.targetTestId === targetTestId &&
+    props.dragPreview.valid
+  const isMergeTarget = isDropTarget && props.dragPreview?.mergeable === true
 
   return (
     <div
-      className={`slot merge-cell element-${elementClass}${selected ? " is-selected" : ""}`}
-      data-testid={`merge-cell-${props.index}`}
+      className={`slot merge-cell element-${elementClass}${selected ? " is-selected" : ""}${isDraggingSource ? " is-dragging-source" : ""}${isDropTarget ? " is-drop-target" : ""}${isMergeTarget ? " is-merge-target" : ""}`}
+      data-book-element={props.book?.element}
+      data-book-id={props.book?.id}
+      data-book-level={props.book?.level}
+      data-testid={targetTestId}
       onClick={() => {
         if (props.book !== null) {
           props.onBookClick({ kind: "inventory", bookId: props.book.id }, props.book)
@@ -190,6 +238,9 @@ function InventoryCell(props: {
         <>
           <TomeIcon element={props.book.element} />
           <span className="level-badge">{props.t.levelBadge(props.book.level)}</span>
+          {isMergeTarget && props.dragPreview?.previewLevel !== null ? (
+            <span className="merge-preview-badge">{props.t.levelBadge(props.dragPreview.previewLevel)}</span>
+          ) : null}
           <span className="slot-meta">{elementLabel(props.book.element, props.t)}</span>
         </>
       )}

@@ -6,8 +6,21 @@ import { createGame } from "../game/createGame"
 import { INVENTORY_LIMIT } from "../engine/constants"
 import { assertNever, type Spellbook } from "../engine/types"
 import { ActionFeedbackLayer } from "./ActionFeedbackLayer"
-import { bookElementSelector, getEquipSlotClickDecision, type BookSource } from "./bookInteractions"
+import {
+  bookElementSelector,
+  DRAG_GHOST_OFFSET_Y,
+  dropTargetToBookSource,
+  findBookInState,
+  getDragPreview,
+  getEquipSlotClickDecision,
+  pointerDragDistance,
+  resolveDropTargetFromElement,
+  shouldActivateDrag,
+  type BookSource,
+  type DragPreview,
+} from "./bookInteractions"
 import { ControlsPanel } from "./ControlsPanel"
+import { DragGhostLayer, type DragGhostState } from "./DragGhostLayer"
 import { canMerge } from "./engineActionHelpers"
 import { clearSavedRun } from "./engineStorage"
 import { HelpModal } from "./HelpModal"
@@ -18,14 +31,21 @@ import { getContextHint } from "./hints"
 import { Toasts } from "./Toasts"
 import { Tutorial } from "./TutorialOverlay"
 import { useActionFeedback } from "./useActionFeedback"
+import { useBadges } from "./useBadges"
 import { useEngine } from "./useEngine"
 import { useLocale } from "./useLocale"
 import { useTutorial } from "./useTutorial"
 import type { MessageKey } from "./i18n"
 
-const TABS: readonly { readonly id: TabId; readonly labelKey: MessageKey; readonly testId: string }[] = [
+const TABS: readonly {
+  readonly id: TabId
+  readonly labelKey: MessageKey
+  readonly testId: string
+  readonly locked?: boolean
+}[] = [
   { id: "books", labelKey: "tabBooks", testId: "tab-books" },
   { id: "skills", labelKey: "tabSkills", testId: "tab-skills" },
+  { id: "quests", labelKey: "tabQuests", testId: "tab-quests", locked: true },
   { id: "rebirth", labelKey: "tabRebirth", testId: "tab-rebirth" },
   { id: "ranks", labelKey: "tabRanks", testId: "tab-ranks" },
 ]
@@ -36,15 +56,26 @@ export function GameShell() {
   const gameRef = useRef<Phaser.Game | null>(null)
   const selectedRef = useRef<BookSource | null>(null)
   const draggingRef = useRef<BookSource | null>(null)
+  const dragStartRef = useRef<{ readonly x: number; readonly y: number } | null>(null)
+  const dragActiveRef = useRef(false)
+  const ghostOriginRef = useRef<{ readonly x: number; readonly y: number } | null>(null)
   const suppressClickRef = useRef(false)
   const [activeSceneKey, setActiveSceneKey] = useState("booting")
   const [activeTab, setActiveTab] = useState<TabId>("books")
   const [selected, setSelected] = useState<BookSource | null>(null)
-  const [, setDragging] = useState<BookSource | null>(null)
+  const [draggingBookId, setDraggingBookId] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null)
+  const [dragGhost, setDragGhost] = useState<DragGhostState | null>(null)
+  const dragGhostRef = useRef<DragGhostState | null>(null)
+  dragGhostRef.current = dragGhost
   const [soundMuted, setSoundMuted] = useState(readAudioMutedPreference)
   const [helpOpen, setHelpOpen] = useState(false)
   const engine = useEngine()
+  const engineStateRef = useRef(engine.state)
+  engineStateRef.current = engine.state
   const feedback = useActionFeedback()
+  const badges = useBadges(engine.state)
   const tutorial = useTutorial(engine.state, {
     onComplete: () => engine.notify(t("toastTutorialComplete"), "notice"),
   })
@@ -60,10 +91,6 @@ export function GameShell() {
       setActiveSceneKey(scene.scene.key)
     })
 
-    // StrictMode runs this effect twice in dev; destroying a Phaser game
-    // mid-asset-load corrupts the loader (scene stuck in "booting"). The game
-    // is an app-lifetime singleton, so create once and never destroy on the
-    // double-invoke.
     if (gameRef.current === null) {
       gameRef.current = createGame(host)
     }
@@ -80,35 +107,46 @@ export function GameShell() {
 
   const setDraggingSource = (source: BookSource | null) => {
     draggingRef.current = source
-    setDragging(source)
+    setDraggingBookId(source?.bookId ?? null)
+  }
+
+  const clearDragSession = () => {
+    dragStartRef.current = null
+    dragActiveRef.current = false
+    ghostOriginRef.current = null
+    setDragActive(false)
+    setDragPreview(null)
+    setDragGhost(null)
+    setDraggingSource(null)
   }
 
   const clearHeldBook = () => {
-    setSelectedSource(null); setDraggingSource(null)
+    setSelectedSource(null)
+    clearDragSession()
   }
 
-  // allowSwap distinguishes intent: a drag-drop onto a different-level book
-  // falls back to a swap, but a tap-tap means "merge these two" — a silent swap
-  // on a level mismatch was the #1 source of "I don't know what happened".
+  const findBookLevel = (bookId: string): number => findBookInState(engineStateRef.current, bookId)?.level ?? 0
+
   const applyBookTargetAction = (source: BookSource, target: BookSource, allowSwap: boolean) => {
     if (source.bookId === target.bookId) {
       setSelectedSource(target)
-      setDraggingSource(null)
+      clearDragSession()
       return
     }
 
-    // Anchor the merge feedback to the target slot before the merge mutates
-    // state (the merged book gets a new id at the same cell).
-    const targetSelector = bookElementSelector(engine.state, target.bookId)
-    const willMerge = canMerge(engine.state, target.bookId, source.bookId)
+    const beforeState = engineStateRef.current
+    const sourceSelector = bookElementSelector(beforeState, source.bookId)
+    const targetSelector = bookElementSelector(beforeState, target.bookId)
+    const willMerge = canMerge(beforeState, target.bookId, source.bookId)
     const mergedLevel = willMerge ? findBookLevel(target.bookId) + 1 : null
+    const mergeElement = findBookInState(beforeState, target.bookId)?.element ?? "fire"
 
     if (engine.mergeBooks(target.bookId, source.bookId)) {
       emitGameSfx("merge")
-      if (targetSelector !== null) {
-        if (mergedLevel !== null) {
-          feedback.floatAbove(targetSelector, t.mergedLv(mergedLevel), "gold")
-        }
+      if (targetSelector !== null && sourceSelector !== null && mergedLevel !== null) {
+        feedback.playMergeJuice(sourceSelector, targetSelector, mergeElement, mergedLevel)
+        feedback.floatAbove(targetSelector, t.mergedLv(mergedLevel), "gold")
+      } else if (targetSelector !== null) {
         feedback.pulse(targetSelector, "fb-flash")
       }
       tutorial.notifyMerge()
@@ -117,8 +155,6 @@ export function GameShell() {
     }
 
     if (!allowSwap) {
-      // Tap-tap on a level mismatch: shake, tell the player why, keep the
-      // selection so they can pick a matching book instead of losing it.
       if (targetSelector !== null) {
         feedback.pulse(targetSelector, "fb-shake")
       }
@@ -132,31 +168,215 @@ export function GameShell() {
     clearHeldBook()
   }
 
-  const findBookLevel = (bookId: string): number => {
-    const equipped = engine.state.equipped.find((book) => book?.id === bookId)
-    if (equipped != null) {
-      return equipped.level
+  const animateGhostSnapBack = (targetSelector: string | null) => {
+    const ghost = dragGhostRef.current
+    const origin = ghostOriginRef.current
+    if (ghost === null || origin === null) {
+      clearDragSession()
+      return
     }
-    return engine.state.books.find((book) => book.id === bookId)?.level ?? 0
+
+    setDragGhost({
+      ...ghost,
+      snapping: true,
+      snapFromX: ghost.x,
+      snapFromY: ghost.y,
+      snapToX: origin.x,
+      snapToY: origin.y,
+    })
+
+    window.setTimeout(() => {
+      clearDragSession()
+    }, 160)
+
+    if (targetSelector !== null) {
+      feedback.pulse(targetSelector, "fb-shake")
+    }
   }
+
+  const resolveDropAtPoint = (clientX: number, clientY: number) => {
+    const source = draggingRef.current
+    if (source === null) {
+      return
+    }
+
+    const dropTarget = resolveDropTargetFromElement(document.elementFromPoint(clientX, clientY))
+    const preview = getDragPreview({ state: engineStateRef.current, source, target: dropTarget })
+    setDragPreview(preview)
+
+    if (dropTarget === null || !preview.valid) {
+      animateGhostSnapBack(preview.targetTestId === null ? null : `[data-testid="${preview.targetTestId}"]`)
+      return
+    }
+
+    suppressClickRef.current = true
+
+    if (dropTarget.book === null) {
+      if (dropTarget.kind === "equipped") {
+        if (engine.equipBook(source.bookId, dropTarget.index)) {
+          emitGameSfx("confirm")
+          feedback.pulse(`[data-testid="equip-slot-${dropTarget.index}"]`, "fb-pulse")
+        }
+        clearHeldBook()
+        return
+      }
+
+      animateGhostSnapBack(null)
+      return
+    }
+
+    const targetSource = dropTargetToBookSource(dropTarget)
+    if (targetSource === null) {
+      animateGhostSnapBack(`[data-testid="${preview.targetTestId}"]`)
+      return
+    }
+
+    if (preview.mergeable) {
+      applyBookTargetAction(source, targetSource, true)
+      return
+    }
+
+    if (canMerge(engineStateRef.current, targetSource.bookId, source.bookId)) {
+      applyBookTargetAction(source, targetSource, true)
+      return
+    }
+
+    if (engine.swapBooks(source.bookId, targetSource.bookId)) {
+      emitGameSfx("confirm")
+      clearHeldBook()
+      return
+    }
+
+    applyBookTargetAction(source, targetSource, true)
+  }
+
+  useEffect(() => {
+    if (draggingBookId === null) {
+      return
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      const source = draggingRef.current
+      if (source === null) {
+        return
+      }
+
+      if (dragStartRef.current === null) {
+        dragStartRef.current = { x: event.clientX, y: event.clientY }
+      }
+
+      const start = dragStartRef.current
+      const distance = pointerDragDistance(start.x, start.y, event.clientX, event.clientY)
+      if (!dragActiveRef.current && shouldActivateDrag(distance)) {
+        dragActiveRef.current = true
+        setDragActive(true)
+          const book = findBookInState(engineStateRef.current, source.bookId)
+          if (book !== null) {
+            const selector = bookElementSelector(engineStateRef.current, source.bookId)
+          if (selector !== null) {
+            const el = document.querySelector(selector)
+            if (el !== null) {
+              const box = el.getBoundingClientRect()
+              ghostOriginRef.current = {
+                x: box.left + box.width / 2,
+                y: box.top + box.height / 2 + DRAG_GHOST_OFFSET_Y,
+              }
+            }
+          }
+          setDragGhost({
+            x: event.clientX,
+            y: event.clientY + DRAG_GHOST_OFFSET_Y,
+            book,
+          })
+        }
+      }
+
+      if (dragActiveRef.current) {
+        const book = findBookInState(engineStateRef.current, source.bookId)
+        if (book !== null) {
+          setDragGhost({
+            x: event.clientX,
+            y: event.clientY + DRAG_GHOST_OFFSET_Y,
+            book,
+          })
+        }
+        const dropTarget = resolveDropTargetFromElement(document.elementFromPoint(event.clientX, event.clientY))
+        setDragPreview(getDragPreview({ state: engineStateRef.current, source, target: dropTarget }))
+      }
+    }
+
+    const onPointerUp = (event: PointerEvent) => {
+      const source = draggingRef.current
+      if (source === null) {
+        return
+      }
+
+      if (dragActiveRef.current) {
+        resolveDropAtPoint(event.clientX, event.clientY)
+        return
+      }
+
+      const dropTarget = resolveDropTargetFromElement(document.elementFromPoint(event.clientX, event.clientY))
+      if (dropTarget !== null && dropTarget.book !== null) {
+        const targetSource = dropTargetToBookSource(dropTarget)
+        if (targetSource !== null && targetSource.bookId !== source.bookId) {
+          suppressClickRef.current = true
+          applyBookTargetAction(source, targetSource, true)
+          return
+        }
+      }
+
+      if (dropTarget !== null && dropTarget.book === null && dropTarget.kind === "equipped") {
+        suppressClickRef.current = true
+        if (engine.equipBook(source.bookId, dropTarget.index)) {
+          emitGameSfx("confirm")
+          feedback.pulse(`[data-testid="equip-slot-${dropTarget.index}"]`, "fb-pulse")
+        }
+        clearHeldBook()
+        return
+      }
+
+      setSelectedSource(source)
+      clearDragSession()
+    }
+
+    window.addEventListener("pointermove", onPointerMove)
+    window.addEventListener("pointerup", onPointerUp)
+    window.addEventListener("pointercancel", onPointerUp)
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove)
+      window.removeEventListener("pointerup", onPointerUp)
+      window.removeEventListener("pointercancel", onPointerUp)
+    }
+  }, [draggingBookId, engine, feedback, t, tutorial])
 
   const handleBookPointerDown = (source: BookSource) => {
     const selectedSource = selectedRef.current
     if (selectedSource !== null && selectedSource.bookId !== source.bookId) {
       return
     }
+
+    dragStartRef.current = null
+    dragActiveRef.current = false
+    setDragActive(false)
+    setDragPreview(null)
+    setDragGhost(null)
     setDraggingSource(source)
   }
 
   const handleBookDrop = (targetBook: Spellbook) => {
+    if (dragActiveRef.current) {
+      return
+    }
+
     const source = draggingRef.current
     if (source === null) {
       return
     }
 
     suppressClickRef.current = true
-    setDraggingSource(null)
-
+    clearDragSession()
     applyBookTargetAction(source, { kind: "inventory", bookId: targetBook.id }, true)
   }
 
@@ -176,6 +396,10 @@ export function GameShell() {
   }
 
   const handleEquipDrop = (slotIdx: number, target: BookSource | null) => {
+    if (dragActiveRef.current) {
+      return
+    }
+
     const source = draggingRef.current
     if (source === null) {
       return
@@ -184,11 +408,12 @@ export function GameShell() {
     suppressClickRef.current = true
 
     if (target !== null) {
+      clearDragSession()
       applyBookTargetAction(source, target, true)
       return
     }
 
-    setDraggingSource(null)
+    clearDragSession()
     if (engine.equipBook(source.bookId, slotIdx)) {
       emitGameSfx("confirm")
       feedback.pulse(`[data-testid="equip-slot-${slotIdx}"]`, "fb-pulse")
@@ -229,6 +454,7 @@ export function GameShell() {
     const upgraded = engine.upgradeSlot(slotIdx)
     if (upgraded) {
       emitGameSfx("confirm")
+      feedback.playSlotUpgradeJuice(`[data-testid="equip-slot-${slotIdx}"]`)
     }
     return upgraded
   }
@@ -240,7 +466,8 @@ export function GameShell() {
   }
 
   const handleNewGame = () => {
-    clearSavedRun(); window.location.reload()
+    clearSavedRun()
+    window.location.reload()
   }
 
   const handleReplayTutorial = () => {
@@ -249,6 +476,20 @@ export function GameShell() {
   }
 
   const contextHint = getContextHint({ state: engine.state, summonCost: engine.summonCost }, t)
+  const nextGoalHint = activeTab === "books" ? contextHint : null
+
+  const tabShowsDot = (tabId: TabId): boolean => {
+    switch (tabId) {
+      case "books":
+        return badges.books
+      case "skills":
+        return badges.skills
+      case "rebirth":
+        return badges.rebirth
+      default:
+        return false
+    }
+  }
 
   return (
     <main
@@ -286,6 +527,10 @@ export function GameShell() {
               activeTab,
               engine,
               selected,
+              draggingBookId,
+              dragActive,
+              dragPreview,
+              nextGoalHint,
               handleBookPointerDown,
               handleBookDrop,
               handleBookClick,
@@ -312,14 +557,25 @@ export function GameShell() {
               emitGameSfx("confirm")
             }}
             onSummon={() => {
+              const before = engine.state
               if (engine.summon()) {
                 emitGameSfx("confirm")
                 tutorial.notifySummon()
+                const newEquipped = engine.state.equipped.find(
+                  (book, index) => book !== null && before.equipped[index]?.id !== book.id,
+                )
+                const newInventory = engine.state.books.find(
+                  (book) => !before.books.some((previous) => previous.id === book.id),
+                )
+                const summonedBook = newEquipped ?? newInventory
+                if (summonedBook !== null && summonedBook !== undefined) {
+                  const selector = bookElementSelector(engine.state, summonedBook.id)
+                  if (selector !== null) {
+                    feedback.playSummonJuice(selector)
+                  }
+                }
                 return
               }
-              // Blocked summon: shake the button and say why. Inventory-full is
-              // checked first (matches the engine's summonBook order); otherwise
-              // it's the gold shortfall.
               feedback.pulse('[data-testid="summon-btn"]', "fb-shake")
               const inventoryFull =
                 engine.state.equipped.every((book) => book !== null) &&
@@ -333,27 +589,38 @@ export function GameShell() {
             {TABS.map((tab) => (
               <button
                 aria-pressed={activeTab === tab.id}
-                className={`tab-btn${activeTab === tab.id ? " is-active" : ""}`}
+                className={`tab-btn${activeTab === tab.id ? " is-active" : ""}${tab.locked === true ? " is-locked" : ""}`}
                 data-testid={tab.testId}
                 key={tab.id}
                 onClick={() => {
+                  if (tab.locked === true) {
+                    return
+                  }
                   setActiveTab(tab.id)
                   emitGameSfx("confirm")
                 }}
+                title={tab.locked === true ? t("questsLockedTooltip") : undefined}
                 type="button"
               >
+                {tab.locked === true ? <span aria-hidden="true" className="tab-lock-icon" /> : null}
                 {t(tab.labelKey)}
                 {tab.id === "skills" && engine.state.skillPoints > 0 ? (
                   <span className="tab-badge" data-testid="skills-badge">
                     {engine.state.skillPoints}
                   </span>
                 ) : null}
+                {tabShowsDot(tab.id) ? <span aria-hidden="true" className="badge-dot" /> : null}
               </button>
             ))}
           </nav>
         </div>
         <Toasts toasts={engine.toasts} />
-        <ActionFeedbackLayer floatingTexts={feedback.floatingTexts} microToasts={feedback.microToasts} />
+        <ActionFeedbackLayer
+          floatingTexts={feedback.floatingTexts}
+          microToasts={feedback.microToasts}
+          particles={feedback.particles}
+        />
+        <DragGhostLayer ghost={dragGhost} t={t} />
         <OfflineClaimModal claim={engine.offlineClaim} onClose={engine.closeOfflineClaim} />
         <Tutorial state={tutorial.state} onSkip={tutorial.skip} />
         {helpOpen ? <HelpModal onClose={() => setHelpOpen(false)} onReplayTutorial={handleReplayTutorial} /> : null}

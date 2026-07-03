@@ -11,6 +11,10 @@ function book(id: string, level: number, element: Spellbook["element"]): Spellbo
 function renderBooksPanel(state: EngineState): string {
   return renderToStaticMarkup(
     <BooksPanel
+      dragActive={false}
+      dragPreview={null}
+      draggingBookId={null}
+      nextGoalHint={null}
       onBookClick={() => undefined}
       onBookDrop={() => undefined}
       onBookPointerDown={() => undefined}
