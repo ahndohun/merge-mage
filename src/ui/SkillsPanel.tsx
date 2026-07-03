@@ -6,6 +6,7 @@ import {
   GOLD_GAIN_PER_POINT,
   MIN_CAST_INTERVAL_MS,
 } from "../engine/constants"
+import { getTraitsForSlot, TRAIT_SLOTS, type TraitId, type TraitSlot } from "../engine/traits"
 import type { EngineState, SkillName } from "../engine/types"
 import type { MessageKey, Translator } from "./i18n"
 import { useLocale } from "./useLocale"
@@ -21,6 +22,7 @@ type SkillsPanelProps = {
   readonly state: EngineState
   readonly onAllocateSkill: (skill: SkillName) => void
   readonly onResetSkills: () => void
+  readonly onSelectTrait: (slot: TraitSlot, traitId: TraitId) => boolean
 }
 
 // Mirrors the engine's cast-interval formula (src/engine/battle.ts getCastIntervalMs).
@@ -81,6 +83,65 @@ export function SkillsPanel(props: SkillsPanelProps) {
       <button className="btn btn-wide" data-testid="skill-reset" onClick={props.onResetSkills} type="button">
         {t("reset")}
       </button>
+      <TraitsSection state={props.state} onSelectTrait={props.onSelectTrait} t={t} />
     </section>
+  )
+}
+
+function TraitsSection(props: {
+  readonly state: EngineState
+  readonly onSelectTrait: (slot: TraitSlot, traitId: TraitId) => boolean
+  readonly t: Translator
+}) {
+  return (
+    <section className="traits-section" aria-label="Arcane traits">
+      <div className="panel-header">
+        <span>{props.t("traits")}</span>
+        <strong>{Object.keys(props.state.traits.picks).filter((key) => key.startsWith("lv")).length}/3</strong>
+      </div>
+      {TRAIT_SLOTS.map((slot) => (
+        <TraitSlotRow key={slot} slot={slot} state={props.state} onSelectTrait={props.onSelectTrait} t={props.t} />
+      ))}
+    </section>
+  )
+}
+
+function TraitSlotRow(props: {
+  readonly slot: TraitSlot
+  readonly state: EngineState
+  readonly onSelectTrait: (slot: TraitSlot, traitId: TraitId) => boolean
+  readonly t: Translator
+}) {
+  const traits = getTraitsForSlot(props.slot)
+  const requiredLevel = traits[0]?.requiredLevel ?? 1
+  const unlocked = props.state.wizardLevel >= requiredLevel
+  const selected = props.state.traits.picks[props.slot]
+
+  return (
+    <div className={`trait-slot-row${unlocked ? " is-unlocked" : " is-locked"}`}>
+      <div className="trait-slot-title">
+        <span>{props.t.traitUnlock(requiredLevel)}</span>
+        {unlocked ? null : <strong>{props.t("locked")}</strong>}
+        {unlocked && selected !== undefined ? <strong>{props.t("selected")}</strong> : null}
+      </div>
+      <div className="trait-card-grid">
+        {traits.map((trait) => {
+          const isSelected = selected === trait.id
+          return (
+            <button
+              className={`trait-card${isSelected ? " is-selected" : ""}`}
+              data-testid={`trait-${props.slot}-${trait.id}`}
+              disabled={!unlocked || isSelected}
+              key={trait.id}
+              onClick={() => props.onSelectTrait(props.slot, trait.id)}
+              type="button"
+            >
+              <strong>{props.t.traitTitle(trait.id)}</strong>
+              <span>{props.t.traitDescription(trait.id)}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }

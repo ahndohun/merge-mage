@@ -23,6 +23,7 @@ export function renderTab(
   onEquipDrop: (slotIdx: number, source: BookSource | null) => void,
   onEquipClick: (slotIdx: number, source: BookSource | null) => void,
   onUpgradeSlot: (slotIdx: number) => boolean,
+  onClaimQuest: (questId: string) => boolean,
 ) {
   switch (activeTab) {
     case "books":
@@ -43,9 +44,16 @@ export function renderTab(
         />
       )
     case "skills":
-      return <SkillsPanel onAllocateSkill={engine.allocateSkill} onResetSkills={engine.resetSkills} state={engine.state} />
+      return (
+        <SkillsPanel
+          onAllocateSkill={engine.allocateSkill}
+          onResetSkills={engine.resetSkills}
+          onSelectTrait={engine.selectTrait}
+          state={engine.state}
+        />
+      )
     case "quests":
-      return <QuestsPanel />
+      return <QuestsPanel onClaimQuest={onClaimQuest} state={engine.state} />
     case "rebirth":
       return (
         <RebirthPanel

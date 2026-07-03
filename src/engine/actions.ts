@@ -34,6 +34,7 @@ import {
   toSlotIndex,
 } from "./bookSlots.js"
 import { mergeSpellbooks } from "./merge.js"
+import { trackProgress } from "./progression.js"
 import { nextRandomState } from "./rng.js"
 import { getEquippedRelicEffects, getUncappedRelicIds, isRelicId, RELIC_IDS, type RelicId } from "./relics.js"
 import { getSummonCost, getSummonLevel } from "./summon.js"
@@ -47,6 +48,7 @@ import {
   zeroTimers,
 } from "./state.js"
 import { assertNever, type BattleSnapshot, type Element, type EngineState, type RelicEquipment, type RiftKind, type SkillName, type Spellbook } from "./types.js"
+import { grantTraitRespecAfterPrestige } from "./traits.js"
 
 export {
   BookNotFoundError,
@@ -62,6 +64,7 @@ export {
   SkillPointError,
   SlotIndexError,
 } from "./errors.js"
+export { claimQuestReward, selectTrait } from "./progressionActions.js"
 
 export function summonBook(state: EngineState): EngineState {
   const emptySlot = SLOT_INDEXES.find((slot) => state.equipped[slot] === null)
@@ -80,7 +83,7 @@ export function summonBook(state: EngineState): EngineState {
     element: pickElement(roll.value),
   }
 
-  return {
+  return trackProgress({
     ...state,
     gold: state.gold - cost,
     books: emptySlot === undefined ? [...state.books, spellbook] : state.books,
@@ -88,7 +91,7 @@ export function summonBook(state: EngineState): EngineState {
     highestLevelEver: Math.max(state.highestLevelEver, spellbook.level),
     rngState: roll.state,
     nextBookId: state.nextBookId + 1,
-  }
+  }, [{ counter: "summonsTotal", amount: 1 }], spellbook)
 }
 
 export function mergeBooks(state: EngineState, idA: string, idB: string): EngineState {
@@ -131,7 +134,8 @@ export function mergeBooks(state: EngineState, idA: string, idB: string): Engine
     nextBookId: state.nextBookId + 1,
   }
 
-  return right.kind === "equipped" ? refillSlotsFromInventory(next, [right.slot]) : next
+  const refilled = right.kind === "equipped" ? refillSlotsFromInventory(next, [right.slot]) : next
+  return trackProgress(refilled, [{ counter: "mergesTotal", amount: 1 }], merged)
 }
 
 export function equipBook(state: EngineState, bookId: string, slotIdx: number): EngineState {
@@ -147,16 +151,16 @@ export function equipBook(state: EngineState, bookId: string, slotIdx: number): 
 
   switch (source.kind) {
     case "inventory":
-      return {
+      return trackProgress({
         ...state,
         books: targetBook === null ? booksWithoutSource : [...booksWithoutSource, targetBook],
         equipped: setEquippedSlot(state.equipped, targetSlot, source.book),
-      }
+      })
     case "equipped":
-      return {
+      return trackProgress({
         ...state,
         equipped: setEquippedSlot(setEquippedSlot(state.equipped, targetSlot, source.book), source.slot, targetBook),
-      }
+      })
     default:
       return assertNever(source)
   }
@@ -210,11 +214,11 @@ export function upgradeSlot(state: EngineState, slotIdx: number): EngineState {
     throw new InsufficientGoldError(cost, state.gold)
   }
 
-  return {
+  return trackProgress({
     ...state,
     gold: state.gold - cost,
     slotTiers: setSlotTier(state.slotTiers, slot, currentTier + 1),
-  }
+  })
 }
 
 export function allocateSkill(state: EngineState, skill: SkillName): EngineState {
@@ -224,13 +228,13 @@ export function allocateSkill(state: EngineState, skill: SkillName): EngineState
 
   switch (skill) {
     case "summonBonus":
-      return { ...state, skillPoints: state.skillPoints - 1, skills: { ...state.skills, summonBonus: state.skills.summonBonus + 1 } }
+      return trackProgress({ ...state, skillPoints: state.skillPoints - 1, skills: { ...state.skills, summonBonus: state.skills.summonBonus + 1 } })
     case "castSpeed":
-      return { ...state, skillPoints: state.skillPoints - 1, skills: { ...state.skills, castSpeed: state.skills.castSpeed + 1 } }
+      return trackProgress({ ...state, skillPoints: state.skillPoints - 1, skills: { ...state.skills, castSpeed: state.skills.castSpeed + 1 } })
     case "goldGain":
-      return { ...state, skillPoints: state.skillPoints - 1, skills: { ...state.skills, goldGain: state.skills.goldGain + 1 } }
+      return trackProgress({ ...state, skillPoints: state.skillPoints - 1, skills: { ...state.skills, goldGain: state.skills.goldGain + 1 } })
     case "critChance":
-      return { ...state, skillPoints: state.skillPoints - 1, skills: { ...state.skills, critChance: state.skills.critChance + 1 } }
+      return trackProgress({ ...state, skillPoints: state.skillPoints - 1, skills: { ...state.skills, critChance: state.skills.critChance + 1 } })
     default:
       return assertNever(skill)
   }
@@ -239,11 +243,11 @@ export function allocateSkill(state: EngineState, skill: SkillName): EngineState
 export function resetSkills(state: EngineState): EngineState {
   const allocated = state.skills.summonBonus + state.skills.castSpeed + state.skills.goldGain + state.skills.critChance
 
-  return {
+  return trackProgress({
     ...state,
     skillPoints: state.skillPoints + allocated,
     skills: { summonBonus: 0, castSpeed: 0, goldGain: 0, critChance: 0 },
-  }
+  })
 }
 
 export function prestige(state: EngineState): EngineState {
@@ -255,7 +259,7 @@ export function prestige(state: EngineState): EngineState {
   const manaCrystals = Math.floor((state.stage ** 1.5 / 10) * getEquippedRelicEffects(state.relics).crystalGainMultiplier)
   const enemiesHp = createWaveEnemies(initial.stage, initial.wave)
 
-  return {
+  return trackProgress(grantTraitRespecAfterPrestige({
     ...initial,
     gold: initial.gold + getEquippedRelicEffects(state.relics).startingGoldBonus,
     skills: state.skills,
@@ -282,7 +286,7 @@ export function prestige(state: EngineState): EngineState {
     mine: state.mine,
     dailyMissions: state.dailyMissions,
     skins: state.skins,
-  }
+  }))
 }
 
 export function summonRelic(state: EngineState): EngineState {

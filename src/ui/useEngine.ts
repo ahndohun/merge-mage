@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   allocateSkill as allocateSkillReducer,
   autoMergeBooks as autoMergeBooksReducer,
+  claimQuestReward as claimQuestRewardReducer,
   enterRift as enterRiftReducer,
   equipRelic as equipRelicReducer,
   equipBook as equipBookReducer,
@@ -9,6 +10,7 @@ import {
   mergeBooks as mergeBooksReducer,
   prestige as prestigeReducer,
   resetSkills as resetSkillsReducer,
+  selectTrait as selectTraitReducer,
   summonRelic as summonRelicReducer,
   summonBook,
   swapBookPositions as swapBookPositionsReducer,
@@ -18,6 +20,7 @@ import {
 import { INVENTORY_LIMIT } from "../engine/constants"
 import { getEquippedRelicEffects } from "../engine/relics"
 import { getSummonCost, getSummonLevel } from "../engine/summon"
+import type { TraitId, TraitSlot } from "../engine/traits"
 import type { EngineEvent, EngineState, RiftKind, SkillName } from "../engine/types"
 import { EventBus } from "../bridge/EventBus"
 import { canMerge, isExpectedEngineError } from "./engineActionHelpers"
@@ -67,6 +70,8 @@ export type UseEngineResult = {
   readonly equipRelic: (relicId: string | null, slotIdx: number) => boolean
   readonly enterRift: (kind: RiftKind) => boolean
   readonly exitRift: () => boolean
+  readonly claimQuestReward: (questId: string) => boolean
+  readonly selectTrait: (slot: TraitSlot, traitId: TraitId) => boolean
   readonly setAutoMerge: (enabled: boolean) => void
   readonly setAutoBuy: (enabled: boolean) => void
   readonly setNickname: (nickname: string) => void
@@ -198,6 +203,16 @@ export function useEngine(): UseEngineResult {
   )
   const exitRift = useCallback(() => applyReducer({ reducer: exitRiftReducer }), [applyReducer])
 
+  const claimQuestReward = useCallback(
+    (questId: string) => applyReducer({ reducer: (current) => claimQuestRewardReducer(current, questId) }),
+    [applyReducer],
+  )
+
+  const selectTrait = useCallback(
+    (slot: TraitSlot, traitId: TraitId) => applyReducer({ reducer: (current) => selectTraitReducer(current, slot, traitId) }),
+    [applyReducer],
+  )
+
   const setAutoMerge = useCallback((enabled: boolean) => {
     autoMergeRef.current = enabled
     setAutoMergeState(enabled)
@@ -321,6 +336,8 @@ export function useEngine(): UseEngineResult {
     equipRelic,
     enterRift,
     exitRift,
+    claimQuestReward,
+    selectTrait,
     setAutoMerge,
     setAutoBuy,
     setNickname,

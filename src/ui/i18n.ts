@@ -16,6 +16,19 @@ const enMessages = {
   rifts: "RIFTS",
   questsComingSoon: "Coming soon",
   questsLockedTooltip: "Coming soon",
+  subBooks: "TOMES",
+  subCodex: "CODEX",
+  mainQuest: "MAIN CHAIN",
+  longQuest: "LONG OATHS",
+  achievements: "ACHIEVEMENTS",
+  reward: "REWARD",
+  claimed: "CLAIMED",
+  ready: "READY",
+  locked: "LOCKED",
+  traits: "TRAITS",
+  selected: "SELECTED",
+  resonance: "RESONANCE",
+  respecReady: "RESPEC READY",
   nextGoal: "NEXT GOAL",
   autoMerge: "AUTO MERGE",
   autoBuy: "AUTO BUY",
@@ -105,6 +118,7 @@ const enMessages = {
   toastRelicSummoned: "Relic awakened.",
   toastRiftBlocked: "Rift unavailable.",
   toastRiftComplete: "Rift settled.",
+  toastQuestClaimed: "Quest reward claimed.",
   toastLeaderboardSaved: "Nickname saved to the leaderboard!",
   toastCloudSaveUnavailable: "Cloud save unavailable; local save active.",
   battleLoading: "LOADING",
@@ -130,6 +144,19 @@ const ko: Record<MessageKey, string> = {
   rifts: "균열",
   questsComingSoon: "곧 열림",
   questsLockedTooltip: "곧 열림",
+  subBooks: "마법서",
+  subCodex: "도감",
+  mainQuest: "메인 연쇄",
+  longQuest: "장기 맹세",
+  achievements: "업적",
+  reward: "보상",
+  claimed: "받음",
+  ready: "완료",
+  locked: "잠김",
+  traits: "특성",
+  selected: "선택됨",
+  resonance: "공명",
+  respecReady: "재선택 가능",
   nextGoal: "다음 목표",
   autoMerge: "자동 합성",
   autoBuy: "자동 구매",
@@ -219,6 +246,7 @@ const ko: Record<MessageKey, string> = {
   toastRelicSummoned: "유물이 깨어났어요.",
   toastRiftBlocked: "균열에 입장할 수 없어요.",
   toastRiftComplete: "균열 정산 완료.",
+  toastQuestClaimed: "퀘스트 보상 획득!",
   toastLeaderboardSaved: "리더보드에 닉네임을 저장했어요!",
   toastCloudSaveUnavailable: "클라우드 저장 불가. 로컬 저장 중이에요.",
   battleLoading: "불러오는 중",
@@ -255,6 +283,16 @@ type TemplateSet = {
   readonly battleBossDown: (gold: number) => string
   readonly battleStageWaveReset: (stage: number) => string
   readonly battleWaveIndicator: (wave: number, bossWave: number) => string
+  readonly questTitle: (id: string) => string
+  readonly questDescription: (id: string) => string
+  readonly achievementTitle: (counter: string, threshold: number) => string
+  readonly achievementProgress: (current: number, threshold: number) => string
+  readonly rewardLine: (gold: number, skillPoints: number) => string
+  readonly codexTier: (tier: number, bonusPercent: number) => string
+  readonly traitTitle: (id: string) => string
+  readonly traitDescription: (id: string) => string
+  readonly traitUnlock: (level: number) => string
+  readonly resonanceBadge: (element: string, count: number, requirement: number) => string
 }
 
 export type Translator = ((key: MessageKey) => string) & TemplateSet & {
@@ -288,6 +326,16 @@ const templates: Record<Locale, TemplateSet> = {
     battleBossDown: (gold) => `BOSS DOWN +${gold}`,
     battleStageWaveReset: (stage) => `STAGE ${stage} — WAVE RESET`,
     battleWaveIndicator: (wave, bossWave) => `W ${wave}/${bossWave}`,
+    questTitle: (id) => enQuestText[id]?.title ?? id.toUpperCase(),
+    questDescription: (id) => enQuestText[id]?.description ?? "Arcane work awaits.",
+    achievementTitle: (counter, threshold) => `${enCounterText[counter] ?? counter} ${threshold}`,
+    achievementProgress: (current, threshold) => `${Math.min(current, threshold)}/${threshold}`,
+    rewardLine: (gold, skillPoints) => `+${gold} gold${skillPoints > 0 ? `, +${skillPoints} SP` : ""}`,
+    codexTier: (tier, bonusPercent) => `T${tier} +${bonusPercent}%`,
+    traitTitle: (id) => enTraitText[id]?.title ?? id,
+    traitDescription: (id) => enTraitText[id]?.description ?? "A sealed arcane path.",
+    traitUnlock: (level) => `Wizard Lv${level}`,
+    resonanceBadge: (element, count, requirement) => `${element.toUpperCase()} ${count}/${requirement}`,
   },
   ko: {
     mergedLv: (level) => `합성! Lv ${level}`,
@@ -315,7 +363,131 @@ const templates: Record<Locale, TemplateSet> = {
     battleBossDown: (gold) => `보스 처치 +${gold}`,
     battleStageWaveReset: (stage) => `스테이지 ${stage} - 웨이브 리셋`,
     battleWaveIndicator: (wave, bossWave) => `웨이브 ${wave}/${bossWave}`,
+    questTitle: (id) => koQuestText[id]?.title ?? id,
+    questDescription: (id) => koQuestText[id]?.description ?? "비전의 과제가 기다려요.",
+    achievementTitle: (counter, threshold) => `${koCounterText[counter] ?? counter} ${threshold}`,
+    achievementProgress: (current, threshold) => `${Math.min(current, threshold)}/${threshold}`,
+    rewardLine: (gold, skillPoints) => `골드 +${gold}${skillPoints > 0 ? `, SP +${skillPoints}` : ""}`,
+    codexTier: (tier, bonusPercent) => `T${tier} +${bonusPercent}%`,
+    traitTitle: (id) => koTraitText[id]?.title ?? id,
+    traitDescription: (id) => koTraitText[id]?.description ?? "봉인된 비전 특성입니다.",
+    traitUnlock: (level) => `마법사 Lv${level}`,
+    resonanceBadge: (element, count, requirement) => `${element} ${count}/${requirement}`,
   },
+}
+
+const enCounterText: Record<string, string> = {
+  mergesTotal: "Merges",
+  bossKills: "Boss kills",
+  summonsTotal: "Summons",
+  rebirths: "Rebirths",
+  questsClaimed: "Quest claims",
+  highestLevelEver: "Highest tome",
+  stagesReached: "Stage",
+  codexCells: "Codex cells",
+  killsTotal: "Kills",
+}
+
+const koCounterText: Record<string, string> = {
+  mergesTotal: "합성",
+  bossKills: "보스 처치",
+  summonsTotal: "소환",
+  rebirths: "환생",
+  questsClaimed: "퀘스트 수령",
+  highestLevelEver: "최고 마법서",
+  stagesReached: "스테이지",
+  codexCells: "도감 칸",
+  killsTotal: "처치",
+}
+
+const enTraitText: Record<string, { readonly title: string; readonly description: string }> = {
+  chainCast: { title: "Chain Cast", description: "After a cast, the next spell rhythm runs 20% faster." },
+  goldenLibrary: { title: "Golden Library", description: "Gold rewards rise by 15%." },
+  elementalCycle: { title: "Elemental Cycle", description: "Resonance awakens with 2 matching tomes." },
+  pyroGlyphs: { title: "Pyro Glyphs", description: "Fire tome damage rises by 20%." },
+  deepFreeze: { title: "Deep Freeze", description: "Frost slow bites harder and lasts longer." },
+  sanctifiedAim: { title: "Sanctified Aim", description: "Holy boss damage gains another 25%." },
+  archmageFocus: { title: "Archmage Focus", description: "Each codex tier adds 1% more elemental damage." },
+  quickHands: { title: "Quick Hands", description: "All tome casting is 10% faster." },
+  treasureOath: { title: "Treasure Oath", description: "Gold rewards rise by 25%." },
+}
+
+const koTraitText: Record<string, { readonly title: string; readonly description: string }> = {
+  chainCast: { title: "연쇄 시전", description: "시전 뒤 다음 주문 박자가 20% 빨라집니다." },
+  goldenLibrary: { title: "황금 서고", description: "골드 보상이 15% 증가합니다." },
+  elementalCycle: { title: "원소 순환", description: "같은 원소 2권만으로 공명이 깨어납니다." },
+  pyroGlyphs: { title: "화염 문양", description: "화염 마법서 피해가 20% 증가합니다." },
+  deepFreeze: { title: "심층 결빙", description: "냉기 둔화가 더 강하고 오래 지속됩니다." },
+  sanctifiedAim: { title: "성화 조준", description: "신성 보스 피해가 추가로 25% 증가합니다." },
+  archmageFocus: { title: "대마법사 집중", description: "도감 티어마다 원소 피해가 1% 더 증가합니다." },
+  quickHands: { title: "재빠른 손", description: "모든 마법서 시전이 10% 빨라집니다." },
+  treasureOath: { title: "보물 맹세", description: "골드 보상이 25% 증가합니다." },
+}
+
+const enQuestText: Record<string, { readonly title: string; readonly description: string }> = {
+  "chain-01": { title: "Bind the First Tome", description: "Summon or equip any spellbook." },
+  "chain-02": { title: "Ink into Power", description: "Merge your first matching pair." },
+  "chain-03": { title: "Third Seal", description: "Reach a Lv3 tome." },
+  "chain-04": { title: "Circle of Three", description: "Equip three tomes at once." },
+  "chain-05": { title: "Apprentice Shelf", description: "Reach a Lv5 tome." },
+  "chain-06": { title: "Break the Gate", description: "Defeat your first boss gate." },
+  "chain-07": { title: "Spend the Spark", description: "Earn or spend a skill point." },
+  "chain-08": { title: "First Specialization", description: "Choose a Lv8 arcane trait." },
+  "chain-09": { title: "Full Orbit", description: "Fill all six equipped slots." },
+  "chain-10": { title: "Tiered Flame", description: "Reach a Lv10 tome." },
+  "chain-11": { title: "Arcane Rebirth", description: "Rebirth once." },
+  "chain-12": { title: "Five Grimoire Marks", description: "Unlock five codex cells." },
+  "chain-13": { title: "Fifteenth Stair", description: "Reach stage 15." },
+  "chain-14": { title: "Second Ash", description: "Rebirth twice." },
+  "chain-15": { title: "Deep Shelf", description: "Reach a Lv20 tome." },
+  "chain-16": { title: "Adept Vow", description: "Choose a Lv16 arcane trait." },
+  "chain-17": { title: "Boss Ledger", description: "Defeat 25 bosses." },
+  "chain-18": { title: "Stage 25 Gate", description: "Reach stage 25." },
+  "chain-19": { title: "Archmage Vow", description: "Choose a Lv24 arcane trait." },
+  "chain-20": { title: "Triple Rebirth", description: "Rebirth three times." },
+  "long-stage-25": { title: "Oath: Stage 25", description: "Hold the line at stage 25." },
+  "long-stage-50": { title: "Oath: Stage 50", description: "Climb to stage 50." },
+  "long-stage-75": { title: "Oath: Stage 75", description: "Climb to stage 75." },
+  "long-stage-100": { title: "Oath: Stage 100", description: "Climb to stage 100." },
+  "long-rebirth-3": { title: "Oath: Three Rebirths", description: "Rebirth three times." },
+  "long-rebirth-10": { title: "Oath: Ten Rebirths", description: "Rebirth ten times." },
+  "long-relics-5": { title: "Oath: Five Relics", description: "Own five relic types." },
+  "long-codex-15": { title: "Oath: Fifteen Marks", description: "Unlock 15 codex cells." },
+  "long-codex-30": { title: "Oath: Full Grimoire", description: "Unlock all 30 codex cells." },
+  "long-level-50": { title: "Oath: Lv50 Tome", description: "Reach a Lv50 tome." },
+}
+
+const koQuestText: Record<string, { readonly title: string; readonly description: string }> = {
+  "chain-01": { title: "첫 마법서 결속", description: "아무 마법서나 소환하거나 장착하세요." },
+  "chain-02": { title: "잉크를 힘으로", description: "첫 같은 레벨 쌍을 합성하세요." },
+  "chain-03": { title: "세 번째 봉인", description: "Lv3 마법서에 도달하세요." },
+  "chain-04": { title: "세 권의 원", description: "마법서 세 권을 동시에 장착하세요." },
+  "chain-05": { title: "견습 서가", description: "Lv5 마법서에 도달하세요." },
+  "chain-06": { title: "관문 돌파", description: "첫 보스 관문을 넘으세요." },
+  "chain-07": { title: "불씨 사용", description: "스킬 포인트를 얻거나 사용하세요." },
+  "chain-08": { title: "첫 특화", description: "Lv8 비전 특성을 선택하세요." },
+  "chain-09": { title: "완전한 궤도", description: "장착 슬롯 6개를 모두 채우세요." },
+  "chain-10": { title: "티어의 불꽃", description: "Lv10 마법서에 도달하세요." },
+  "chain-11": { title: "비전 환생", description: "한 번 환생하세요." },
+  "chain-12": { title: "도감 표식 다섯", description: "도감 5칸을 해금하세요." },
+  "chain-13": { title: "열다섯 번째 계단", description: "스테이지 15에 도달하세요." },
+  "chain-14": { title: "두 번째 재", description: "두 번 환생하세요." },
+  "chain-15": { title: "깊은 서가", description: "Lv20 마법서에 도달하세요." },
+  "chain-16": { title: "숙련자의 맹세", description: "Lv16 비전 특성을 선택하세요." },
+  "chain-17": { title: "보스 장부", description: "보스 25마리를 처치하세요." },
+  "chain-18": { title: "스테이지 25 관문", description: "스테이지 25에 도달하세요." },
+  "chain-19": { title: "대마법사의 맹세", description: "Lv24 비전 특성을 선택하세요." },
+  "chain-20": { title: "세 번의 환생", description: "세 번 환생하세요." },
+  "long-stage-25": { title: "맹세: 스테이지 25", description: "스테이지 25에 도달하세요." },
+  "long-stage-50": { title: "맹세: 스테이지 50", description: "스테이지 50에 도달하세요." },
+  "long-stage-75": { title: "맹세: 스테이지 75", description: "스테이지 75에 도달하세요." },
+  "long-stage-100": { title: "맹세: 스테이지 100", description: "스테이지 100에 도달하세요." },
+  "long-rebirth-3": { title: "맹세: 환생 3회", description: "세 번 환생하세요." },
+  "long-rebirth-10": { title: "맹세: 환생 10회", description: "열 번 환생하세요." },
+  "long-relics-5": { title: "맹세: 유물 5종", description: "유물 5종을 보유하세요." },
+  "long-codex-15": { title: "맹세: 표식 15개", description: "도감 15칸을 해금하세요." },
+  "long-codex-30": { title: "맹세: 완전한 도감", description: "도감 30칸을 모두 해금하세요." },
+  "long-level-50": { title: "맹세: Lv50 마법서", description: "Lv50 마법서에 도달하세요." },
 }
 
 export function createTranslator(locale: Locale): Translator {

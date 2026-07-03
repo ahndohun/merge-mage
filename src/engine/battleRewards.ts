@@ -11,7 +11,9 @@ import {
   XP_PER_KILL,
 } from "./constants.js"
 import { getEquippedRelicEffects } from "./relics.js"
+import { incrementAchievementCounter, refreshAchievementCounters } from "./achievements.js"
 import { createWaveEnemies, sumHp } from "./state.js"
+import { getTraitSkillGoldPoints } from "./traits.js"
 import type { EngineEvent, EngineState } from "./types.js"
 
 export type DamageApplication = {
@@ -43,8 +45,10 @@ export function finalizeDamage(
     xp: xpPerKill,
     boss,
   }) satisfies EngineEvent)
+  const countedState = killed > 0 ? incrementAchievementCounter(withRewards.state, "killsTotal", killed) : refreshAchievementCounters(withRewards.state)
+  const bossCountedState = boss && killed > 0 ? incrementAchievementCounter(countedState, "bossKills", killed) : countedState
   const stateWithEnemies = {
-    ...withRewards.state,
+    ...bossCountedState,
     enemiesHp: survivors,
     stageHp: sumHp(survivors),
   }
@@ -163,7 +167,7 @@ function getKillReward(state: EngineState, boss: boolean): number {
   const reward = Math.ceil(
     GOLD_REWARD_BASE *
       GOLD_REWARD_GROWTH ** state.stage *
-      (1 + GOLD_GAIN_PER_POINT * state.skills.goldGain) *
+      (1 + GOLD_GAIN_PER_POINT * getTraitSkillGoldPoints(state)) *
       relicEffects.goldMultiplier *
       riftMultiplier,
   )

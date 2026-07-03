@@ -8,9 +8,6 @@ import {
   CRIT_DAMAGE_MULTIPLIER,
   DMG_BASE,
   DMG_GROWTH,
-  FIRE_TARGET_CAP,
-  FROST_SLOW_FACTOR,
-  FROST_SLOW_MS,
   GOLDEN_RIFT_MS,
   MANA_DAMAGE_PER_CRYSTAL,
   MIN_CAST_INTERVAL_MS,
@@ -20,8 +17,11 @@ import {
 import { getSlotMultiplier } from "./actions.js"
 import { finalizeDamage, type DamageApplication } from "./battleRewards.js"
 import { getElementDamageMultiplier, getEquippedRelicEffects } from "./relics.js"
+import { getCodexBonusMultiplier } from "./codex.js"
+import { getFireTargetCap, getFrostSlow, getHolyBossMultiplier } from "./resonance.js"
 import { nextRandomState } from "./rng.js"
 import { createWaveEnemies, setSlotTimer, sumHp } from "./state.js"
+import { applyTraitCastInterval, getTraitCodexBonusPerTier, getTraitElementDamageMultiplier } from "./traits.js"
 import { assertNever, type Element, type EngineEvent, type EngineState, type SlotIndex, type Spellbook } from "./types.js"
 
 const INNATE_STAFF_INTERVAL_MS = 1_200
@@ -50,6 +50,7 @@ export function bookDamage(book: Spellbook, slotTier: number, state: EngineState
     getSlotMultiplier(slotTier) *
     (1 + MANA_DAMAGE_PER_CRYSTAL * state.manaCrystals) *
     getElementDamageMultiplier(book.element, state.relics) *
+    getElementProgressionMultiplier(state, book.element) *
     critFactor
 
   return {
@@ -177,8 +178,8 @@ function applyCastDamage(
     return { state, events: [], goldEarned: 0 }
   }
 
-  const targetsHit = getTargetsHit(book.element, state.enemiesHp.length)
-  const damage = getElementDamage(book.element, baseDamage, state.wave)
+  const targetsHit = getTargetsHit(book.element, state.enemiesHp.length, state)
+  const damage = getElementDamage(book.element, baseDamage, state.wave, state)
   const damaged = state.enemiesHp.map((hp, index) => (index < targetsHit ? hp - damage : hp))
   const castEvent: EngineEvent = {
     type: "cast",
@@ -190,9 +191,10 @@ function applyCastDamage(
     targetIndex: 0,
     targetsHit,
   }
-  const frostSlowMs = FROST_SLOW_MS + getEquippedRelicEffects(state.relics).frostSlowBonusMs
+  const frostSlow = getFrostSlow(state)
+  const frostSlowMs = frostSlow.durationMs + getEquippedRelicEffects(state.relics).frostSlowBonusMs
   const slowEvents: readonly EngineEvent[] =
-    book.element === "frost" ? [{ type: "slow", durationMs: frostSlowMs, factor: FROST_SLOW_FACTOR }] : []
+    book.element === "frost" ? [{ type: "slow", durationMs: frostSlowMs, factor: frostSlow.factor }] : []
   const slowedState = book.element === "frost" ? { ...state, frostSlowMs: Math.max(state.frostSlowMs, frostSlowMs) } : state
   return finalizeDamage(slowedState, damaged, [castEvent, ...slowEvents])
 }
@@ -206,10 +208,10 @@ function normalizeBattleState(state: EngineState): EngineState {
   return { ...state, enemiesHp, stageHp: sumHp(enemiesHp) }
 }
 
-function getTargetsHit(element: Element, enemyCount: number): number {
+function getTargetsHit(element: Element, enemyCount: number, state: EngineState): number {
   switch (element) {
     case "fire":
-      return Math.min(FIRE_TARGET_CAP, enemyCount)
+      return Math.min(getFireTargetCap(state), enemyCount)
     case "frost":
       return Math.min(1, enemyCount)
     case "holy":
@@ -219,14 +221,14 @@ function getTargetsHit(element: Element, enemyCount: number): number {
   }
 }
 
-function getElementDamage(element: Element, damage: number, wave: number): number {
+function getElementDamage(element: Element, damage: number, wave: number, state: EngineState): number {
   switch (element) {
     case "fire":
       return damage
     case "frost":
       return damage
     case "holy":
-      return wave === BOSS_WAVE ? damage * 2 : damage
+      return wave === BOSS_WAVE ? damage * getHolyBossMultiplier(state) : damage
     default:
       return assertNever(element)
   }
@@ -235,5 +237,11 @@ function getElementDamage(element: Element, damage: number, wave: number): numbe
 function getCastIntervalMs(state: EngineState): number {
   const baseInterval = BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * state.skills.castSpeed
   const riftMultiplier = state.activeRift?.kind === "golden" ? GOLDEN_RIFT_MS / (GOLDEN_RIFT_MS * 2) : 1
-  return Math.max(MIN_CAST_INTERVAL_MS, baseInterval * getEquippedRelicEffects(state.relics).castIntervalMultiplier * riftMultiplier)
+  const relicInterval = baseInterval * getEquippedRelicEffects(state.relics).castIntervalMultiplier * riftMultiplier
+  return applyTraitCastInterval(state, Math.max(MIN_CAST_INTERVAL_MS, relicInterval))
+}
+
+function getElementProgressionMultiplier(state: EngineState, element: Element): number {
+  const codexTiers = state.codex.tiers[element] ?? 0
+  return getCodexBonusMultiplier(state, element) * (1 + getTraitCodexBonusPerTier(state) * codexTiers) * getTraitElementDamageMultiplier(state, element)
 }

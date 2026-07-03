@@ -5,7 +5,14 @@ import type { EngineState } from "../engine/types"
 import { SkillsPanel } from "./SkillsPanel"
 
 function renderSkillsPanel(state: EngineState): string {
-  return renderToStaticMarkup(<SkillsPanel onAllocateSkill={() => undefined} onResetSkills={() => undefined} state={state} />)
+  return renderToStaticMarkup(
+    <SkillsPanel
+      onAllocateSkill={() => undefined}
+      onResetSkills={() => undefined}
+      onSelectTrait={() => false}
+      state={state}
+    />,
+  )
 }
 
 describe("SkillsPanel", () => {
@@ -43,5 +50,15 @@ describe("SkillsPanel", () => {
     const markup = renderSkillsPanel(state)
 
     expect(markup).toContain("now 300ms")
+  })
+
+  it("renders locked and unlocked trait cards", () => {
+    const locked = renderSkillsPanel(createInitialState(1))
+    const unlocked = renderSkillsPanel({ ...createInitialState(1), wizardLevel: 8 })
+
+    expect(locked).toContain("Wizard Lv8")
+    expect(locked).toContain("LOCKED")
+    expect(unlocked).toContain("Chain Cast")
+    expect(unlocked).toContain("Golden Library")
   })
 })

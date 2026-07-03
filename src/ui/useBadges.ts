@@ -1,9 +1,11 @@
 import { getSlotUpgradeCost } from "../engine/actions"
+import { getClaimableQuests } from "../engine/quests"
 import type { EngineState } from "../engine/types"
 
 export type BadgeFlags = {
   readonly books: boolean
   readonly skills: boolean
+  readonly quests: boolean
   readonly rebirth: boolean
 }
 
@@ -27,6 +29,7 @@ export function useBadges(state: EngineState): BadgeFlags {
   return {
     books: state.gold >= minUpgradeCost,
     skills: state.skillPoints > 0,
+    quests: getClaimableQuests(state).length > 0,
     rebirth:
       state.stage >= 10 &&
       rebirthPreview > 0 &&

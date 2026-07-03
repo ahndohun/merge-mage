@@ -101,3 +101,14 @@ export class RiftEntryError extends Error {
     super(`Cannot enter rift: ${reason}`)
   }
 }
+
+export class QuestClaimError extends Error {
+  readonly name = "QuestClaimError"
+
+  constructor(
+    readonly questId: string,
+    readonly reason: "missing" | "locked" | "incomplete" | "claimed",
+  ) {
+    super(`Quest ${questId} cannot be claimed: ${reason}`)
+  }
+}
