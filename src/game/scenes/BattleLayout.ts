@@ -7,7 +7,7 @@ export const BOSS_ENRAGE_MS = 30_000
 export const BattleLayout = {
   width: 390,
   height: 844,
-  viewportHeight: 380,
+  viewportHeight: 844,
   wizardX: 64,
   wizardY: 226,
   castX: 78,
