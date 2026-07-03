@@ -2,7 +2,7 @@
   "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
   "type": "frontend",
   "name": "Summoned books auto-equip and can be moved between slots",
-  "description": "A summon fills the first empty equip slot; tapping the slotted book then another empty slot moves it.",
+  "description": "Summons auto-equip into empty slots; a selected book moves to an empty slot by tap-tap. Each slot card contains a small UP(grade) sub-button at its bottom — taps for selecting/moving must land on the large book/plus area of the card, never on the UP button.",
   "priority": "p0",
   "planSteps": [
     {
@@ -15,15 +15,15 @@
     },
     {
       "type": "assertion",
-      "description": "Verify the first equip slot now shows a book with a level badge (like Lv1) \u2014 summons auto-equip into empty slots"
+      "description": "Verify the first equip slot now shows a book with a level badge (like Lv1) — summons auto-equip into empty slots"
     },
     {
       "type": "action",
-      "description": "Tap the book in the first equip slot to select it, then tap a different empty equip slot"
+      "description": "Tap the book image area in the first equip slot to select it (avoid the small UP button at the card's bottom), then tap the large plus area of the third equip slot (an empty slot, again avoiding its UP button)"
     },
     {
       "type": "assertion",
-      "description": "Verify the book moved: the tapped destination slot now shows the book and the original slot is empty again"
+      "description": "Verify the book moved: the third slot now shows the Lv1 book and the first slot shows an empty plus placeholder"
     }
   ]
 }

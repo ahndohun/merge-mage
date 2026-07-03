@@ -217,6 +217,10 @@ export function useEngine(): UseEngineResult {
           setLeaderboardStatus(result.kind)
           return
         }
+        // Visible confirmation is the only feedback the submitter gets: E2E%
+        // nicknames never appear on the public board (server filter), and a
+        // real player's row can sit below the fold.
+        addToast(t("toastLeaderboardSaved"), "notice")
         return fetchLeaderboard().then((list) => {
           if (list.kind === "ok") {
             setLeaderboard(list.data)
@@ -226,7 +230,7 @@ export function useEngine(): UseEngineResult {
           setLeaderboardStatus(list.kind)
         })
       })
-  }, [])
+  }, [addToast, t])
 
   const closeOfflineClaim = useCallback(() => {
     setOfflineClaim(null)
