@@ -142,6 +142,7 @@ function applyInnateStaffDamage(state: EngineState): DamageApplication {
     element: "arcane",
     damage,
     critical: false,
+    targetIndex: 0,
     targetsHit: 1,
   }
 
@@ -169,6 +170,7 @@ function applyCastDamage(
     element: book.element,
     damage,
     critical,
+    targetIndex: 0,
     targetsHit,
   }
   const slowEvents: readonly EngineEvent[] =

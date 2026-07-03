@@ -26,8 +26,8 @@ describe("battle layout helpers", () => {
     expect(uniqueX.size).toBeGreaterThan(1)
     expect(uniqueY.size).toBe(5)
     for (const point of points) {
-      expect(point.x).toBeGreaterThanOrEqual(BattleLayout.mobStartX)
-      expect(point.x).toBeLessThanOrEqual(BattleLayout.mobStartX + 28)
+      expect(point.x).toBeGreaterThanOrEqual(BattleLayout.mobStartX - 68)
+      expect(point.x).toBeLessThanOrEqual(BattleLayout.mobStartX)
     }
   })
 

@@ -29,9 +29,9 @@ export const BattleLayout = {
 
 const LANES = [174, 210, 246, 282, 318] as const
 const ELEMENT_CYCLE: readonly Element[] = ["fire", "frost", "holy"]
-const MOB_COLUMN_WIDTH = 12
-const MOB_COLUMN_RANDOM_MAX = 4
-const MOB_Y_JITTER = 7
+const MOB_COLUMN_WIDTH = 30
+const MOB_COLUMN_RANDOM_MAX = 8
+const MOB_Y_JITTER = 10
 
 type Point = {
   readonly x: number
@@ -101,7 +101,7 @@ export function getMobSpawnPoint(input: MobSpawnInput): Point {
   const yJitter = (hashInt(input.index, input.stage, input.wave) % (MOB_Y_JITTER * 2 + 1)) - MOB_Y_JITTER
 
   return {
-    x: BattleLayout.mobStartX + column * MOB_COLUMN_WIDTH + xJitter,
+    x: BattleLayout.mobStartX - column * MOB_COLUMN_WIDTH - xJitter,
     y: getLaneY(input.index) + yJitter,
   }
 }

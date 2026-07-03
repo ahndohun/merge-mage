@@ -12,8 +12,6 @@ export class BattleWizardView {
   readonly sprite: Phaser.GameObjects.Sprite
 
   private tintTimer: Phaser.Time.TimerEvent | null = null
-  private castQueue: Array<() => void> = []
-  private casting = false
 
   constructor(private readonly scene: Phaser.Scene) {
     this.sprite = scene.add
@@ -32,57 +30,9 @@ export class BattleWizardView {
     })
   }
 
-  /**
-   * The battler can fire several casts in the same tick (one per equipped
-   * book). Playing them all at once re-triggers sprite.play() on top of an
-   * in-flight cast animation, which never cleans up the previous call's
-   * "animationupdate" listener — every queued cast's launch callback then
-   * fires off the newest animation's frames, so projectiles/impacts/tint
-   * all land on the same instant instead of playing out one at a time.
-   * Queuing here guarantees only one cast animation is ever playing on
-   * this.sprite, so each request's own listeners are fully torn down
-   * before the next one starts.
-   */
   playCast(onLaunch: () => void): void {
-    this.castQueue.push(onLaunch)
-    this.pumpCastQueue()
-  }
-
-  private pumpCastQueue(): void {
-    if (this.casting) {
-      return
-    }
-
-    const onLaunch = this.castQueue.shift()
-    if (onLaunch === undefined) {
-      return
-    }
-
-    this.casting = true
-    let launched = false
-    const launch = () => {
-      if (launched) {
-        return
-      }
-
-      launched = true
-      onLaunch()
-    }
-    const launchOnFrame = (animation: Phaser.Animations.Animation, frame: Phaser.Animations.AnimationFrame) => {
-      if (animation.key === AnimationKeys.wizard.cast && frame.index >= 5) {
-        launch()
-      }
-    }
-
-    this.sprite.on("animationupdate", launchOnFrame)
-    this.sprite.once("animationcomplete", () => {
-      this.sprite.off("animationupdate", launchOnFrame)
-      launch()
-      this.sprite.play(AnimationKeys.wizard.idle, true)
-      this.casting = false
-      this.pumpCastQueue()
-    })
-    this.sprite.play(AnimationKeys.wizard.cast)
+    this.sprite.play(AnimationKeys.wizard.idle, true)
+    onLaunch()
   }
 
   getStaffTip(): Point {
@@ -94,6 +44,13 @@ export class BattleWizardView {
       originX: this.sprite.originX,
       originY: this.sprite.originY,
     })
+  }
+
+  getOrbitCenter(): Point {
+    return {
+      x: Math.round(this.sprite.x + this.sprite.displayWidth * (0.5 - this.sprite.originX)),
+      y: Math.round(this.sprite.y + this.sprite.displayHeight * (0.5 - this.sprite.originY)),
+    }
   }
 
   playHit(): void {

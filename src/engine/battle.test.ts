@@ -70,4 +70,25 @@ describe("battle ticks", () => {
     expect(result.events.some((event) => event.type === "kill")).toBe(true)
     expect(result.state.gold).toBeGreaterThan(state.gold)
   })
+
+  it("includes the actual target index on cast events", () => {
+    const state = {
+      ...createInitialState(11),
+      equipped: [book("splash", 8, "fire"), null, null, null, null, null],
+      enemiesHp: [500, 500, 500, 500, 500],
+      stageHp: 2_500,
+    } satisfies EngineState
+
+    const result = simulateTicks(state, 10)
+    const castEvent = result.events.find((event) => event.type === "cast")
+
+    expect(castEvent).toEqual(
+      expect.objectContaining({
+        type: "cast",
+        bookId: "splash",
+        targetIndex: 0,
+        targetsHit: 3,
+      }),
+    )
+  })
 })

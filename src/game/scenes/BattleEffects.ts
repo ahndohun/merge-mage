@@ -10,22 +10,28 @@ type Point = {
   readonly y: number
 }
 
-type ProjectileRequest = {
-  readonly from: Point
-  readonly to: Point
-  readonly element: CastElement
-  readonly onImpact: () => void
+type ProjectileTarget = {
+  isActive(): boolean
+  getImpactPoint(): Point
 }
 
-// The holy VFX sheet's native frame is 48x48 vs. the 64x64 fire/frost
-// explosion frames, so it renders smaller at the same Phaser scale. Scale it
-// up by the size ratio to read as the same visual weight as other impacts.
-const HOLY_IMPACT_SCALE = 64 / 48
+type ProjectileUpdate = (time: number, delta: number) => void
+
+type ProjectileRequest = {
+  readonly from: Point
+  readonly target: ProjectileTarget
+  readonly element: CastElement
+  readonly onImpact: (point: Point) => void
+}
+
+const HOLY_IMPACT_SCALE = 2
+const PROJECTILE_SPEED_PER_SECOND = 760
 
 export class BattleEffects {
   readonly damageTexts: DamageTextPool
 
   private readonly projectiles: Phaser.GameObjects.Sprite[]
+  private readonly projectileUpdates = new Map<Phaser.GameObjects.Sprite, ProjectileUpdate>()
   private readonly impacts: Phaser.GameObjects.Sprite[]
   private readonly particles: Phaser.GameObjects.Particles.ParticleEmitter
   private readonly juice: BattleJuiceEffects
@@ -60,11 +66,11 @@ export class BattleEffects {
     this.juice.muzzleFlash(request.from, request.element)
     const projectile = this.borrowSprite(this.projectiles, getProjectileTexture(request.element))
     if (projectile === null) {
-      request.onImpact()
+      request.onImpact(request.target.getImpactPoint())
       return
     }
 
-    const arc = Math.max(16, Math.abs(request.to.x - request.from.x) * 0.14)
+    let lastTargetPoint = request.target.getImpactPoint()
     projectile
       .setPosition(request.from.x, request.from.y)
       .setAlpha(1)
@@ -78,18 +84,38 @@ export class BattleEffects {
       projectile.setTint(CastColors.arcane)
     }
 
-    this.scene.tweens.add({
-      targets: projectile,
-      x: request.to.x,
-      y: [request.from.y, (request.from.y + request.to.y) / 2 - arc, request.to.y],
-      duration: 260,
-      ease: "Sine.easeInOut",
-      onComplete: () => {
-        projectile.anims.stop()
-        projectile.setVisible(false)
-        request.onImpact()
-      },
-    })
+    const complete = (point: Point) => {
+      this.stopProjectileUpdate(projectile)
+      projectile.anims.stop()
+      projectile.setVisible(false)
+      request.onImpact(point)
+    }
+    const update = (_time: number, delta: number) => {
+      if (!projectile.visible) {
+        this.stopProjectileUpdate(projectile)
+        return
+      }
+
+      if (request.target.isActive()) {
+        lastTargetPoint = request.target.getImpactPoint()
+      }
+
+      const dx = lastTargetPoint.x - projectile.x
+      const dy = lastTargetPoint.y - projectile.y
+      const distance = Math.hypot(dx, dy)
+      const travel = PROJECTILE_SPEED_PER_SECOND * (delta / 1_000)
+      if (distance <= travel) {
+        projectile.setPosition(lastTargetPoint.x, lastTargetPoint.y)
+        complete(lastTargetPoint)
+        return
+      }
+
+      projectile.setPosition(projectile.x + (dx / distance) * travel, projectile.y + (dy / distance) * travel)
+    }
+
+    this.stopProjectileUpdate(projectile)
+    this.projectileUpdates.set(projectile, update)
+    this.scene.events.on(Phaser.Scenes.Events.UPDATE, update)
   }
 
   impact(element: CastElement, point: Point): void {
@@ -108,7 +134,7 @@ export class BattleEffects {
   bossDeath(point: Point, element: Element): void {
     this.particles.setParticleTint(ElementColors[element])
     this.particles.explode(56, point.x, point.y)
-    this.playImpact(point, 1.7)
+    this.playImpact(point, 2)
     this.juice.whitePop(point, 6)
     this.goldBurst(point, 5)
     this.playSlowMotion()
@@ -127,6 +153,7 @@ export class BattleEffects {
     this.damageTexts.clear()
     this.projectiles.forEach((projectile) => {
       this.scene.tweens.killTweensOf(projectile)
+      this.stopProjectileUpdate(projectile)
       projectile.anims.stop()
       projectile.setVisible(false)
     })
@@ -204,6 +231,16 @@ export class BattleEffects {
     // before play() takes over.
     sprite.setTexture(texture, 0)
     return sprite
+  }
+
+  private stopProjectileUpdate(projectile: Phaser.GameObjects.Sprite): void {
+    const update = this.projectileUpdates.get(projectile)
+    if (update === undefined) {
+      return
+    }
+
+    this.scene.events.off(Phaser.Scenes.Events.UPDATE, update)
+    this.projectileUpdates.delete(projectile)
   }
 }
 

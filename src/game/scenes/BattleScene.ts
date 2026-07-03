@@ -3,25 +3,20 @@ import { EventBus, type Unsubscribe } from "../../bridge/EventBus"
 import { assertNever, type EngineEvent, type EngineState } from "../../engine/types"
 import { createTranslator, getInitialLocale, type Translator } from "../../ui/i18n"
 import { EngineEventBridge } from "../GameEventBridge"
-import {
-  createBattleAnimations,
-  getBossKindForStage,
-  getMobKindForStage,
-  preloadBattleAssets,
-} from "../TextureKeys"
+import { createBattleAnimations, preloadBattleAssets } from "../TextureKeys"
 import { registerUtilityTextures } from "../UtilityTextures"
 import { BattleAudio } from "./BattleAudio"
+import { BattleCastController } from "./BattleCastController"
 import { BattleEffects } from "./BattleEffects"
-import { BOSS_ENRAGE_MS, BOSS_WAVE_NUMBER, BattleLayout, getElementForIndex, getWaveIndicator, isBossWave } from "./BattleLayout"
+import { BOSS_ENRAGE_MS, BOSS_WAVE_NUMBER, BattleLayout, getWaveIndicator, isBossWave } from "./BattleLayout"
 import { BattleBanner } from "./BattleBanner"
 import { mirrorBattleState } from "./BattleDataMirror"
 import { drawBattleFrame } from "./BattleFrame"
 import { BattleLoadingView } from "./BattleLoadingView"
+import { prewarmBattleMobs, spawnBattleMob } from "./BattleMobSpawner"
 import { BattleMobView } from "./BattleMobView"
 import { BattleWizardView } from "./BattleWizardView"
 import { BattleWaveIndicator } from "./BattleWaveIndicator"
-
-const MOB_POOL_SIZE = 36
 
 export class BattleScene extends Phaser.Scene {
   private wizard: BattleWizardView | null = null
@@ -38,6 +33,7 @@ export class BattleScene extends Phaser.Scene {
   private slowFactor = 1
   private audio: BattleAudio | null = null
   private waveIndicator: BattleWaveIndicator | null = null
+  private castController: BattleCastController | null = null
 
   private readonly activeMobs: BattleMobView[] = []
   private readonly mobPool: BattleMobView[] = []
@@ -60,13 +56,14 @@ export class BattleScene extends Phaser.Scene {
     drawBattleFrame(this)
 
     this.wizard = new BattleWizardView(this)
+    this.castController = new BattleCastController(this, this.wizard)
     this.effects = new BattleEffects(this)
     this.banner = new BattleBanner(this)
     this.audio = new BattleAudio(this)
     this.waveIndicator = new BattleWaveIndicator(this)
     this.t = createTranslator(getInitialLocale())
     this.waveIndicator.update(1, this.t)
-    this.prewarmMobs()
+    prewarmBattleMobs(this, this.mobPool)
     this.banner.show(this.t.battleStageWave(1, 1, BOSS_WAVE_NUMBER), 0xfff0a8)
     this.unsubscribeState = EngineEventBridge.onState((state) => this.handleState(state))
     this.unsubscribeEvents = EngineEventBridge.onEvents((events) => this.handleEvents(events))
@@ -85,20 +82,16 @@ export class BattleScene extends Phaser.Scene {
     for (const mob of this.activeMobs) {
       mob.update(time, delta, this.slowFactor)
     }
+    this.castController?.update(time)
 
     this.syncBossEnrage()
-  }
-
-  private prewarmMobs(): void {
-    for (let index = 0; index < MOB_POOL_SIZE; index += 1) {
-      this.mobPool.push(new BattleMobView(this))
-    }
   }
 
   private handleState(state: EngineState): void {
     const waveChanged = state.stage !== this.lastStage || state.wave !== this.lastWave
     this.currentState = state
     mirrorBattleState(state)
+    this.castController?.syncState(state)
     this.audio?.syncMusic(state)
     this.waveIndicator?.update(state.wave, this.t)
 
@@ -120,12 +113,6 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private handleEvents(events: readonly EngineEvent[]): void {
-    // The engine can report several "cast" events in the same tick (one per
-    // equipped book firing at once). BattleWizardView.playCast() queues them
-    // so the cast animation, its projectile, and its hit-flash always play
-    // out one at a time instead of stacking on top of each other at the
-    // same target point (that stacking is what read as a "stuck" pink
-    // wizard and an oversized holy impact blob).
     for (const event of events) {
       this.handleEvent(event)
     }
@@ -163,6 +150,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private resetWave(state: EngineState): void {
+    this.castController?.clearDyingTargets()
     this.activeMobs.splice(0).forEach((mob) => {
       mob.hide()
       this.mobPool.push(mob)
@@ -175,63 +163,49 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private reconcileMobs(state: EngineState): void {
+    this.castController?.clearDyingTargets()
+    let removedTargetIndex = 0
     while (this.activeMobs.length > state.enemiesHp.length) {
       const mob = this.activeMobs.shift()
       if (mob === undefined) {
         return
       }
 
+      this.castController?.trackRemovedTarget(removedTargetIndex, mob)
       this.playMobDeath(mob)
+      removedTargetIndex += 1
     }
 
     state.enemiesHp.forEach((hp, index) => {
       let mob = this.activeMobs[index]
       if (mob === undefined) {
-        mob = this.spawnMob(hp, index, isBossWave(state.wave), state.stage, state.wave)
+        mob = spawnBattleMob({
+          scene: this,
+          mobPool: this.mobPool,
+          activeMobs: this.activeMobs,
+          hp,
+          index,
+          isBoss: isBossWave(state.wave),
+          stage: state.stage,
+          wave: state.wave,
+        })
       }
 
       mob.syncHp(hp)
     })
   }
 
-  private spawnMob(hp: number, index: number, isBoss: boolean, stage: number, wave: number): BattleMobView {
-    const mob = this.mobPool.pop() ?? new BattleMobView(this)
-    mob.spawn({
-      hp,
-      index,
-      isBoss,
-      element: getElementForIndex(index),
-      mobKind: getMobKindForStage(stage),
-      bossKind: getBossKindForStage(stage),
-      stage,
-      wave,
-    })
-    this.activeMobs.push(mob)
-    return mob
-  }
-
   private playCast(event: Extract<EngineEvent, { readonly type: "cast" }>): void {
-    const target = this.activeMobs[0]
-    const wizard = this.wizard
     const effects = this.effects
-    if (target === undefined || wizard === null || effects === null) {
+    if (effects === null) {
       return
     }
 
-    const targetPoint = target.getImpactPoint()
-    wizard.playCast(() => {
-      effects.fireProjectile({
-        from: wizard.getStaffTip(),
-        to: targetPoint,
-        element: event.element,
-        onImpact: () => {
-          target.flashHit(this)
-          effects.impact(event.element, targetPoint)
-          effects.showDamage(targetPoint, event.damage, event.critical)
-          this.audio?.playMobHit(target.isBoss())
-          wizard.flash(event.element)
-        },
-      })
+    this.castController?.playCast({
+      event,
+      activeMobs: this.activeMobs,
+      effects,
+      audio: this.audio,
     })
   }
 
@@ -295,6 +269,8 @@ export class BattleScene extends Phaser.Scene {
     this.waveIndicator?.hide()
     this.waveIndicator = null
     this.effects?.clear()
+    this.castController?.destroy()
+    this.castController = null
     this.activeMobs.splice(0).forEach((mob) => mob.hide())
     this.mobPool.splice(0)
   }

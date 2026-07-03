@@ -68,6 +68,7 @@ export type EngineEvent =
       readonly element: CastElement
       readonly damage: number
       readonly critical: boolean
+      readonly targetIndex: number
       readonly targetsHit: number
     }
   | {
