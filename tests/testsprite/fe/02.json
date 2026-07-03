@@ -2,7 +2,7 @@
   "projectId": "cc32b9b9-ea01-408d-a2df-6e2a724b7142",
   "type": "frontend",
   "name": "Merging two same-level books produces one book of the next level",
-  "description": "Two level-1 books tap-merged become a single level-2 book and the inventory count shrinks by one.",
+  "description": "Summoned books auto-equip into the equipped slots row. Tapping one equipped book and then another equipped book of the same level merges them into a single higher-level book.",
   "priority": "p0",
   "planSteps": [
     {
@@ -11,19 +11,19 @@
     },
     {
       "type": "action",
-      "description": "Click the SUMMON button twice so at least two LV 1 books exist in the inventory grid"
+      "description": "Click the SUMMON button twice. Each summoned book auto-equips into the equipped slots row near the top of the BOOKS panel, each showing a Lv1 badge"
     },
     {
       "type": "action",
-      "description": "Tap the first inventory book to select it, then tap the second book of the same level"
+      "description": "In the equipped slots row, tap one book showing Lv1, then tap another book showing Lv1"
     },
     {
       "type": "assertion",
-      "description": "Verify a single book labeled LV 2 now exists where the merge happened"
+      "description": "A book showing a Lv2 badge is present in the equipped slots row"
     },
     {
       "type": "assertion",
-      "description": "Verify the total number of filled inventory cells decreased by one"
+      "description": "The number of occupied equipped slots is one fewer than before the merge, and a MERGED floating text or merge effect appeared"
     }
   ]
 }
