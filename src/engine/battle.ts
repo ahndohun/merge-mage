@@ -14,6 +14,7 @@ import {
   SLOT_INDEXES,
   TICK_MS,
 } from "./constants.js"
+import { getBossRequiredDps, getTomeMilestoneDamageMultiplier, getWizardCastIntervalMultiplier, getWizardCritChanceBonus } from "./balance.js"
 import { getPetDps, shouldPetAttack } from "./camp.js"
 import { getSlotMultiplier } from "./actions.js"
 import { finalizeDamage, type DamageApplication } from "./battleRewards.js"
@@ -41,7 +42,7 @@ export type TickSimulation = {
 
 export function bookDamage(book: Spellbook, slotTier: number, state: EngineState): DamageRoll {
   const roll = nextRandomState(state.rngState)
-  const critChance = Math.min(1, BASE_CRIT_CHANCE + CRIT_CHANCE_PER_POINT * state.skills.critChance)
+  const critChance = Math.min(1, BASE_CRIT_CHANCE + CRIT_CHANCE_PER_POINT * state.skills.critChance + getWizardCritChanceBonus(state.wizardLevel))
   const critical = roll.value < critChance
   const relicEffects = getEquippedRelicEffects(state.relics)
   const critFactor = critical ? CRIT_DAMAGE_MULTIPLIER + relicEffects.critDamageBonus : 1
@@ -52,6 +53,7 @@ export function bookDamage(book: Spellbook, slotTier: number, state: EngineState
     (1 + MANA_DAMAGE_PER_CRYSTAL * state.manaCrystals) *
     getElementDamageMultiplier(book.element, state.relics) *
     getElementProgressionMultiplier(state, book.element) *
+    getTomeMilestoneDamageMultiplier(state.highestLevelEver) *
     critFactor
 
   return {
@@ -118,6 +120,8 @@ export function simulateTicks(state: EngineState, nTicks: number): TickSimulatio
       const bossElapsedMs = current.bossElapsedMs + TICK_MS
       current = { ...current, bossElapsedMs }
       if (current.activeRift?.kind !== "trial" && bossElapsedMs >= BOSS_ENRAGE_MS) {
+        const requiredDps = getBossRequiredDps(current.stage)
+        const currentDps = Math.max(0, requiredDps - current.stageHp / (BOSS_ENRAGE_MS / 1_000))
         const enemiesHp = createWaveEnemies(current.stage, 1)
         current = {
           ...current,
@@ -127,7 +131,7 @@ export function simulateTicks(state: EngineState, nTicks: number): TickSimulatio
           bossElapsedMs: 0,
           frostSlowMs: 0,
         }
-        events = [...events, { type: "bossFail", stage: current.stage }]
+        events = [...events, { type: "bossFail", stage: current.stage, requiredDps, currentDps }]
       }
     }
 
@@ -266,7 +270,7 @@ function getElementDamage(element: Element, damage: number, wave: number, state:
 function getCastIntervalMs(state: EngineState): number {
   const baseInterval = BASE_CAST_INTERVAL_MS - CAST_SPEED_REDUCTION_MS * state.skills.castSpeed
   const riftMultiplier = state.activeRift?.kind === "golden" ? GOLDEN_RIFT_MS / (GOLDEN_RIFT_MS * 2) : 1
-  const relicInterval = baseInterval * getEquippedRelicEffects(state.relics).castIntervalMultiplier * riftMultiplier
+  const relicInterval = baseInterval * getEquippedRelicEffects(state.relics).castIntervalMultiplier * riftMultiplier * getWizardCastIntervalMultiplier(state.wizardLevel)
   return applyTraitCastInterval(state, Math.max(MIN_CAST_INTERVAL_MS, relicInterval))
 }
 

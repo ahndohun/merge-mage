@@ -5,11 +5,13 @@ import {
   GOLD_GAIN_PER_POINT,
   GOLD_REWARD_BASE,
   GOLD_REWARD_GROWTH,
+  REGULAR_MOB_BASE_COUNT,
   TRIAL_RIFT_BOSS_MULTIPLIERS,
   WIZARD_XP_PER_LEVEL,
   XP_PER_BOSS_KILL,
   XP_PER_KILL,
 } from "./constants.js"
+import { getRegularMobCount, getWizardGoldMultiplier } from "./balance.js"
 import { getEquippedRelicEffects } from "./relics.js"
 import { incrementAchievementCounter, refreshAchievementCounters } from "./achievements.js"
 import { addPetXp, recordDailyProgress, setAchievementCounterMax } from "./camp.js"
@@ -36,7 +38,8 @@ export function finalizeDamage(
   // XP is kill-count based, NOT gold based: gold grows exponentially per stage
   // while the level threshold is linear, so gold-XP floods skill points late
   // game (measured: 22 unspent points in 3 minutes) and erases the choice.
-  const xpPerKill = Math.ceil((boss ? XP_PER_BOSS_KILL : XP_PER_KILL) * getEquippedRelicEffects(state.relics).xpMultiplier)
+  const regularXp = (XP_PER_KILL * REGULAR_MOB_BASE_COUNT) / getRegularMobCount(state.stage)
+  const xpPerKill = (boss ? XP_PER_BOSS_KILL : regularXp) * getEquippedRelicEffects(state.relics).xpMultiplier
   const withRewards = addCombatXp({ ...state, gold: state.gold + gold }, xpPerKill * killed)
   const killEvents = Array.from({ length: killed }, () => ({
     type: "kill",
@@ -170,10 +173,13 @@ function getKillReward(state: EngineState, boss: boolean): number {
     GOLD_REWARD_BASE *
       GOLD_REWARD_GROWTH ** state.stage *
       (1 + GOLD_GAIN_PER_POINT * getTraitSkillGoldPoints(state)) *
+      getWizardGoldMultiplier(state.wizardLevel) *
       relicEffects.goldMultiplier *
       riftMultiplier,
   )
-  return boss ? Math.ceil(reward * BOSS_REWARD_MULTIPLIER * relicEffects.bossGoldMultiplier) : reward
+  return boss
+    ? Math.ceil(reward * BOSS_REWARD_MULTIPLIER * relicEffects.bossGoldMultiplier)
+    : Math.ceil((reward * REGULAR_MOB_BASE_COUNT) / getRegularMobCount(state.stage))
 }
 
 function getWizardXpThreshold(wizardLevel: number): number {

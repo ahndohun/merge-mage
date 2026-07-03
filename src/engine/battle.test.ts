@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { enterRift } from "./actions.js"
+import { getBossFactor, getBossHp, getPrestigeCrystalReward } from "./balance.js"
 import { bookDamage, simulateTicks } from "./battle.js"
 import { createInitialState, type EngineState } from "./state.js"
 import type { Spellbook } from "./types.js"
@@ -37,7 +38,14 @@ describe("battle ticks", () => {
     expect(result.events.some((event) => event.type === "bossFail")).toBe(true)
     expect(result.state.wave).toBe(1)
     expect(result.state.stage).toBe(1)
-    expect(result.state.enemiesHp).toHaveLength(5)
+    expect(result.state.enemiesHp).toHaveLength(6)
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: "bossFail",
+        requiredDps: expect.any(Number),
+        currentDps: expect.any(Number),
+      }),
+    )
   })
 
   it("clears waves, grants gold, and records a recent gold rate", () => {
@@ -118,6 +126,53 @@ describe("battle ticks", () => {
 
     expect(boosted.damage).toBeGreaterThan(base.damage * 1.3)
     expect(frost.events).toContainEqual(expect.objectContaining({ type: "slow", durationMs: 2_200 }))
+  })
+
+  it("doubles all tome damage at highest-book milestones", () => {
+    const spellbook = book("milestone", 10, "fire")
+    const base = { ...createInitialState(5), highestLevelEver: 9 } satisfies EngineState
+    const milestone = { ...base, highestLevelEver: 10 } satisfies EngineState
+
+    const before = bookDamage(spellbook, 0, base)
+    const after = bookDamage(spellbook, 0, milestone)
+
+    expect(after.damage).toBeCloseTo(before.damage * 2)
+  })
+
+  it("applies wizard level 10, 20, and 30 permanent battle bonuses", () => {
+    const spellbook = book("wizard-bonus", 10, "fire")
+    const base = {
+      ...createInitialState(19),
+      equipped: [spellbook, null, null, null, null, null],
+      enemiesHp: [10_000],
+      stageHp: 10_000,
+    } satisfies EngineState
+    const crit = { ...base, wizardLevel: 20 } satisfies EngineState
+    const fast = { ...base, wizardLevel: 10 } satisfies EngineState
+    const gold = { ...base, wizardLevel: 30, stage: 20, enemiesHp: [1], stageHp: 1 } satisfies EngineState
+    const baseGold = { ...base, stage: 20, enemiesHp: [1], stageHp: 1 } satisfies EngineState
+
+    const baseRoll = bookDamage(spellbook, 0, base)
+    const critRoll = bookDamage(spellbook, 0, crit)
+    const baseCasts = simulateTicks(base, 29).events.filter((event) => event.type === "cast")
+    const fastCasts = simulateTicks(fast, 29).events.filter((event) => event.type === "cast")
+    const baseGoldResult = simulateTicks(baseGold, 10)
+    const goldResult = simulateTicks(gold, 10)
+
+    expect(baseRoll.critical).toBe(false)
+    expect(critRoll.critical).toBe(true)
+    expect(critRoll.damage).toBeGreaterThan(baseRoll.damage)
+    expect(fastCasts.length).toBeGreaterThan(baseCasts.length)
+    expect(goldResult.state.gold - gold.gold).toBeGreaterThan(baseGoldResult.state.gold - baseGold.gold)
+  })
+
+  it("uses expected DPS boss factors and the Wave C rebirth crystal curve", () => {
+    expect(getBossFactor(4)).toBe(1)
+    expect(getBossFactor(5)).toBe(1.5)
+    expect(getBossFactor(10)).toBe(2.2)
+    expect(getBossHp(10)).toBeGreaterThan(getBossHp(9))
+    expect(getPrestigeCrystalReward(13, 1)).toBe(2)
+    expect(getPrestigeCrystalReward(14, 1)).toBe(3)
   })
 
   it("keeps golden rift kills on the home stage and multiplies gold rewards", () => {

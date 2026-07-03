@@ -170,7 +170,7 @@ export type EngineEvent =
   | { readonly type: "waveClear"; readonly stage: number; readonly wave: number }
   | { readonly type: "bossSpawn"; readonly stage: number }
   | { readonly type: "bossKill"; readonly stage: number; readonly gold: number }
-  | { readonly type: "bossFail"; readonly stage: number }
+  | { readonly type: "bossFail"; readonly stage: number; readonly requiredDps: number; readonly currentDps: number }
   | { readonly type: "levelUp"; readonly wizardLevel: number; readonly skillPoints: number }
   | { readonly type: "slow"; readonly durationMs: number; readonly factor: number }
   | { readonly type: "riftComplete"; readonly kind: RiftKind; readonly reward: number }

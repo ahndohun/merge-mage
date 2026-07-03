@@ -82,6 +82,72 @@ v2 시소(비용 1.32 > 수입 1.30)는 유지하되 리듬을 만든다.
 | Day 1 | st25~30, 티어3 톰, 특성 2개 | 일일 던전 루프 정착 |
 | Day 3 | st50대, 유물 세트 절반 | 강벽: 유물/특성 조합 최적화 필요 |
 | Day 7 | st80~100 (티어 캡 Lv100 미달성) | **클리어 불가 상태 유지** |
+
+### 밸런스 v3 최종 상수 및 시뮬 검증 (Wave C, 2026-07-03)
+
+| 상수 | v2 | v3 | 근거 |
+|---|---:|---:|---|
+| SUMMON_COST_GROWTH | 1.32 | 1.34 | 골드 보상 1.30 대비 비용 우위 확대. Day-7 Lv100 미달성 보장 |
+| HP_GROWTH | 1.38 | 1.43 | 마일스톤 ×2, 펫, 특성, 유물 반영 후 Day-1 st35~50으로 감속 |
+| REGULAR_MOB_COUNT | 5 | stage band 6~9 | 전장 밀도 증가. 웨이브 총 HP/골드/XP는 5마리 기준으로 보존 |
+| BOSS_HP_MULTIPLIER | 20 | expectedDPS(stage) × 30s × factor | 보스가 실제 DPS 체크가 되도록 재산정 |
+| BOSS_EXPECTED_DPS_BASE | - | 9 | 실측 시뮬의 초반 일반 화력 근사 기준값 |
+| BOSS_EXPECTED_DPS_GROWTH | - | 1.49 | Day-1 이후 벽 강도를 키워 장기 폭주 차단 |
+| BOSS_FACTORS | - | normal 1.0 / wall 1.5 / gate 2.2 | 5배수 약벽, 10배수 관문 보스 리듬 |
+| MANA_DAMAGE_PER_CRYSTAL | 0.25 | 0.08 | 첫 환생은 유효하지만 반복 환생 폭주를 억제 |
+| PRESTIGE_CRYSTALS | floor(stage^1.5/10) | floor((stage-8)^1.7/6) | st14부터 3크리스탈. 첫 환생 적기 25~35분 |
+| TOME_DAMAGE_MILESTONE | - | Lv10/20/30/40 each ×2 | 톰 티어 승급 시 전 화력 계단식 점프 |
+| WIZARD_MILESTONE | - | Lv10 cast -5%, Lv20 crit +3%p, Lv30 gold +10% | 마법사 레벨 보존 가치 강화 |
+
+시뮬레이터는 batch2 화력원(공명 맞추기, 특성 선택, 유물 소환/장착, 펫 성장)을 단순 휴리스틱으로 반영했다.
+
+`pnpm exec tsx src/engine/simulate.ts --minutes 60 --row-minutes 5`
+
+```text
+minute | stage | highest book | gold | summon floor | wall | flags
+     5 |     6 |            7 |    4 |            1 |  0.0 | -
+    10 |     7 |            8 |   19 |            1 | 999.9 | -
+    15 |     8 |            9 |   25 |            1 | 999.9 | -
+    20 |     9 |            9 |   10 |            1 | 999.9 | -
+    25 |    10 |           10 |   34 |            2 | 999.9 | -
+    30 |    11 |           11 |   72 |            3 |  0.0 | -
+    35 |     1 |            3 |   13 |            1 |  0.0 | -
+    40 |     9 |            8 |   24 |            1 |  0.2 | -
+    45 |    10 |            9 |   28 |            1 |  0.0 | -
+    50 |    10 |           10 |   67 |            2 |  0.0 | STALL
+    55 |    13 |           11 |    3 |            3 | 999.9 | STALL
+    60 |     8 |            8 |   22 |            1 |  0.3 | -
+```
+
+`pnpm exec tsx src/engine/simulate.ts --minutes 1440 --summary`
+
+```text
+first prestige: 34m
+first wall>5: 10m
+stage 10: 20m
+stage 20: 185m
+stage 30: 426m
+stage 40: 606m
+stage 50: 1084m
+final: stage 45, wave 10, highest book 43, gold 74708, mana 4
+```
+
+`pnpm exec tsx src/engine/simulate.ts --minutes 10080 --summary`
+
+```text
+first prestige: 34m
+first wall>5: 10m
+stage 10: 20m
+stage 20: 185m
+stage 30: 426m
+stage 40: 606m
+stage 50: 1084m
+stage 60: 1737m
+stage 70: 3695m
+stage 80: 6006m
+final: stage 80, wave 10, highest book 86, gold 141014290050, mana 6
+```
+
 - 티어 캡: 책 Lv100(티어 10)까지 테마 승급 — 톰 아이콘 승급 로테이션 확장.
 - 스테이지 월드 밴드: 10스테이지마다 몹 팔레트/배경 톤 로테이션 확장(기존 자산 재조합)으로 "새 지역" 체감.
 - wall_strength가 Day가 갈수록 완만히 상승하는 곡선을 시뮬레이터(장시간 모드)로 검증.
