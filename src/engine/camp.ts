@@ -61,6 +61,11 @@ const PET_EVOLUTION_DPS_SHARE = 0.05
 const MINE_CAP_MS = 12 * 60 * 60 * 1_000
 const MINE_FLOOR_ONE_RATE = 0.15
 const MINE_FLOOR_RATES_PER_HOUR: readonly [number, number, number, number] = [MINE_FLOOR_ONE_RATE, 0.4, 0.95, 2]
+// R4: the familiar mines. Its level/evolution raise the crystal rate (it still
+// contributes battle DPS via getPetDps). Kept gentle so mining stays well under
+// a rebirth's yield (R1 balance rule: <=5% of first-rebirth crystals per hour).
+const MINE_PET_LEVEL_BONUS = 0.015
+const MINE_PET_EVOLUTION_BONUS = 0.1
 
 const DAILY_MISSION_MERGE20: DailyMissionDefinition = { id: "merge20", goal: 20, rewardManaCrystals: 1 }
 const DAILY_MISSION_BOSS3: DailyMissionDefinition = { id: "boss3", goal: 3, rewardManaCrystals: 1 }
@@ -162,7 +167,7 @@ export function getUnlockedMineFloor(stage: number): number {
 
 export function getMineClaimPreview(state: EngineState, nowMs: number): MineClaimPreview {
   const floor = Math.max(state.mine.floor, getUnlockedMineFloor(state.stage))
-  const ratePerHour = getMineRatePerHour(floor)
+  const ratePerHour = getMineRatePerHour(floor) * getMinePetMultiplier(state.pet)
   if (state.mine.lastClaimAt === null) {
     return { floor, elapsedMs: 0, manaCrystals: 0, ratePerHour, claimable: false }
   }
@@ -379,6 +384,12 @@ export function getPetXpThreshold(level: number): number {
 
 function getMineRatePerHour(floor: number): number {
   return MINE_FLOOR_RATES_PER_HOUR[Math.max(0, floor - 1)] ?? MINE_FLOOR_ONE_RATE
+}
+
+export function getMinePetMultiplier(pet: PetState): number {
+  // A level-1 familiar adds nothing, so the base rate stays under the R1 balance
+  // ceiling; the bonus grows as the familiar levels up and evolves.
+  return 1 + Math.max(0, pet.level - 1) * MINE_PET_LEVEL_BONUS + pet.evolution * MINE_PET_EVOLUTION_BONUS
 }
 
 function getLocalDateKey(date: Date): string {

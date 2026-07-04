@@ -8,6 +8,7 @@ import {
   equipSkin,
   getDailyMissionStatus,
   getMineClaimPreview,
+  getMinePetMultiplier,
   getPetDamagePercent,
   getPetEvolutionForLevel,
   getUnlockedMineFloor,
@@ -71,6 +72,23 @@ describe("mine production", () => {
     expect(preview.ratePerHour).toBeLessThanOrEqual(0.15)
     expect(preview.manaCrystals).toBe(1)
     expect(claimed.manaCrystals).toBe(1)
+  })
+
+  it("raises the mine rate as the familiar levels and evolves (R4)", () => {
+    const fresh = {
+      ...createInitialState(2),
+      stage: 4,
+      mine: { floor: 1, lastClaimAt: 1_000 },
+    } satisfies EngineState
+    const grown = { ...fresh, pet: { level: 20, xp: 0, evolution: 2 } } satisfies EngineState
+    const at12h = 1_000 + 12 * 60 * 60 * 1_000
+
+    // A level-1 familiar contributes nothing (base rate stays under the ceiling).
+    expect(getMinePetMultiplier(fresh.pet)).toBe(1)
+    expect(getMinePetMultiplier(grown.pet)).toBeGreaterThan(1)
+    expect(getMineClaimPreview(grown, at12h).ratePerHour).toBeGreaterThan(
+      getMineClaimPreview(fresh, at12h).ratePerHour,
+    )
   })
 
   it("unlocks floors from stage milestones and caps claim elapsed time at twelve hours", () => {
