@@ -42,6 +42,10 @@ import { useEngine } from "./useEngine"
 import { useLocale } from "./useLocale"
 import { useTutorial } from "./useTutorial"
 const PULSE_MS = 900
+// Portal appearance animation (scale/fade/pulse) — plays once, the instant
+// rifts unlock. Longer than PULSE_MS: the portal is a bigger, slower "reveal"
+// than a tab badge pulse.
+const RIFT_PORTAL_APPEAR_MS = 1_100
 
 export function GameShell() {
   const { t } = useLocale()
@@ -66,6 +70,7 @@ export function GameShell() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [ranksOpen, setRanksOpen] = useState(false)
   const [pulsingTabs, setPulsingTabs] = useState<readonly TabId[]>([])
+  const [riftPortalAppearing, setRiftPortalAppearing] = useState(false)
   const engine = useEngine()
   const engineStateRef = useRef(engine.state)
   engineStateRef.current = engine.state
@@ -102,7 +107,21 @@ export function GameShell() {
     const timeoutId = window.setTimeout(() => {
       setPulsingTabs((current) => current.filter((tabId) => !newPulseTabs.includes(tabId)))
     }, PULSE_MS)
-    return () => window.clearTimeout(timeoutId)
+
+    // Rifts is not a tab (it renders as a battlefield portal, not in
+    // visibleTabs), so it needs its own one-time "just appeared" cue.
+    let riftTimeoutId: number | null = null
+    if (newlyUnlocked.includes("rifts")) {
+      setRiftPortalAppearing(true)
+      riftTimeoutId = window.setTimeout(() => setRiftPortalAppearing(false), RIFT_PORTAL_APPEAR_MS)
+    }
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      if (riftTimeoutId !== null) {
+        window.clearTimeout(riftTimeoutId)
+      }
+    }
   }, [engine.notify, t, unlockedFeatures, visibleTabs])
 
   useEffect(() => {
@@ -580,7 +599,9 @@ export function GameShell() {
         />
         {unlockedFeatures.rifts || engine.state.activeRift !== null ? (
           <RiftsOverlay
+            justAppeared={riftPortalAppearing}
             state={engine.state}
+            onClosedTap={() => feedback.microToast(t("toastRiftBlocked"))}
             onEnterRift={(kind) => {
               const entered = engine.enterRift(kind)
               if (entered) {
