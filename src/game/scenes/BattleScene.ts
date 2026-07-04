@@ -17,6 +17,10 @@ import { prewarmBattleMobs, spawnBattleMob } from "./BattleMobSpawner"
 import { BattleMobView } from "./BattleMobView"
 import { BattleWizardView } from "./BattleWizardView"
 
+// Rift warp flash tints — mirror --mm-gold / --mm-frost from src/styles.css.
+const GOLDEN_FLASH_RGB: readonly [number, number, number] = [230, 180, 80]
+const TRIAL_FLASH_RGB: readonly [number, number, number] = [110, 203, 255]
+
 export class BattleScene extends Phaser.Scene {
   private wizard: BattleWizardView | null = null
   private banner: BattleBanner | null = null
@@ -28,6 +32,7 @@ export class BattleScene extends Phaser.Scene {
   private t: Translator = createTranslator(getInitialLocale())
   private lastStage = 0
   private lastWave = 0
+  private lastRiftActive = false
   private slowUntil = 0
   private slowFactor = 1
   private audio: BattleAudio | null = null
@@ -83,6 +88,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private handleState(state: EngineState): void {
+    this.syncRiftAtmosphere(state)
+
     const waveChanged = state.stage !== this.lastStage || state.wave !== this.lastWave
     this.currentState = state
     mirrorBattleState(state)
@@ -268,6 +275,22 @@ export class BattleScene extends Phaser.Scene {
       boss.syncBars(state.bossElapsedMs / BOSS_ENRAGE_MS)
     }
     this.effects?.setBossEnragePulse(BOSS_ENRAGE_MS - state.bossElapsedMs <= 5_000)
+  }
+
+  // Optional "battlefield mood" cue for the rift warp (R4 spec: EventBus-style
+  // transient signal, never direct canvas CSS). Reuses the same camera FX API
+  // as the existing boss-entrance shake — a momentary flash that reverts
+  // itself, so there is no persisted tint to remember to undo on exit.
+  private syncRiftAtmosphere(state: EngineState): void {
+    const active = state.activeRift !== null
+    if (active === this.lastRiftActive) {
+      return
+    }
+    this.lastRiftActive = active
+
+    const kind = state.activeRift?.kind ?? null
+    const [r, g, b] = kind === "trial" ? TRIAL_FLASH_RGB : GOLDEN_FLASH_RGB
+    this.cameras.main.flash(220, r, g, b)
   }
 
   private cleanup(): void {
