@@ -106,3 +106,86 @@
 - data-testid: 기존 `rifts-open-btn`·`rift-modal`·`rifts-close-btn`·`rift-active-hud`·`rift-exit-btn` 최대 유지. 포탈화로 불가피한 변경은 보고서에 목록화(E2E 재작성 반영).
 - 컴포넌트/유닛 테스트 갱신+신규(포탈 등장 조건·진입·비활성). `npm run test`+`npm run build` 그린.
 - 커밋은 redesign 브랜치에만. main·배포·원격 테스트 접근 금지.
+
+**R4 결과 (2026-07-04, 오케스트레이터 검수 완료)**: 커밋 4e4b3d4/a6b9670/33ea966. 균열 진입점을 전장 포탈로 재구성 — `rift-entry-btn`→`rift-portal-btn`(금색 이중 테두리+청록 이너 차원문, 남은 횟수 배지, 횟수 0시 `is-closed`). 언락 시 등장 연출(`is-appearing`)·진입 워프(`rift-warp-flash` gold/frost 틴트)·BattleScene `cameras.main.flash()`(EventBus, 캔버스 직접 스타일 없음). 엔진 무변경(enterRift/exitRift 재사용). 테스트 180→191 그린·빌드 그린. 프리뷰 실측(playwright, highestStage=8 주입): 데스크톱 3열 캔버스 하단 중앙·모바일 캔버스 중앙에 포탈, HUD·탭바·여정 겹침 없음. i18n 신규 키 0(기존 featureUnlocked/toastRiftBlocked 재사용). data-testid: `rifts-open-btn`·`rift-modal`·`rifts-close-btn`·`rift-active-hud`·`rift-exit-btn` 유지, 신규 `rift-warp-flash`.
+
+## R5 스펙 — 전직·유파 (공명+특성 흡수 → 유파 선택)
+
+원안(제안서): "공명+특성 → 전직 유파 — 전직 때 화염/냉기/신성 유파를 선택 → 진짜 특화". 견습→정식→대마법사, 스킨=전직 보상. **3모델 독립 설계(codex 밸런스·grok 최소침습·opus UX) 합성.** 디렉터 확정: 전직 페이싱 **중간**(환생 1회+레벨), 유파 신규 패시브 **도입**.
+
+**용어(디렉터 지정 2026-07-04)**: `school` = **학파**(화염/냉기/신성 학파 — "school of magic" 설정 차용), `ascension.rank` = **클래스**(견습→정식→대마법사 — "클래스로 표현되는 마법 수준" 설정 차용). **코드 키(`school`/`rank`)는 유지하고 UI 카피·i18n을 학파/클래스로 통일한다.** 정체성 = 학파(전공)×클래스(급) 교차 — 예: "화염 학파의 대마법사". 아래 본문의 "유파"는 전부 "학파"로 읽는다. (전직 = 클래스 승급, 학파 선택은 정식 클래스 승급 시 1회.)
+
+### A. 전직 3단계 (`ascension` 상태)
+- 신규 상태 `ascension: { rank: 0|1|2, school: "fire"|"frost"|"holy"|null, schoolRespecs: number }` — `EngineState`에 1필드. 기존 `traits`는 삭제하지 않고 비전 각인(C절)으로 의미 재정의.
+- **견습(rank0)**: 시작. `school=null`. 범용 공명만 약하게(기존 `getResonance` 유지). 스킨 apprentice.
+- **정식(rank1)**: 복합 게이트 **`prestigeCount≥1 && wizardLevel≥12`** (잠정 — G절 시뮬로 확정). 유파 1회 선택(세리머니). 스킨 유파색.
+- **대마법사(rank2)**: 복합 게이트 **`prestigeCount≥4 && wizardLevel≥30 && highestStage≥20`** (잠정 — 시뮬 확정, Day-7 클리어 불가 라인 아래로). 유파 심화(선택 없음, 승천). 스킨 각성판.
+- 파생 `getPromotionStatus(state)`(순수함수·저장X): `{ nextRank, eligible, progress }` — UI·배지·NEXT GOAL 단일 소스. 권한은 항상 진행값 재검증. 환생 시 `ascension` 보존(`traits` 보존 패턴).
+- 견습 이탈 방지: 첫 환생 후 마법사 탭에 "유파 예고"(3카드 잠금 미리보기 + 진행도 "환생 1/1 · 레벨 n/12").
+
+### B. 유파 3종 효과 (기존 수치 보존 + 신규 패시브 도입)
+- 원칙: 기존 공명·데미지 수치 보존, 유파는 그 위 증폭기. 모든 효과는 장착·캐스트 결과에 곱하는 배수/공명 증폭 — 자동클리어 금지("머지가 왕").
+- 공명 흡수: 선택 유파 주원소 공명 요구 `3→2`(elementalCycle 흡수, **선택 유파 원소 한정** — 전체 적용 시 딜 폭주). 기존 `resonance.ts` 공식 불변.
+- 특성 흡수: 원소 특성(pyroGlyphs/deepFreeze/sanctifiedAim) 유파 자동 내장.
+- 유파별 (정식 rank1 / 대마법사 rank2, 수치는 잠정·시뮬 확정):
+  - **화염 Pyromancer**: 정식 = 요구3→2, targetCap+1, 화염×1.2, 신규 **연쇄 발화**(초과 대상 20% 스플래시). 대마법사 = targetCap+1, 화염×1.5, 신규 **겁화**(보스 `bossElapsedMs` 30초 후 ×2).
+  - **냉기 Cryomancer**: 정식 = 요구3→2, factor+0.15·dur+1000, deepFreeze, 신규 **빙결 축적**(`frostSlowMs>0` 적 피해+15%). 대마법사 = dur+1500, 냉기×1.3, 신규 **절대영도**(일반웨이브 첫타 20% 즉결).
+  - **신성 Lightbringer**: 정식 = 요구3→2, bossMult+0.5, sanctifiedAim, 신규 **심판의 빛**(보스 처치 골드+25%). 대마법사 = bossMult+1, 신성×1.3, 신규 **성역**(환생 후 첫 보스까지 신성×2).
+- 신규 패시브 계수는 밸런스 시뮬 반영·재측정(특히 겁화·절대영도는 DPS 변동 큼 — codex 경고).
+
+### C. 비전 각인 (범용 특성 슬롯 — 컷 없이 보존)
+- 범용 특성 5종(chainCast/goldenLibrary/quickHands/treasureOath/archmageFocus)을 **삭제하지 않고** 선택 슬롯으로 보존(디렉터 "볼륨 유지, 컷 없음").
+- 슬롯: 정식 2 / 대마법사 3 (견습 0). 기존 `TraitState{picks}` 구조 재사용, 원소 특성 id 제거. 슬롯별 후보 겹침 없이 배분.
+- 되돌림: 환생 시 무료 respec 크레딧(기존 `grantTraitRespecAfterPrestige` 계승).
+
+### D. respec 이원화 + 스킨 매핑
+- **respec 이원화**(정체성 무게 vs 실험 자유):
+  - 비전 각인 = 환생 무료 크레딧.
+  - 유파 = 마나수정 유료. 첫 변경 무료 → 이후 25 → 50 점증(`schoolRespecs`). 화폐 3종 준수(신규 발행 없음). 확인 다이얼로그로 비용·효과 공개. 환생 크레딧은 유파에 적용 안 함.
+- **스킨 = (rank, 유파) 결정론적 보상**. 구매·업적 카운터 언락 폐지.
+  - apprentice(시작) / ember·frost·gilded = 유파 정식(기존 tint 재활용, 즉시 가능).
+  - 대마법사 3종(archmagePyro/Cryo/Lumen) 신규 id — 에셋은 **R2 스프라이트 파이프라인 연동**. 그전까진 각성 오라(글로우/파티클, `BattleWizardView`)로 임시 차별.
+  - 전직 확정 시 스프라이트 스킨 전환 연출("펑"). `SkinState` owned/equipped 유지(되돌리기 수집). 외형과 수치 분리(apprentice로 되돌려도 유파 효과 유지).
+
+### E. 상태·액션·SAVE v5 마이그레이션
+- `types.ts`: `School`, `AscensionRank`(0|1|2), `AscensionState` 추가, `EngineState.ascension`. `TraitState` 유지(마이그레이션·비전 각인).
+- 액션: `promoteClass(state, school?)`(rank+1, rank0→1 school 필수·rank1→2 승계), `respecSchool(state, school)`(마나수정 차감·교체·schoolRespecs+1·스킨 재부여), `getPromotionStatus`(파생). `selectTrait` 유지(비전 각인 의미). `prestige` `ascension` 보존. `equipSkin` 언락소스 전직 기반. `useEngine.ts` 배선 추가.
+- **SAVE_VERSION 4→5**: v4→v5 마이그레이션 `ascension:{rank:0,school:null,schoolRespecs:0}` 초기화. 기존 traits.picks에서 공용 특성만 비전 각인 이관, 원소 특성 폐기(rank0 무효라 손실 체감 없음), **school 자동추론 안 함**(오추론 방지). 스킨 owned 보존+전직 재획득, `normalizeSkinState` 정규화. `isEngineState`에 `isAscensionState` 추가. 서버 zod 관대(ascension optional). `createInitialState`에 ascension 기본값.
+
+### F. 마법사 탭 UI (전직 세리머니)
+- 정보구조(위→아래): ① 정체성 헤더(초상·칭호·유파 문장·다음 전직 게이지) ② 전직 카드(eligible 시 CTA, 미충족 시 진행도) ③ 유파 패널(효과 목록 or 예고) ④ 비전 각인 슬롯(`TraitsSection` 재활용) ⑤ 스킬포인트(유지) ⑥ 공명(`ResonanceBadges`, 유파 보너스 표기 "화염 4/2 · 유파 +1") ⑦ 도감(유지). 정체성·유파 상시, 나머지 접이식.
+- **1차 전직 세리머니**(견습→정식, 무게 최대): 트리거(토스트+펄스) → 풀스크린 모달(`.modal.panel` 불투명) → 딤·집중 → 유파 3카드(효과 프리뷰 수치) → 되돌림 고지 → 확정·각성 연출(스킨 전환·능력 순차 공개) → 헤더 갱신·NEXT GOAL 전환. 캔버스 딤·파티클은 EventBus(R3 Gotcha3).
+- **2차 전직**(정식→대마법사, 카타르시스): 선택 없음, 승천 연출, 각성 오라·심화 효과 공개. 유파 변경은 세리머니 아닌 유파 패널 하단 "유파 변경" 버튼.
+- 시안: `scratchpad/r5-mockup.html`(디렉터 승인 방향).
+
+### G. 검증 (R5 완료 조건)
+- **밸런스 시뮬 재증명**: `simulate.ts` selectGreedy를 전직·유파(화염 기본)로 교체. 첫 벽 8~12분·첫 환생 25~35분·Day-7 클리어 불가 유지. 신규 패시브 계수 반영. 결과 수치 보고에 포함.
+- 유닛/컴포넌트 테스트 갱신+신규(progression·camp·state·actions·engineStorage·unlocks·i18n). `npm run test`+`npm run build` 그린.
+- data-testid: 신규 `identity-header`·`promote-card`·`promote-btn`·`school-modal`·`school-card-{fire|frost|holy}`·`school-confirm`·`school-respec-btn`. 유지 `resonance-row`·`codex-grid`·`skill-*`. 불가피 변경(trait 슬롯 id `lv8`→비전 각인 슬롯 등) 목록화.
+- 커밋은 redesign 브랜치에만. main·배포·원격 테스트 접근 금지.
+
+## 진행 상태 & 재시작 이어갈 지점 (2026-07-04)
+
+**재시작 사유**: 직전 세션이 repo 밖(`~/Documents/Codex/2026-07-04/new-chat`)에서 열려, codex-companion(codex:rescue 플러그인)의 쓰기 루트가 그 디렉토리로 제한돼 이 repo에 `apply_patch`가 거부됐다. **repo(`~/projects/merge-mage-redesign`)에서 세션을 재시작하면 플러그인이 정상 작동한다.** (교훈: codex 위임은 세션 cwd=repo에서.)
+
+**완료**: R1(49dfc2c)·R3(8f45c43)·R4(4e4b3d4/a6b9670/33ea966) 커밋·검수 완료. 테스트 191 그린.
+
+**R5 전직·유파 — 스펙·설계·시안 확정, 엔진 미구현**:
+- 스펙 위 A~G 확정. 디렉터 확정: 페이싱 **중간**(정식=환생1회+Lv12 잠정, 대마법사=환생4회+Lv30+최고스테이지20 잠정), 유파 신규 패시브 **도입**, 용어 **학파(school)/클래스(rank)**.
+- 3모델 독립 설계 합성: `docs/redesign-assets/r5-design/{codex,grok,claude}.md`.
+- 세리머니 목업(학파/클래스 카피) 확정: `docs/redesign-assets/r5-mockup.png` (+.html).
+- **다음**: ① 엔진 재위임 — codex:rescue에 `docs/redesign-assets/r5-engine-prompt.txt` 프롬프트 전달(엔진+상태+SAVE v5+밸런스 시뮬+WizardPanel 최소 마이그레이션, 세리머니 UX 제외). ② UI — sonnet에 세리머니 모달·정체성 헤더(목업·학파/클래스 카피 반영). ③ 검증 — codex review 적대 + 시뮬 수치(첫 벽/첫 환생/Day-7) + 프리뷰 실사용.
+
+**R2 원소 구슬 — 준비 완료(R5 후 착수)**:
+- 스프라이트 프로토타입: `docs/redesign-assets/orbs/{fire,frost,holy}.png`(16×16, 기존 tome 팔레트 재사용, **신성만 금색 확장 — R5 gilded 정합, 디렉터 확인됨**), 생성기 `orbs/gen_orbs.py`. 시안 `docs/redesign-assets/r2-orb-mockup.png`.
+- 스코프 = **표면 재테마**(스프라이트+카피+도감/궤도 비주얼, 엔진 `Spellbook`/`books` 타입 유지 — 정합 리네임 `tome→orb`는 선택).
+- 범위맵: 스프라이트 `public/assets/tomes/{fire,frost,holy}.png` 3장 교체(**`atlas.png`는 미사용 레거시**), 카피 `i18n.ts` en/ko 다수 키(tome/spellbook/마법서/도감), CTA `ControlsPanel.tsx`+`.btn-summon`(주인공급 격상), 도감 `CodexGrid` 비주얼(`codex.ts` 로직 유지). 깨질 테스트: `JourneyPanel.test`(Bind the First Tome), `BattleLayout.test`(resolveTomeLaunchPoint).
+
+**통합 게이트 — E2E 재작성 범위 스캔 완료**:
+- E2E 실체 = **TestSprite**(`tests/testsprite/fe/*.json`+`be/*.py`, `.testsprite/runs/*/code.py`). FE 01–07 + BE 01–04.
+- 깨짐: **fe/05**(`tab-skills`→`tab-wizard`), **fe/07**(`tab-ranks` 제거→HUD `ranks-btn`→`ranks-modal`+하드코딩 xpath). fe/01·02·03 = copy만(R2). fe/06·be/* 안정.
+- **R4는 E2E 무영향**(`rift-entry-btn`→`rift-portal-btn`은 CSS, testid `rifts-open-btn` 유지).
+- **fe/04 auto-buy**: 토글 UI 소실(상태만 `useEngine`에 잔존) + `04.json` 유실. 원안이 "자동구매 첫 버전 제외·후반 잠금해제 보상"이라 명시 → **폐기 또는 후반 언락 보상으로 이관**이 정합(통합 게이트서 확정).
+- CI 게이트 얕음(`testsprite.yml`이 FE 스모크 1건만 자동) → 재작성 후 편입 범위 결정.
+
+**다음 순서**: R5 엔진 재위임 → R5 UI → R5 검증 → R2(표면 재테마) → 통합 게이트(밸런스 시뮬·E2E 재작성·fe/04 결정·신선한 눈 실사용·라이브 교체 판단).

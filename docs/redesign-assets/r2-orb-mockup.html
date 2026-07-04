@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{
+    --bg:#16121e; --panel:#221c2e; --edge:#3a3152; --gold:#e8b84b; --cyan:#7ee0e6;
+    --ink:#d8d2e4; --dim:#8d84a4;
+    --corners: polygon(0 6px,6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px));
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d0a13;color:var(--ink);font-family:"SF Mono",ui-monospace,Menlo,monospace;padding:32px;letter-spacing:.5px}
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-size:12px;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;text-align:center;margin-bottom:6px}
+  h1{text-align:center;font-size:26px;color:#fff;letter-spacing:1px;margin-bottom:4px;text-transform:uppercase}
+  .sub{text-align:center;color:var(--dim);font-size:13px;margin-bottom:30px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:26px}
+  .col{background:var(--panel);border:2px solid var(--edge);clip-path:var(--corners);padding:20px 16px;text-align:center;box-shadow:5px 5px 0 rgba(0,0,0,.4)}
+  .name{font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:2px}
+  .en{font-size:10px;color:var(--dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
+  .row{display:flex;align-items:center;justify-content:center;gap:14px}
+  .slot{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .label{font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+  .book{width:56px;height:56px;image-rendering:pixelated;opacity:.9;filter:saturate(.85)}
+  .arrow{color:var(--gold);font-size:22px}
+  .orb{width:60px;height:60px;border-radius:50%;position:relative}
+  .fire .orb{background:radial-gradient(circle at 35% 30%,#ffe0b0 0%,#f0803a 42%,#c23a1e 70%,#5e160c 100%);
+    box-shadow:0 0 22px #e0603a99, inset -6px -6px 12px #00000066, inset 4px 4px 8px #ffd9a055}
+  .frost .orb{background:radial-gradient(circle at 35% 30%,#e8f6ff 0%,#7bbce8 42%,#3a72b0 70%,#193ا50 100%);
+    background:radial-gradient(circle at 35% 30%,#e8f6ff 0%,#7bbce8 42%,#3a72b0 70%,#193a50 100%);
+    box-shadow:0 0 22px #6ea8e899, inset -6px -6px 12px #00000066, inset 4px 4px 8px #d0ecff66}
+  .holy .orb{background:radial-gradient(circle at 35% 30%,#fff8dc 0%,#f0d98a 42%,#c29a3a 70%,#6e5216 100%);
+    box-shadow:0 0 24px #f0d98aaa, inset -6px -6px 12px #00000066, inset 4px 4px 8px #fff4c877}
+  .orb::after{content:"";position:absolute;top:12%;left:24%;width:26%;height:20%;border-radius:50%;background:#ffffffcc;filter:blur(1px)}
+  .fx{border-top:1px solid var(--edge);margin-top:16px;padding-top:12px;font-size:11px;color:var(--dim);line-height:1.6;text-align:left}
+  .fx b{color:var(--ink)}
+  .copy{background:var(--panel);border:2px solid var(--edge);clip-path:var(--corners);padding:16px 20px}
+  .copy h3{font-size:11px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin-bottom:10px}
+  .copy table{width:100%;font-size:12px;border-collapse:collapse}
+  .copy td{padding:5px 8px;border-bottom:1px solid #2a2338}
+  .copy td:first-child{color:var(--dim)}
+  .copy td:last-child{color:var(--ink)}
+  .old{color:#a06a6a;text-decoration:line-through;opacity:.7}
+  .new{color:var(--gold)}
+  .note{text-align:center;color:var(--dim);font-size:11px;margin-top:18px}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">R2 · Elemental Re-theme</div>
+  <h1>마법서 → 원소 구슬</h1>
+  <div class="sub">합성 단위를 "마법서"에서 원소 구슬로. "화염 Lv1 + 화염 Lv1"처럼 직관적이고, 궤도 연출과 맞는다.</div>
+
+  <div class="grid">
+    <div class="col fire">
+      <div class="name">화염 구슬</div>
+      <div class="en">Fire Orb</div>
+      <div class="row">
+        <div class="slot"><span class="label">Before</span><img class="book" src="file:///Users/ahndohun/projects/merge-mage-redesign/public/assets/tomes/fire.png"><span class="label" style="color:#6a6478">마법서</span></div>
+        <span class="arrow">▸</span>
+        <div class="slot"><span class="label">After</span><div class="orb"></div><span class="label" style="color:#e0603a">원소 구슬</span></div>
+      </div>
+      <div class="fx"><b>광역·지속화력</b><br>다중 타격·연쇄 발화의 원소.</div>
+    </div>
+    <div class="col frost">
+      <div class="name">냉기 구슬</div>
+      <div class="en">Frost Orb</div>
+      <div class="row">
+        <div class="slot"><span class="label">Before</span><img class="book" src="file:///Users/ahndohun/projects/merge-mage-redesign/public/assets/tomes/frost.png"><span class="label" style="color:#6a6478">마법서</span></div>
+        <span class="arrow">▸</span>
+        <div class="slot"><span class="label">After</span><div class="orb"></div><span class="label" style="color:#6ea8e8">원소 구슬</span></div>
+      </div>
+      <div class="fx"><b>제어·안정</b><br>감속을 화력으로 되돌리는 원소.</div>
+    </div>
+    <div class="col holy">
+      <div class="name">신성 구슬</div>
+      <div class="en">Holy Orb</div>
+      <div class="row">
+        <div class="slot"><span class="label">Before</span><img class="book" src="file:///Users/ahndohun/projects/merge-mage-redesign/public/assets/tomes/holy.png"><span class="label" style="color:#6a6478">마법서</span></div>
+        <span class="arrow">▸</span>
+        <div class="slot"><span class="label">After</span><div class="orb"></div><span class="label" style="color:#f0d98a">원소 구슬</span></div>
+      </div>
+      <div class="fx"><b>보스·폭발</b><br>보스의 무대에서 폭발하는 원소.</div>
+    </div>
+  </div>
+
+  <div class="copy">
+    <h3>카피·정보구조 전환</h3>
+    <table>
+      <tr><td>합성 단위</td><td><span class="old">마법서(Tome)</span> → <span class="new">원소 구슬(Orb)</span></td></tr>
+      <tr><td>서브탭·라벨</td><td><span class="old">TOMES</span> → <span class="new">ORBS</span> · <span class="old">도감(Codex)</span> → <span class="new">원소 도감</span></td></tr>
+      <tr><td>구매 CTA</td><td><span class="new">주인공급 격상</span> — "구슬 소환 Lv1 · 27골드"</td></tr>
+      <tr><td>연출</td><td>궤도 마법서 → <span class="new">궤도 원소 구슬</span> (OrbitingTomesView)</td></tr>
+    </table>
+  </div>
+
+  <div class="note">※ After 구슬은 컨셉 시안(색·발광·형태 방향). 최종은 게임 톤에 맞춘 픽셀 스프라이트로 생성 — fire/frost/holy.png + atlas 티어.</div>
+</div>
+</body></html>

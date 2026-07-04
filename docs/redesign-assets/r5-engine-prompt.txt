@@ -1,0 +1,23 @@
+merge-mage 재설계 R5 전직·유파 시스템의 엔진+상태+마이그레이션+밸런스 구현이다. 작업 루트는 -C로 지정된 redesign 브랜치 워크트리다. main·다른 브랜치 접근 금지.
+
+먼저 스펙을 정독하라: docs/specs/2026-07-04-redesign-tracks.md의 "## R5 스펙 — 전직·유파" A~G절 전부. 상단 확정 기둥과 R1/R3/R4 결과도 맥락으로 읽어라.
+
+이번 작업 범위 = 엔진·상태·마이그레이션·밸런스 시뮬 + 엔진 유닛테스트 + WizardPanel의 "동작하는 최소 마이그레이션"(build/test 그린 유지용). 전직 세리머니 모달·정체성 헤더·유파 카드 UX polish와 목업 CSS 스타일은 다음 UI 단계(별도 담당)에 맡긴다. 지금은 동작만 하는 기본 UI로 두고 연출을 넣지 마라.
+
+구현(스펙 A~G):
+- types.ts: AscensionState{rank,school,schoolRespecs}, EngineState.ascension.
+- src/engine/school.ts(신규): 유파 흡수 — 선택유파 공명 요구 3에서 2로(선택 원소 한정, 전체 적용 금지), 원소특성(pyroGlyphs/deepFreeze/sanctifiedAim) 자동 내장, 유파 신규 패시브 계수(연쇄발화·빙결축적·심판의빛·겁화·절대영도·성역).
+- resonance.ts/traits.ts: 유파 오버레이 진입(기존 수치 보존, 진입부 최소 수정). 비전 각인 = 범용특성 5종 슬롯(정식2/대마법사3), 원소특성 id 제거.
+- actions.ts/progressionActions.ts: promoteClass(state,school?), respecSchool(state,school) 마나수정 유료 점증(첫 무료 다음 25 다음 50), getPromotionStatus 파생, prestige가 ascension 보존, selectTrait는 비전각인 의미 유지, equipSkin 언락소스 전직 기반.
+- battle.ts/battleRewards.ts: 유파 신규 패시브 계수 반영.
+- camp.ts: 스킨 언락 (rank,유파) 결정론. ember/frost/gilded=유파 정식, 대마법사 신규 id는 정의만(에셋 R2 연동, 지금은 자리만).
+- engineStorage.ts: SAVE_VERSION 4에서 5로, migrateV4State(ascension 초기화, 공용특성만 비전각인 이관, school 자동추론 금지), isAscensionState 검증, 서버 zod 관대.
+- simulate.ts: selectGreedy를 전직·유파(화염 기본)로 교체.
+- state.ts: createInitialState ascension 기본값.
+- WizardPanel.tsx: 새 상태로 컴파일·동작하게 최소 마이그레이션(전직 버튼·유파 표시·비전각인 슬롯이 기능은 하되 기본 UI). data-testid는 스펙 G절 신규(promote-btn, school-card-fire 등) 부착, 기존 유지분 보존.
+
+전직 게이트 잠정값: 정식 prestigeCount>=1 && wizardLevel>=12, 대마법사 prestigeCount>=4 && wizardLevel>=30 && highestStage>=20. 밸런스 시뮬로 검증하고, 곡선(첫 벽 8에서 12분·첫 환생 25에서 35분·Day-7 클리어 불가)을 벗어나면 게이트·계수를 조정한 뒤 최종값을 보고에 명시하라.
+
+검증: npm run test 와 npm run build 둘 다 그린. 밸런스 시뮬을 실행해 첫 벽/첫 환생/Day-7 highest book 수치를 보고하라.
+금지: 세리머니 연출·목업 CSS, main·다른 브랜치, git push, 배포(vercel), 원격 테스트 API, LOOP.md·plans·.github·AGENTS.md 수정.
+완료: redesign 브랜치에 커밋(메시지 말미에 Co-Authored-By: Claude <noreply@anthropic.com> 한 줄) + 보고에 (1)구현표 A~G 항목별 (2)밸런스 시뮬 수치와 최종 게이트·계수 (3)data-testid 변경목록 (4)신규/갱신 테스트 목록 (5)git log --oneline 이 작업 (6)git status --short. 비대화형으로 끝까지 진행하고 막히면 보고에 명시. 보고는 한국어로.
