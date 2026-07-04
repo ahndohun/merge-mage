@@ -12,7 +12,7 @@ describe("JourneyPanel", () => {
       <JourneyPanel state={state} onClaimQuest={() => false} onClaimDailyMission={() => false} />,
     )
 
-    expect(markup).toContain("Bind the First Tome")
+    expect(markup).toContain("Bind the First Orb")
     expect(markup).toContain("data-testid=\"quest-claim-chain-01\"")
     expect(markup).toContain("ACHIEVEMENTS")
     expect(markup).toContain("data-testid=\"achievement-mergesTotal-10\"")

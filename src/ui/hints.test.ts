@@ -11,7 +11,7 @@ describe("getContextHint", () => {
   it("asks a player with no books and enough gold to summon first", () => {
     const state = createInitialState(1)
 
-    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap BUY to arm your first spellbook")
+    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap BUY to arm your first orb")
   })
 
   it("prioritizes same-level merging across inventory and equipped books", () => {
@@ -21,7 +21,7 @@ describe("getContextHint", () => {
       equipped: [book("equipped", 2, "holy"), null, null, null, null, null],
     } satisfies EngineState
 
-    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap a book, then another of the same level — works in slots too")
+    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap an orb, then another of the same level — works in slots too")
   })
 
   it("points inventory books toward empty equipment slots before boss or rebirth hints", () => {
@@ -32,7 +32,7 @@ describe("getContextHint", () => {
       wave: 10,
     } satisfies EngineState
 
-    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap a book, then an empty slot to equip")
+    expect(getContextHint({ state, summonCost: 20 })).toBe("Tap an orb, then an empty slot to equip")
   })
 
   it("shows boss and rebirth hints after higher-priority inventory guidance is absent", () => {
@@ -48,7 +48,7 @@ describe("getContextHint", () => {
       equipped: [book("equipped", 3, "holy"), null, null, null, null, null],
     } satisfies EngineState
 
-    expect(getContextHint({ state: boss, summonCost: 20 })).toBe("Boss! Holy books deal double damage")
+    expect(getContextHint({ state: boss, summonCost: 20 })).toBe("Boss! Holy orbs deal double damage")
     expect(getContextHint({ state: rebirth, summonCost: 20 })).toBe("REBIRTH is unlocked — permanent power")
   })
 
