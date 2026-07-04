@@ -2804,3 +2804,327 @@
     max-width: 340px;
   }
 }
+
+/* ---- R5: promotion ceremony (Wizard tab school pick / archmage ascension) ----
+   Fullscreen ceremony overlay — opaque dim over canvas + HUD + tab bar, same
+   layering idea as .modal-shade but pinned above everything (25, below the
+   drag-ghost's 40 and toast-stack's 30) and always centered, even on the
+   desktop 3-col layout where .modal-shade normally shifts right. This is a
+   DOM overlay only; the Phaser canvas underneath is never touched (no
+   direct styling, no EventBus tint) — AGENTS.md scale/canvas rules. */
+.ceremony-shade {
+  /* .modal-shade is `position: absolute; inset: 0`, which only spans the
+     nearest positioned ancestor — here that's .bottom-overlay (the tab
+     panel strip), not the full viewport. The ceremony must dim the canvas
+     and HUD too, so it needs `fixed` positioning to escape that ancestor
+     and cover the whole screen regardless of which tab panel renders it. */
+  position: fixed;
+  z-index: 25;
+  padding: 16px;
+  background: rgb(10 8 14 / 94%);
+}
+
+.ceremony {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  width: min(560px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 18px 16px 16px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgb(230 180 80 / 12%), transparent 60%),
+    var(--mm-panel);
+  box-shadow:
+    inset 0 0 0 2px var(--mm-panel-hi),
+    5px 5px 0 var(--mm-shadow);
+  animation: ceremonyRise 260ms cubic-bezier(0.2, 0.8, 0.3, 1.1);
+}
+
+@keyframes ceremonyRise {
+  0% {
+    transform: translateY(10px) scale(0.97);
+    opacity: 0;
+  }
+
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.ceremony-eyebrow {
+  color: var(--mm-frost);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.ceremony-title {
+  color: var(--mm-ink);
+  font-size: 18px;
+  letter-spacing: 1px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.ceremony-sub {
+  color: var(--mm-muted);
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.ceremony-awakening-label {
+  color: var(--mm-gold);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
+  animation: ceremonyAwakeningPulse 900ms steps(2, end) infinite;
+}
+
+@keyframes ceremonyAwakeningPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Mobile-first: this is an idle game whose primary target is phones, and at
+   375px a 3-across row squeezes each card to ~95px — narrow enough that the
+   Korean effect lines break character-by-character ("화염 공/명 요구/3 → 2"),
+   which gnaws at the "heaviest beat in the run" the ceremony is meant to be.
+   So the default is a single-column vertical stack (each card spans the full
+   dialog width, so text wraps at word boundaries), and the 3-across side-by-
+   side comparison — the point of the school pick — is restored at desktop
+   width via the 1280px block below. The dialog scrolls inside the dim if the
+   stack runs tall (.ceremony already sets overflow: auto). */
+.school-card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+/* Adept -> Archmage skips the picker: a single carried-over school card is
+   already the only child, so the stack layout centers it fine. Just cap its
+   width so it doesn't stretch edge-to-edge on the vertical layout. */
+.school-card-grid:has(> :only-child) {
+  grid-template-columns: minmax(0, 320px);
+  justify-content: center;
+}
+
+.school-card {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 12px 8px 10px;
+  border: 2px solid var(--mm-panel-edge);
+  clip-path: var(--mm-corners);
+  background: var(--mm-bg);
+  box-shadow: inset 0 0 0 2px var(--mm-panel);
+  color: var(--mm-ink);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition:
+    transform 120ms ease-out,
+    opacity 300ms ease-out;
+}
+
+.school-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.school-card.is-selected {
+  border-color: var(--mm-gold);
+  box-shadow:
+    inset 0 0 0 2px var(--mm-panel),
+    0 0 0 2px var(--mm-gold);
+}
+
+.school-card:disabled {
+  cursor: default;
+}
+
+/* Awakening step 1: unchosen cards fade out and dim so the chosen one reads
+   as the sole focus of the sequence. */
+.school-card.is-fading-out {
+  animation: ceremonyCardFadeOut 500ms ease-out forwards;
+}
+
+@keyframes ceremonyCardFadeOut {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-6px) scale(0.94);
+    opacity: 0;
+  }
+}
+
+.school-crest {
+  width: 44px;
+  height: 44px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.school-crest-fire {
+  background: linear-gradient(160deg, var(--mm-fire), #7a241c);
+  box-shadow: 0 0 14px rgb(226 88 34 / 45%);
+}
+
+.school-crest-frost {
+  background: linear-gradient(160deg, var(--mm-frost), #274566);
+  box-shadow: 0 0 14px rgb(110 203 255 / 45%);
+}
+
+.school-crest-holy {
+  background: linear-gradient(160deg, var(--mm-holy), #8a6a22);
+  box-shadow: 0 0 14px rgb(255 216 115 / 45%);
+}
+
+/* Awakening step 2: the chosen school's crest grows and pulses with its
+   school-colored glow — the "reveal" beat of the sequence. */
+.school-card.is-chosen .school-crest {
+  animation: ceremonyCrestAwaken 1400ms ease-in-out 120ms both;
+}
+
+@keyframes ceremonyCrestAwaken {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  35% {
+    transform: scale(1.55);
+    filter: brightness(1.6);
+  }
+
+  60% {
+    transform: scale(1.35);
+    filter: brightness(1.3);
+  }
+
+  100% {
+    transform: scale(1.4);
+    filter: brightness(1.35);
+  }
+}
+
+.school-card.is-chosen {
+  border-color: var(--mm-gold);
+  box-shadow:
+    inset 0 0 0 2px var(--mm-panel),
+    0 0 20px 2px rgb(230 180 80 / 35%);
+}
+
+.school-effect-list {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  list-style: none;
+  border-top: 1px solid var(--mm-panel-edge);
+  padding-top: 6px;
+  color: var(--mm-muted);
+  /* keep-all stops Korean from breaking mid-word; the wide single-column card
+     gives each effect line enough room to wrap only between words (or not at
+     all). Font is a touch larger than the old cramped 3-col value now that
+     there's width to spare. */
+  word-break: keep-all;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Awakening step 3: abilities reveal one line at a time (stagger via
+   --reveal-index, set inline per <li> from WizardPanel). */
+.school-effect-list li.is-revealing {
+  animation: ceremonyEffectReveal 260ms ease-out both;
+  animation-delay: calc(500ms + var(--reveal-index) * 220ms);
+}
+
+@keyframes ceremonyEffectReveal {
+  0% {
+    transform: translateX(-4px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Awakening step 4: one full-viewport school-tinted flash, layered above the
+   ceremony card itself (this element lives inside .ceremony, not the shade,
+   so it flashes the dialog's own bounds — still no canvas access). */
+.ceremony-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 26;
+  pointer-events: none;
+  animation: ceremonyFlash 900ms ease-out 1500ms both;
+}
+
+.ceremony-flash[data-school="fire"] {
+  background: var(--mm-fire);
+}
+
+.ceremony-flash[data-school="frost"] {
+  background: var(--mm-frost);
+}
+
+.ceremony-flash[data-school="holy"] {
+  background: var(--mm-holy);
+}
+
+@keyframes ceremonyFlash {
+  0% {
+    opacity: 0;
+  }
+
+  35% {
+    opacity: 0.8;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (min-width: 1280px) {
+  /* The 3-col desktop layout shifts .modal-shade to the right column, but
+     the ceremony must stay centered over the whole viewport regardless. */
+  .ceremony-shade {
+    place-items: center;
+    padding-right: 16px;
+  }
+
+  .ceremony {
+    width: min(720px, 100%);
+  }
+
+  /* Desktop restores the 3-across side-by-side school comparison — the whole
+     point of the pick. At ~720px the dialog gives each of the three cards
+     ~220px, wide enough that keep-all wraps cleanly between words. */
+  .school-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Cards are narrower here than in the mobile stack, so dial the effect
+     text back down to fit three columns without re-crowding. */
+  .school-effect-list {
+    font-size: 9.5px;
+    line-height: 1.4;
+  }
+}

@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useRef, useState, type CSSProperties } from "react"
+import { createPortal } from "react-dom"
 import {
   BASE_CAST_INTERVAL_MS,
   BASE_CRIT_CHANCE,
@@ -58,32 +59,12 @@ function getSkillEffectCopy(skill: SkillName, state: EngineState, t: Translator)
 // codex moved here from the Books tab so Books stays focused on equip/inventory/buy.
 export function WizardPanel(props: WizardPanelProps) {
   const { t } = useLocale()
-  const [schoolModalMode, setSchoolModalMode] = useState<"closed" | "choose" | "respec">("closed")
+  const [ceremonyOpen, setCeremonyOpen] = useState(false)
+  const [respecOpen, setRespecOpen] = useState(false)
 
   const status = getPromotionStatus(props.state)
 
-  const closeModal = () => setSchoolModalMode("closed")
-
-  const handlePromoteCta = () => {
-    if (props.state.ascension.rank === 0) {
-      setSchoolModalMode("choose")
-      return
-    }
-    // Adept -> Archmage: school carries over, no picker needed.
-    props.onPromoteClass()
-  }
-
-  const handleConfirmSchool = (school: School) => {
-    if (schoolModalMode === "respec") {
-      if (props.onRespecSchool(school)) {
-        closeModal()
-      }
-      return
-    }
-    if (props.onPromoteClass(school)) {
-      closeModal()
-    }
-  }
+  const handlePromoteCta = () => setCeremonyOpen(true)
 
   return (
     <section className="panel tab-panel wizard-panel" aria-label="Wizard">
@@ -98,18 +79,30 @@ export function WizardPanel(props: WizardPanelProps) {
         <button
           className="btn btn-wide"
           data-testid="school-respec-btn"
-          onClick={() => setSchoolModalMode("respec")}
+          onClick={() => setRespecOpen(true)}
           type="button"
         >
           {t("schoolRespecBtn")} · {t.schoolRespecCost(getSchoolRespecCost(props.state.ascension.schoolRespecs))}
         </button>
       ) : null}
-      {schoolModalMode !== "closed" ? (
-        <SchoolModal
+      {ceremonyOpen ? (
+        <PromotionCeremony
+          onClose={() => setCeremonyOpen(false)}
+          onPromoteClass={props.onPromoteClass}
+          state={props.state}
+          status={status}
+          t={t}
+        />
+      ) : null}
+      {respecOpen ? (
+        <SchoolRespecModal
           currentSchool={props.state.ascension.school}
-          mode={schoolModalMode}
-          onCancel={closeModal}
-          onConfirm={handleConfirmSchool}
+          onCancel={() => setRespecOpen(false)}
+          onConfirm={(school) => {
+            if (props.onRespecSchool(school)) {
+              setRespecOpen(false)
+            }
+          }}
           respecCost={getSchoolRespecCost(props.state.ascension.schoolRespecs)}
           t={t}
         />
@@ -237,8 +230,149 @@ function PromotionCard(props: {
   )
 }
 
-function SchoolModal(props: {
-  readonly mode: "choose" | "respec"
+// How long the post-confirm awakening sequence plays before the ceremony
+// auto-closes. The CSS stagger (card fade -> crest zoom -> ability reveal ->
+// flash) is timed to fit inside this window; see overlay.css AWAKENING_MS
+// comment for the per-step breakdown.
+const AWAKENING_MS = 2200
+
+// The 1st promotion (Apprentice -> Adept) is the heaviest beat in the run: a
+// fullscreen ceremony dims the whole game (canvas + HUD + tab bar) and asks
+// the player to commit to a school. The 2nd (Adept -> Archmage) reuses the
+// same shell without the picker — school carries over, so it plays as a pure
+// ascension payoff. `onPromoteClass` fires the instant the player confirms
+// (engine state changes synchronously); the awakening phase is a trailing
+// visual layer only, so tests that assert on the callback don't need to wait
+// for the animation.
+function PromotionCeremony(props: {
+  readonly state: EngineState
+  readonly status: ReturnType<typeof getPromotionStatus>
+  readonly onPromoteClass: (school?: School) => boolean
+  readonly onClose: () => void
+  readonly t: Translator
+}) {
+  // Captured once at mount (not derived on every render): confirming a
+  // choose-mode promotion updates props.state.ascension.rank from 0 to 1
+  // immediately (engine state changes synchronously, see AWAKENING_MS
+  // comment below), which would otherwise flip this ceremony instance's own
+  // mode mid-awakening and rewrite its header/title out from under the
+  // reveal animation.
+  const [mode] = useState<"choose" | "ascend">(props.state.ascension.rank === 0 ? "choose" : "ascend")
+  const [selected, setSelected] = useState<School | null>(mode === "ascend" ? props.state.ascension.school : null)
+  const [revealSchool, setRevealSchool] = useState<School | null>(null)
+  const closeTimeoutRef = useRef<number | null>(null)
+
+  const clearCloseTimeout = () => {
+    if (closeTimeoutRef.current !== null) {
+      window.clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
+    }
+  }
+
+  const handleConfirm = () => {
+    if (selected === null) {
+      return
+    }
+    const promoted = mode === "choose" ? props.onPromoteClass(selected) : props.onPromoteClass()
+    if (!promoted) {
+      return
+    }
+    setRevealSchool(selected)
+    clearCloseTimeout()
+    closeTimeoutRef.current = window.setTimeout(() => props.onClose(), AWAKENING_MS)
+  }
+
+  const awakening = revealSchool !== null
+
+  // Portal to <body>: the ceremony must dim the full screen (canvas + HUD +
+  // tab bar), but it mounts from inside .wizard-panel, which sits under a
+  // chain of ancestors (.tab-content -> .bottom-overlay -> .ui-overlay ->
+  // .game-shell) where the panel itself is `overflow: auto`. A `position:
+  // fixed` descendant of an `overflow` ancestor still gets clipped to that
+  // ancestor's box in this app's layout, so escaping via a portal is what
+  // actually reaches the true viewport. Still a DOM-only overlay — no
+  // Phaser/canvas code touched.
+  return createPortal(
+    <div className="modal-shade ceremony-shade" role="presentation">
+      <div
+        aria-modal="true"
+        className={`ceremony panel school-modal${awakening ? " is-awakening" : ""}`}
+        data-testid="school-modal"
+        role="dialog"
+      >
+        <div className="ceremony-eyebrow">
+          {mode === "choose" ? props.t("ceremonyEyebrowChoose") : props.t("ceremonyEyebrowArchmage")}
+        </div>
+        <h2 className="ceremony-title">
+          {mode === "choose" ? props.t("ceremonyTitleChoose") : props.t("ceremonyTitleArchmage")}
+        </h2>
+        <p className="ceremony-sub">{mode === "choose" ? props.t("ceremonySubChoose") : props.t("ceremonySubArchmage")}</p>
+        <div className={`school-card-grid${awakening ? " is-awakening" : ""}`}>
+          {SCHOOLS.map((school) => {
+            if (mode === "ascend" && school !== selected) {
+              return null
+            }
+            const isChosen = revealSchool === school
+            const isFadingOut = awakening && !isChosen
+            return (
+              <button
+                className={`school-card school-card-${school}${selected === school ? " is-selected" : ""}${
+                  isChosen ? " is-chosen" : ""
+                }${isFadingOut ? " is-fading-out" : ""}`}
+                data-testid={`school-card-${school}`}
+                disabled={awakening}
+                key={school}
+                onClick={() => setSelected(school)}
+                type="button"
+              >
+                <div aria-hidden="true" className={`school-crest school-crest-${school}`} />
+                <strong>{props.t.schoolTitle(school)}</strong>
+                <ul className="school-effect-list">
+                  {props.t.schoolEffectSummary(school).map((line, index) => (
+                    <li className={isChosen ? "is-revealing" : ""} key={line} style={{ "--reveal-index": index } as CSSProperties}>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </button>
+            )
+          })}
+        </div>
+        {awakening ? <div className="ceremony-flash" aria-hidden="true" data-school={revealSchool} /> : null}
+        {!awakening ? (
+          <>
+            <div className="school-modal-notice">
+              <span>{props.t("ceremonyRespecNotice")}</span>
+            </div>
+            <div className="modal-actions">
+              <button className="btn" onClick={props.onClose} type="button">
+                {props.t("cancel")}
+              </button>
+              <button
+                className="btn btn-emphasis"
+                data-testid="school-confirm"
+                disabled={selected === null}
+                onClick={handleConfirm}
+                type="button"
+              >
+                {mode === "ascend"
+                  ? props.t("ceremonyConfirmArchmage")
+                  : selected !== null
+                    ? props.t.ceremonyConfirmSchool(selected)
+                    : props.t("confirm")}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="ceremony-awakening-label">{props.t("ceremonyAwakeningTitle")}</div>
+        )}
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+function SchoolRespecModal(props: {
   readonly currentSchool: School | null
   readonly respecCost: number
   readonly onConfirm: (school: School) => void
@@ -251,7 +385,7 @@ function SchoolModal(props: {
     <div className="modal-shade" role="presentation">
       <div aria-modal="true" className="modal panel school-modal" data-testid="school-modal" role="dialog">
         <div className="panel-header">
-          <span>{props.mode === "choose" ? props.t("schoolModalTitleChoose") : props.t("schoolModalTitleRespec")}</span>
+          <span>{props.t("schoolModalTitleRespec")}</span>
         </div>
         <div className="school-card-grid">
           {SCHOOLS.map((school) => (
@@ -272,11 +406,7 @@ function SchoolModal(props: {
           ))}
         </div>
         <div className="school-modal-notice">
-          {props.mode === "respec" ? (
-            <span>{props.t.schoolRespecCost(props.respecCost)}</span>
-          ) : (
-            <span>{props.t("schoolModalRespecNotice")}</span>
-          )}
+          <span>{props.t.schoolRespecCost(props.respecCost)}</span>
         </div>
         <div className="modal-actions">
           <button className="btn" onClick={props.onCancel} type="button">
@@ -285,9 +415,9 @@ function SchoolModal(props: {
           <button
             className="btn btn-emphasis"
             data-testid="school-confirm"
-            disabled={selected === null || (props.mode === "respec" && selected === props.currentSchool)}
+            disabled={selected === null || selected === props.currentSchool}
             onClick={() => {
-              if (selected !== null && !(props.mode === "respec" && selected === props.currentSchool)) {
+              if (selected !== null && selected !== props.currentSchool) {
                 props.onConfirm(selected)
               }
             }}

@@ -2,7 +2,7 @@
 import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { createInitialState } from "../engine/state"
 import type { EngineState, School } from "../engine/types"
 import { WizardPanel } from "./WizardPanel"
@@ -52,8 +52,12 @@ function renderInteractive(state: EngineState, handlers: Handlers = {}): HTMLEle
   return host
 }
 
+// The promotion ceremony renders via a portal into document.body (it must
+// escape the wizard panel's `overflow: auto` ancestor chain to dim the full
+// screen), so lookups search the whole document rather than just the mount
+// host — that also matches how the ceremony actually lives in production.
 function getByTestId(host: HTMLElement, testId: string): HTMLElement {
-  const element = host.querySelector(`[data-testid="${testId}"]`)
+  const element = queryByTestId(host, testId)
   if (!(element instanceof HTMLElement)) {
     throw new Error(`Missing element with data-testid="${testId}"`)
   }
@@ -61,7 +65,7 @@ function getByTestId(host: HTMLElement, testId: string): HTMLElement {
 }
 
 function queryByTestId(host: HTMLElement, testId: string): HTMLElement | null {
-  return host.querySelector(`[data-testid="${testId}"]`)
+  return host.querySelector(`[data-testid="${testId}"]`) ?? document.querySelector(`[data-testid="${testId}"]`)
 }
 
 function adeptState(overrides: Partial<EngineState> = {}): EngineState {
@@ -228,8 +232,8 @@ describe("WizardPanel", () => {
     })
   })
 
-  describe("school modal", () => {
-    it("opens with the three school cards when the promote CTA is clicked (apprentice -> adept)", () => {
+  describe("promotion ceremony (apprentice -> adept, school picker)", () => {
+    it("opens the fullscreen ceremony with the three school cards when the promote CTA is clicked", () => {
       const state = { ...createInitialState(1), prestigeCount: 1, wizardLevel: 12 } satisfies EngineState
       const host = renderInteractive(state)
 
@@ -245,25 +249,7 @@ describe("WizardPanel", () => {
       expect(getByTestId(host, "school-card-holy")).toBeTruthy()
     })
 
-    it("does not open a school picker for rank1 -> rank2 (school carries over)", () => {
-      const state = adeptState({ prestigeCount: 4, wizardLevel: 30, highestStage: 20 })
-      let promoted: (School | undefined)[] = []
-      const host = renderInteractive(state, {
-        onPromoteClass: (school) => {
-          promoted.push(school)
-          return true
-        },
-      })
-
-      act(() => {
-        getByTestId(host, "promote-btn").click()
-      })
-
-      expect(queryByTestId(host, "school-modal")).toBeNull()
-      expect(promoted).toEqual([undefined])
-    })
-
-    it("selects a school card and confirms, calling onPromoteClass with the chosen school", () => {
+    it("calls onPromoteClass synchronously with the chosen school on confirm, before the awakening sequence finishes", () => {
       const state = { ...createInitialState(1), prestigeCount: 1, wizardLevel: 12 } satisfies EngineState
       const promoted: (School | undefined)[] = []
       const host = renderInteractive(state, {
@@ -283,11 +269,43 @@ describe("WizardPanel", () => {
         getByTestId(host, "school-confirm").click()
       })
 
+      // Engine state changes the instant confirm is clicked — the trailing
+      // awakening animation is a visual layer only and must not gate this.
       expect(promoted).toEqual(["frost"])
-      expect(queryByTestId(host, "school-modal")).toBeNull()
+      // The ceremony keeps the school-modal dialog open through the awakening
+      // reveal (card zoom / ability stagger / flash) instead of closing instantly.
+      expect(queryByTestId(host, "school-modal")).not.toBeNull()
     })
 
-    it("keeps the modal open when the engine rejects the promotion", () => {
+    it("auto-closes the ceremony once the awakening sequence finishes", () => {
+      vi.useFakeTimers()
+      try {
+        const state = { ...createInitialState(1), prestigeCount: 1, wizardLevel: 12 } satisfies EngineState
+        const host = renderInteractive(state, { onPromoteClass: () => true })
+
+        act(() => {
+          getByTestId(host, "promote-btn").click()
+        })
+        act(() => {
+          getByTestId(host, "school-card-fire").click()
+        })
+        act(() => {
+          getByTestId(host, "school-confirm").click()
+        })
+
+        expect(queryByTestId(host, "school-modal")).not.toBeNull()
+
+        act(() => {
+          vi.advanceTimersByTime(3000)
+        })
+
+        expect(queryByTestId(host, "school-modal")).toBeNull()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("keeps the modal open (no awakening) when the engine rejects the promotion", () => {
       const state = { ...createInitialState(1), prestigeCount: 1, wizardLevel: 12 } satisfies EngineState
       const host = renderInteractive(state, { onPromoteClass: () => false })
 
@@ -302,6 +320,7 @@ describe("WizardPanel", () => {
       })
 
       expect(queryByTestId(host, "school-modal")).not.toBeNull()
+      expect(queryByTestId(host, "school-card-fire")).not.toBeNull()
     })
 
     it("closes on cancel without calling onPromoteClass", () => {
@@ -318,7 +337,7 @@ describe("WizardPanel", () => {
         getByTestId(host, "promote-btn").click()
       })
       act(() => {
-        host.querySelector(".school-modal .modal-actions .btn:not([data-testid])")?.dispatchEvent(
+        document.querySelector(".school-modal .modal-actions .btn:not([data-testid])")?.dispatchEvent(
           new MouseEvent("click", { bubbles: true }),
         )
       })
@@ -326,7 +345,46 @@ describe("WizardPanel", () => {
       expect(promoteCalls).toBe(0)
       expect(queryByTestId(host, "school-modal")).toBeNull()
     })
+  })
 
+  describe("promotion ceremony (adept -> archmage, ascension without a picker)", () => {
+    it("opens the ceremony with only the carried-over school card, no picker", () => {
+      const state = adeptState({ prestigeCount: 4, wizardLevel: 30, highestStage: 20 })
+      const host = renderInteractive(state, { onPromoteClass: () => true })
+
+      act(() => {
+        getByTestId(host, "promote-btn").click()
+      })
+
+      expect(queryByTestId(host, "school-modal")).not.toBeNull()
+      expect(getByTestId(host, "school-card-fire")).toBeTruthy()
+      expect(queryByTestId(host, "school-card-frost")).toBeNull()
+      expect(queryByTestId(host, "school-card-holy")).toBeNull()
+    })
+
+    it("calls onPromoteClass with no school argument on confirm (school carries over)", () => {
+      const state = adeptState({ prestigeCount: 4, wizardLevel: 30, highestStage: 20 })
+      const promoted: (School | undefined)[] = []
+      const host = renderInteractive(state, {
+        onPromoteClass: (school) => {
+          promoted.push(school)
+          return true
+        },
+      })
+
+      act(() => {
+        getByTestId(host, "promote-btn").click()
+      })
+      act(() => {
+        getByTestId(host, "school-confirm").click()
+      })
+
+      expect(promoted).toEqual([undefined])
+      expect(queryByTestId(host, "school-modal")).not.toBeNull()
+    })
+  })
+
+  describe("school respec (unchanged simple modal, not a ceremony)", () => {
     it("opens in respec mode from the school-respec button and calls onRespecSchool on confirm", () => {
       const respecked: School[] = []
       const host = renderInteractive(adeptState(), {
@@ -351,6 +409,23 @@ describe("WizardPanel", () => {
 
       expect(respecked).toEqual(["holy"])
       expect(queryByTestId(host, "school-modal")).toBeNull()
+    })
+
+    it("does not allow confirming the same school (no ceremony, no crystal loss)", () => {
+      const respecked: School[] = []
+      const host = renderInteractive(adeptState(), {
+        onRespecSchool: (school) => {
+          respecked.push(school)
+          return true
+        },
+      })
+
+      act(() => {
+        getByTestId(host, "school-respec-btn").click()
+      })
+
+      expect(getByTestId(host, "school-confirm")).toHaveProperty("disabled", true)
+      expect(respecked).toEqual([])
     })
   })
 })

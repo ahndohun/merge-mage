@@ -172,6 +172,16 @@ const enMessages = {
   arcaneSlot1: "Adept Slot",
   arcaneSlot2: "Adept Slot",
   arcaneSlot3: "Archmage Slot",
+  ceremonyEyebrowChoose: "Advancing to Adept — Choose Your School",
+  ceremonyTitleChoose: "Choose Your School",
+  ceremonySubChoose: "You have completed your apprenticeship. Which school will you master — this choice defines your wizard.",
+  ceremonyEyebrowArchmage: "Ascending to Archmage",
+  ceremonyTitleArchmage: "Ascension",
+  ceremonySubArchmage: "You have mastered the Adept class. Your school's power now runs deeper.",
+  ceremonyRespecNotice: "Schools can be changed later — mana crystals required (first change free). Arcane inscriptions still respec free on rebirth.",
+  ceremonyConfirmArchmage: "Ascend to Archmage ▸",
+  ceremonyAwakeningTitle: "Awakening...",
+  ceremonyNewPower: "NEW",
 } as const
 
 export type MessageKey = keyof typeof enMessages
@@ -347,6 +357,16 @@ const ko: Record<MessageKey, string> = {
   arcaneSlot1: "정식 슬롯",
   arcaneSlot2: "정식 슬롯",
   arcaneSlot3: "대마법사 슬롯",
+  ceremonyEyebrowChoose: "정식 클래스 승급 · 학파 선택",
+  ceremonyTitleChoose: "학파를 택하라",
+  ceremonySubChoose: "견습 클래스를 마쳤다. 어느 학파의 마법을 전공할 것인가 — 이 선택이 당신의 마법사를 규정한다.",
+  ceremonyEyebrowArchmage: "대마법사 승천",
+  ceremonyTitleArchmage: "승천",
+  ceremonySubArchmage: "정식 클래스의 정점에 섰다. 학파의 힘이 더 깊이 각인된다.",
+  ceremonyRespecNotice: "학파는 나중에 바꿀 수 있다 — 마나수정이 든다(첫 변경 무료). 범용 비전 각인은 환생 때 무료로 다시 찍는다.",
+  ceremonyConfirmArchmage: "대마법사로 승급 ▸",
+  ceremonyAwakeningTitle: "각성 중...",
+  ceremonyNewPower: "신규",
 }
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { en, ko }
@@ -409,6 +429,7 @@ type TemplateSet = {
   readonly schoolEffectSummary: (school: "fire" | "frost" | "holy") => readonly string[]
   readonly schoolRespecCost: (cost: number) => string
   readonly arcaneSlotLabel: (slot: "arcane1" | "arcane2" | "arcane3") => string
+  readonly ceremonyConfirmSchool: (school: "fire" | "frost" | "holy") => string
 }
 
 export type Translator = ((key: MessageKey) => string) & TemplateSet & {
@@ -471,6 +492,7 @@ const templates: Record<Locale, TemplateSet> = {
     schoolEffectSummary: (school) => enSchoolEffectSummary[school],
     schoolRespecCost: (cost) => (cost === 0 ? en.schoolRespecCostFree : `${cost} crystals`),
     arcaneSlotLabel: (slot) => enArcaneSlotLabel[slot],
+    ceremonyConfirmSchool: (school) => `Enter the ${enSchoolTitle[school]} ▸`,
   },
   ko: {
     mergedLv: (level) => `합성! Lv ${level}`,
@@ -526,6 +548,7 @@ const templates: Record<Locale, TemplateSet> = {
     schoolEffectSummary: (school) => koSchoolEffectSummary[school],
     schoolRespecCost: (cost) => (cost === 0 ? ko.schoolRespecCostFree : `크리스탈 ${cost}`),
     arcaneSlotLabel: (slot) => koArcaneSlotLabel[slot],
+    ceremonyConfirmSchool: (school) => `${koSchoolTitle[school]}로 입문 ▸`,
   },
 }
 
