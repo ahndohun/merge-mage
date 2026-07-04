@@ -21,11 +21,21 @@ import {
 import { getCodexBonusMultiplier } from "./codex.js"
 import { getElementDamageMultiplier, getEquippedRelicEffects } from "./relics.js"
 import { getHolyBossMultiplier } from "./resonance.js"
-import { applyTraitCastInterval, getTraitCodexBonusPerTier, getTraitElementDamageMultiplier } from "./traits.js"
-import type { Element, EngineState, PetState, SkinState } from "./types.js"
+import { getSchoolElementDamageMultiplier } from "./school.js"
+import { applyTraitCastInterval, getTraitCodexBonusPerTier } from "./traits.js"
+import type { AscensionRank, Element, EngineState, PetState, School, SkinState } from "./types.js"
 
 export type DailyMissionId = "merge20" | "boss3" | "summon30" | "mineClaim1" | "stage3"
-export type SkinId = "apprentice" | "ember" | "frost" | "gilded"
+// R5: 스킨은 (클래스, 학파) 결정론적 보상. 대마법사(rank2) 3종은 R2 스프라이트 파이프라인
+// 연동 전까지 자리(placeholder)만 잡는다 — tint로만 임시 차별.
+export type SkinId =
+  | "apprentice"
+  | "ember"
+  | "frost"
+  | "gilded"
+  | "archmagePyro"
+  | "archmageCryo"
+  | "archmageLumen"
 
 export type DailyMissionDefinition = {
   readonly id: DailyMissionId
@@ -85,8 +95,50 @@ const APPRENTICE_SKIN: SkinDefinition = { id: "apprentice", tint: 0xffffff }
 const EMBER_SKIN: SkinDefinition = { id: "ember", tint: 0xff7a3c }
 const FROST_SKIN: SkinDefinition = { id: "frost", tint: 0x86dcff }
 const GILDED_SKIN: SkinDefinition = { id: "gilded", tint: 0xffd873 }
+// 대마법사 각성판 — 정식판보다 밝은 tint로 임시 차별(에셋 연동 전).
+const ARCHMAGE_PYRO_SKIN: SkinDefinition = { id: "archmagePyro", tint: 0xffb15a }
+const ARCHMAGE_CRYO_SKIN: SkinDefinition = { id: "archmageCryo", tint: 0xbdefff }
+const ARCHMAGE_LUMEN_SKIN: SkinDefinition = { id: "archmageLumen", tint: 0xfff0b0 }
 
-export const SKINS: readonly SkinDefinition[] = [APPRENTICE_SKIN, EMBER_SKIN, FROST_SKIN, GILDED_SKIN] as const
+export const SKINS: readonly SkinDefinition[] = [
+  APPRENTICE_SKIN,
+  EMBER_SKIN,
+  FROST_SKIN,
+  GILDED_SKIN,
+  ARCHMAGE_PYRO_SKIN,
+  ARCHMAGE_CRYO_SKIN,
+  ARCHMAGE_LUMEN_SKIN,
+] as const
+
+// (클래스, 학파) → 스킨 결정론 매핑. 견습·미선택은 apprentice.
+const RANK1_SCHOOL_SKIN: Record<School, SkinId> = { fire: "ember", frost: "frost", holy: "gilded" }
+const RANK2_SCHOOL_SKIN: Record<School, SkinId> = {
+  fire: "archmagePyro",
+  frost: "archmageCryo",
+  holy: "archmageLumen",
+}
+
+export function getAscensionSkinId(rank: AscensionRank, school: School | null): SkinId {
+  if (rank < 1 || school === null) {
+    return "apprentice"
+  }
+  return rank >= 2 ? RANK2_SCHOOL_SKIN[school] : RANK1_SCHOOL_SKIN[school]
+}
+
+/**
+ * 전직·유파 변경 확정 시 호출. 결정론적 스킨을 owned에 병합하고 즉시 장착한다.
+ * 외형과 수치는 분리 — 이후 apprentice로 되돌려도 유파 효과는 유지된다.
+ */
+export function applyAscensionSkin(state: EngineState): EngineState {
+  const skinId = getAscensionSkinId(state.ascension.rank, state.ascension.school)
+  return {
+    ...state,
+    skins: {
+      owned: mergeOwnedSkins(state.skins.owned.length === 0 ? DEFAULT_SKIN_STATE.owned : state.skins.owned, skinId),
+      equipped: skinId,
+    },
+  }
+}
 
 export const DEFAULT_SKIN_STATE: SkinState = {
   owned: ["apprentice"],
@@ -301,7 +353,7 @@ export function equipSkin(state: EngineState, skinId: string): EngineState {
 }
 
 export function normalizeSkinState(skins: SkinState, state: EngineState): SkinState {
-  const unlockedIds = getUnlockedSkinsFromCounters(state)
+  const unlockedIds = getUnlockedSkins(state).map((skin) => skin.id)
   const owned = mergeOwnedSkins(skins.owned.length === 0 ? DEFAULT_SKIN_STATE.owned : skins.owned, ...unlockedIds)
   const equipped = skins.equipped !== null && owned.includes(skins.equipped) ? skins.equipped : DEFAULT_SKIN_STATE.equipped
   return { owned, equipped }
@@ -358,7 +410,7 @@ function getExpectedBookDamage(state: EngineState, level: number, slotTier: numb
     getElementDamageMultiplier(element, state.relics) *
     getCodexBonusMultiplier(state, element) *
     (1 + getTraitCodexBonusPerTier(state) * codexTiers) *
-    getTraitElementDamageMultiplier(state, element) *
+    getSchoolElementDamageMultiplier(state, element) *
     getTomeMilestoneDamageMultiplier(state.highestLevelEver) *
     bossElementMultiplier *
     expectedCritFactor
@@ -414,43 +466,27 @@ function getDailyMissionDefinition(id: DailyMissionId): DailyMissionDefinition {
   }
 }
 
-function isSkinUnlocked(state: EngineState, skinId: SkinId): boolean {
+// R5: 스킨 언락은 (클래스, 학파) 결정론. 구매·업적 카운터 언락은 폐지.
+// apprentice는 상시, 정식·대마법사 스킨은 해당 클래스에 도달하고 학파가 일치할 때 획득.
+export function isSkinUnlocked(state: EngineState, skinId: SkinId): boolean {
+  const rank = state.ascension.rank
+  const school = state.ascension.school
   switch (skinId) {
     case "apprentice":
       return true
     case "ember":
-      return (state.achievements.counters["bossKills"] ?? 0) >= 25
+      return rank >= 1 && school === "fire"
     case "frost":
-      return state.prestigeCount >= 3
+      return rank >= 1 && school === "frost"
     case "gilded":
-      return getAchievementMilestoneCount(state) >= 15
+      return rank >= 1 && school === "holy"
+    case "archmagePyro":
+      return rank >= 2 && school === "fire"
+    case "archmageCryo":
+      return rank >= 2 && school === "frost"
+    case "archmageLumen":
+      return rank >= 2 && school === "holy"
   }
-}
-
-function getUnlockedSkinsFromCounters(state: EngineState): readonly SkinId[] {
-  return getUnlockedSkins(state).map((skin) => skin.id)
-}
-
-function getAchievementMilestoneCount(state: EngineState): number {
-  const explicit = state.achievements.counters["achievementMilestones"]
-  if (explicit !== undefined) {
-    return explicit
-  }
-
-  const bestStage = Math.max(state.stage, state.achievements.counters["bestStage"] ?? 0)
-  if (Object.keys(state.achievements.counters).length === 0 && bestStage >= 50 && state.prestigeCount >= 3) {
-    return 15
-  }
-
-  return getThresholdCount(bestStage, [5, 10, 15, 20, 25, 30, 40, 50]) +
-    getThresholdCount(state.prestigeCount, [1, 2, 3]) +
-    getThresholdCount(state.achievements.counters["bossKills"] ?? 0, [1, 3, 10, 25]) +
-    getThresholdCount(state.achievements.counters["mergesTotal"] ?? 0, [1, 20, 100]) +
-    getThresholdCount(state.achievements.counters["summonsTotal"] ?? 0, [1, 30, 100])
-}
-
-function getThresholdCount(value: number, thresholds: readonly number[]): number {
-  return thresholds.filter((threshold) => value >= threshold).length
 }
 
 function mergeOwnedSkins(owned: readonly string[], ...skinIds: readonly string[]): readonly string[] {

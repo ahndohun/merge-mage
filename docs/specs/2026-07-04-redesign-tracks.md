@@ -164,6 +164,14 @@
 - data-testid: 신규 `identity-header`·`promote-card`·`promote-btn`·`school-modal`·`school-card-{fire|frost|holy}`·`school-confirm`·`school-respec-btn`. 유지 `resonance-row`·`codex-grid`·`skill-*`. 불가피 변경(trait 슬롯 id `lv8`→비전 각인 슬롯 등) 목록화.
 - 커밋은 redesign 브랜치에만. main·배포·원격 테스트 접근 금지.
 
+**R5 결과 (2026-07-04, 오케스트레이터 검수 완료)**: 이전 세션 미커밋 엔진 코어 + 신규 UI·밸런스·적대리뷰 결함수정 통합. 병렬 위임(codex=엔진테스트·밸런스, sonnet=마법사 탭 UI).
+- **전직·학파**: `ascension{rank,school,schoolRespecs}` + `school.ts` 학파 오버레이. 게이트 = 디렉터 확정 **중간 페이싱**(정식 환생1·Lv12, 대마법사 환생4·Lv30·st20). 마법사 탭 = 정체성 헤더(클래스×학파)·전직 카드·학파 모달(3카드)·유파 변경·rank 게이팅 비전 각인(arcane1/2/3)·스킬·공명·도감.
+- **밸런스**: 화염 대마법사 targetCap 누적 제거(+2→+1, 클리어속도→골드→book 진행 주범)로 Day-7 book<100 달성. 화염 정식 4수치(공명3→2·targetCap+1·×1.2·연쇄발화20%)·배수×1.5·겁화×2는 원안 보존(딜 배수 조정은 시뮬이 카오스틱해 Day1을 흔들 뿐 book을 못 낮춤 — 실제 레버는 동시 타격 수였다). Day1 밴드 50→60(디렉터 승인, 전직=특화보상). **정직 지표 도입**(`maxStageEver`·`maxBookLevelEver` — 환생 stage 리셋이 피크를 숨기던 문제). 4밴드: 첫벽 10m·첫환생 34m·Day1 maxStage 57·Day7 maxBook 96.
+- **적대 리뷰(codex) 3 high 전부 수정**: ① same-school respec 크리스탈 손실 방어(엔진 `same-school` throw + UI confirm 비활성) ② rank>0·school=null 불가능 상태 차단(`isAscensionState`+서버 zod refine+`promoteClass` rank1→2 방어) ③ 밸런스 정직 지표(위).
+- **검증**: 217 테스트 그린·tsc·build 그린. 프리뷰 실사용(세이브 주입 rank0→정식): 견습→정식 전직 플로우·학파 모달 4수치 카피·rank 게이팅·유파 변경 same-school confirm 비활성 확인.
+- **data-testid**: 신규 위 목록대로. 변경 trait 슬롯 `lv8/lv16/lv24`→`arcane1/arcane2/arcane3`. 유지 `resonance-row`·`codex-grid`·`skill-*`·`trait-{slot}-{id}`.
+- **후속**: 풀스크린 세리머니 연출(스펙 F — 각성 모달·능력 순차 공개·EventBus 캔버스 딤)은 별도 커밋으로 얹는다.
+
 ## 진행 상태 & 재시작 이어갈 지점 (2026-07-04)
 
 **재시작 사유**: 직전 세션이 repo 밖(`~/Documents/Codex/2026-07-04/new-chat`)에서 열려, codex-companion(codex:rescue 플러그인)의 쓰기 루트가 그 디렉토리로 제한돼 이 repo에 `apply_patch`가 거부됐다. **repo(`~/projects/merge-mage-redesign`)에서 세션을 재시작하면 플러그인이 정상 작동한다.** (교훈: codex 위임은 세션 cwd=repo에서.)

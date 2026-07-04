@@ -21,9 +21,17 @@ import { finalizeDamage, type DamageApplication } from "./battleRewards.js"
 import { getElementDamageMultiplier, getEquippedRelicEffects } from "./relics.js"
 import { getCodexBonusMultiplier } from "./codex.js"
 import { getFireTargetCap, getFrostSlow, getHolyBossMultiplier } from "./resonance.js"
+import {
+  getAbsoluteZeroExecute,
+  getChainIgnitionSplash,
+  getFrostBuildupMultiplier,
+  getInfernoMultiplier,
+  getSanctuaryMultiplier,
+  getSchoolElementDamageMultiplier,
+} from "./school.js"
 import { nextRandomState } from "./rng.js"
 import { createWaveEnemies, setSlotTimer, sumHp } from "./state.js"
-import { applyTraitCastInterval, getTraitCodexBonusPerTier, getTraitElementDamageMultiplier } from "./traits.js"
+import { applyTraitCastInterval, getTraitCodexBonusPerTier } from "./traits.js"
 import { assertNever, type Element, type EngineEvent, type EngineState, type SlotIndex, type Spellbook } from "./types.js"
 
 const INNATE_STAFF_INTERVAL_MS = 1_200
@@ -213,7 +221,16 @@ function applyCastDamage(
 
   const targetsHit = getTargetsHit(book.element, state.enemiesHp.length, state)
   const damage = getElementDamage(book.element, baseDamage, state.wave, state)
-  const damaged = state.enemiesHp.map((hp, index) => (index < targetsHit ? hp - damage : hp))
+  // 연쇄 발화(화염): cap 초과 대상은 스플래시 비율만큼. 절대영도(냉기 일반웨이브): 첫 대상 현재 HP 20% 즉결.
+  const splash = book.element === "fire" ? getChainIgnitionSplash(state) : 0
+  const executeFrac = book.element === "frost" ? getAbsoluteZeroExecute(state) : 0
+  const damaged = state.enemiesHp.map((hp, index) => {
+    if (index < targetsHit) {
+      const executed = index === 0 && executeFrac > 0 ? hp * executeFrac : 0
+      return hp - damage - executed
+    }
+    return splash > 0 ? hp - damage * splash : hp
+  })
   const castEvent: EngineEvent = {
     type: "cast",
     bookId: book.id,
@@ -255,13 +272,17 @@ function getTargetsHit(element: Element, enemyCount: number, state: EngineState)
 }
 
 function getElementDamage(element: Element, damage: number, wave: number, state: EngineState): number {
+  // 빙결 축적: 둔화 걸린 적에게 주는 피해 +15% (냉기 학파). 겁화·성역은 원소별 보스 배율.
+  const buildup = getFrostBuildupMultiplier(state)
   switch (element) {
     case "fire":
-      return damage
+      return damage * buildup * getInfernoMultiplier(state)
     case "frost":
-      return damage
+      return damage * buildup
     case "holy":
-      return wave === BOSS_WAVE ? damage * getHolyBossMultiplier(state) : damage
+      return wave === BOSS_WAVE
+        ? damage * buildup * getHolyBossMultiplier(state) * getSanctuaryMultiplier(state)
+        : damage * buildup
     default:
       return assertNever(element)
   }
@@ -276,5 +297,5 @@ function getCastIntervalMs(state: EngineState): number {
 
 function getElementProgressionMultiplier(state: EngineState, element: Element): number {
   const codexTiers = state.codex.tiers[element] ?? 0
-  return getCodexBonusMultiplier(state, element) * (1 + getTraitCodexBonusPerTier(state) * codexTiers) * getTraitElementDamageMultiplier(state, element)
+  return getCodexBonusMultiplier(state, element) * (1 + getTraitCodexBonusPerTier(state) * codexTiers) * getSchoolElementDamageMultiplier(state, element)
 }

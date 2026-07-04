@@ -6,7 +6,7 @@ import { LOCALE_STORAGE_KEY } from "./i18n"
 const SAVE_STATE_KEY = "merge-mage:engine-state"
 const SAVE_TOKEN_KEY = "merge-mage:save-token"
 const TUTORIAL_DONE_KEY = "merge-mage:tutorial-done"
-const V3_PROGRESS_KEYS = ["highestStage", "quests", "achievements", "codex", "traits", "relics", "riftRuns", "activeRift", "pet", "mine", "dailyMissions", "skins"] as const
+const V3_PROGRESS_KEYS = ["highestStage", "quests", "achievements", "codex", "traits", "relics", "riftRuns", "activeRift", "pet", "mine", "dailyMissions", "skins", "ascension"] as const
 
 function withoutV3Progression(state: ReturnType<typeof createInitialState>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(state).filter(([key]) => !V3_PROGRESS_KEYS.some((progressKey) => progressKey === key)))
@@ -46,7 +46,7 @@ describe("engineStorage save versioning", () => {
     expect(raw).not.toBeNull()
     const parsed = JSON.parse(raw as string)
     expect(parsed.version).toBe(SAVE_VERSION)
-    expect(parsed.version).toBe(4)
+    expect(parsed.version).toBe(5)
     expect(parsed.state.rngSeed).toBe(7)
   })
 
@@ -57,6 +57,18 @@ describe("engineStorage save versioning", () => {
     const loaded = loadInitialState()
     expect(loaded.gold).toBe(4242)
     expect(loaded.stage).toBe(5)
+  })
+
+  it("resets a save with an impossible rank/school ascension", () => {
+    // rank1인데 school=null은 불가능 상태(정식 전직 = 학파 선택). 손상 세이브로 간주해 리셋한다.
+    const broken = {
+      version: SAVE_VERSION,
+      state: { ...createInitialState(11), ascension: { rank: 1, school: null, schoolRespecs: 0 } },
+    }
+    storage.setItem(SAVE_STATE_KEY, JSON.stringify(broken))
+
+    const loaded = loadInitialState()
+    expect(loaded.ascension).toEqual({ rank: 0, school: null, schoolRespecs: 0 })
   })
 
   it("resets a legacy bare-EngineState save and wipes token + tutorial flag", () => {
@@ -87,7 +99,7 @@ describe("engineStorage save versioning", () => {
     expect(storage.getItem(TUTORIAL_DONE_KEY)).toBeNull()
   })
 
-  it("migrates a v2 save to v4 while preserving existing progress", () => {
+  it("migrates a v2 save to v5 while preserving existing progress", () => {
     const v2State = withoutV3Progression({
       ...createInitialState(13),
       gold: 12_345,
@@ -115,6 +127,7 @@ describe("engineStorage save versioning", () => {
     expect(loaded.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
     expect(loaded.highestStage).toBe(9)
     expect(loaded.skins).toEqual({ owned: ["apprentice"], equipped: "apprentice" })
+    expect(loaded.ascension).toEqual({ rank: 0, school: null, schoolRespecs: 0 })
   })
 
   it("migrates a v3 save by folding mana stones into crystals and deriving highest stage", () => {
@@ -135,6 +148,41 @@ describe("engineStorage save versioning", () => {
     expect(loaded.highestStage).toBe(9)
     expect("manaStone" in loaded).toBe(false)
     expect(loaded.skins).toEqual({ owned: ["ember"], equipped: "ember" })
+    expect(loaded.ascension).toEqual({ rank: 0, school: null, schoolRespecs: 0 })
+  })
+
+  it("migrates a v4 save to v5 with apprentice ascension and folded arcane inscriptions", () => {
+    const currentState = {
+      ...createInitialState(19),
+      equipped: [
+        { id: "fire-a", level: 1, element: "fire" },
+        { id: "fire-b", level: 1, element: "fire" },
+        null,
+        null,
+        null,
+        null,
+      ],
+      traits: {
+        picks: {
+          lv8: "goldenLibrary",
+          lv16: "quickHands",
+          lv24: "pyroGlyphs",
+          legacy: "archmageFocus",
+        },
+      },
+    }
+    const v4State = Object.fromEntries(Object.entries(currentState).filter(([key]) => key !== "ascension"))
+    storage.setItem(SAVE_STATE_KEY, JSON.stringify({ version: 4, state: v4State }))
+
+    const loaded = loadInitialState()
+
+    expect(loaded.ascension).toEqual({ rank: 0, school: null, schoolRespecs: 0 })
+    expect(loaded.traits.picks).toEqual({
+      arcane1: "goldenLibrary",
+      arcane2: "quickHands",
+      arcane3: "archmageFocus",
+    })
+    expect(loaded.ascension.school).toBeNull()
   })
 
   it("round-trips a saved-then-loaded run at the current version", () => {

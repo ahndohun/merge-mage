@@ -102,6 +102,22 @@ export class RiftEntryError extends Error {
   }
 }
 
+export class PromotionError extends Error {
+  readonly name = "PromotionError"
+
+  constructor(readonly reason: "not-eligible" | "school-required" | "invalid-school" | "max-rank") {
+    super(`Cannot promote class: ${reason}`)
+  }
+}
+
+export class SchoolRespecError extends Error {
+  readonly name = "SchoolRespecError"
+
+  constructor(readonly reason: "not-promoted" | "invalid-school" | "same-school") {
+    super(`Cannot respec school: ${reason}`)
+  }
+}
+
 export class QuestClaimError extends Error {
   readonly name = "QuestClaimError"
 

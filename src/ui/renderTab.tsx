@@ -46,6 +46,8 @@ export function renderTab(
       return (
         <WizardPanel
           onAllocateSkill={engine.allocateSkill}
+          onPromoteClass={engine.promoteClass}
+          onRespecSchool={engine.respecSchool}
           onResetSkills={engine.resetSkills}
           onSelectTrait={engine.selectTrait}
           state={engine.state}

@@ -23,6 +23,9 @@ const skinLabelKeys: Record<SkinId, MessageKey> = {
   ember: "skinEmber",
   frost: "skinFrost",
   gilded: "skinGilded",
+  archmagePyro: "skinArchmagePyro",
+  archmageCryo: "skinArchmageCryo",
+  archmageLumen: "skinArchmageLumen",
 }
 
 // Daily missions moved to the Journey tab (R3 IA). Camp keeps the persistent

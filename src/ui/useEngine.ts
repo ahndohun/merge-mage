@@ -10,7 +10,9 @@ import {
   equipSkin as equipSkinReducer,
   mergeBooks as mergeBooksReducer,
   prestige as prestigeReducer,
+  promoteClass as promoteClassReducer,
   resetSkills as resetSkillsReducer,
+  respecSchool as respecSchoolReducer,
   selectTrait as selectTraitReducer,
   summonRelic as summonRelicReducer,
   summonBook,
@@ -29,7 +31,7 @@ import { INVENTORY_LIMIT } from "../engine/constants"
 import { getEquippedRelicEffects } from "../engine/relics"
 import { getSummonCost, getSummonLevel } from "../engine/summon"
 import type { TraitId, TraitSlot } from "../engine/traits"
-import type { EngineEvent, EngineState, RiftKind, SkillName } from "../engine/types"
+import type { EngineEvent, EngineState, RiftKind, School, SkillName } from "../engine/types"
 import { EventBus } from "../bridge/EventBus"
 import { canMerge, isExpectedEngineError } from "./engineActionHelpers"
 import { ensureSaveToken, loadInitialState, loadNickname, saveNickname } from "./engineStorage"
@@ -80,6 +82,8 @@ export type UseEngineResult = {
   readonly exitRift: () => boolean
   readonly claimQuestReward: (questId: string) => boolean
   readonly selectTrait: (slot: TraitSlot, traitId: TraitId) => boolean
+  readonly promoteClass: (school?: School) => boolean
+  readonly respecSchool: (school: School) => boolean
   readonly claimMine: () => boolean
   readonly claimDailyMission: (missionId: DailyMissionId) => boolean
   readonly equipSkin: (skinId: string) => boolean
@@ -221,6 +225,16 @@ export function useEngine(): UseEngineResult {
 
   const selectTrait = useCallback(
     (slot: TraitSlot, traitId: TraitId) => applyReducer({ reducer: (current) => selectTraitReducer(current, slot, traitId) }),
+    [applyReducer],
+  )
+
+  const promoteClass = useCallback(
+    (school?: School) => applyReducer({ reducer: (current) => promoteClassReducer(current, school), successToast: t("toastPromoted") }),
+    [applyReducer, t],
+  )
+
+  const respecSchool = useCallback(
+    (school: School) => applyReducer({ reducer: (current) => respecSchoolReducer(current, school) }),
     [applyReducer],
   )
 
@@ -391,6 +405,8 @@ export function useEngine(): UseEngineResult {
     exitRift,
     claimQuestReward,
     selectTrait,
+    promoteClass,
+    respecSchool,
     claimMine,
     claimDailyMission,
     equipSkin,

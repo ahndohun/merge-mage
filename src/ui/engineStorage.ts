@@ -1,5 +1,7 @@
 import { convertLegacyManaStonesToCrystals } from "../engine/currency"
+import { DEFAULT_ASCENSION } from "../engine/school"
 import { createInitialState, createInitialV3ProgressionState, type EngineV3ProgressionState } from "../engine/state"
+import { TRAITS, isTraitId } from "../engine/traits"
 import type { AchievementState, EngineState, Spellbook } from "../engine/types"
 import { writeLocaleOverride } from "./i18n"
 
@@ -11,22 +13,25 @@ const TUTORIAL_DONE_KEY = "merge-mage:tutorial-done"
 /**
  * Bump when a save-format change changes the local wrapper contract. v2 wiped
  * pre-release bare saves; v3 preserved progression slots; v4 folds mana stones
- * into crystals and records highestStage.
+ * into crystals and records highestStage; v5 adds the R5 ascension (전직·유파)
+ * slot and folds common trait picks into arcane inscriptions.
  */
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 type VersionedSave = {
   readonly version: number
   readonly state: unknown
 }
 
-type EngineV2State = Omit<EngineState, keyof EngineV3ProgressionState | "highestStage"> & {
+// v4 is the last shape before R5: everything the current EngineState has except ascension.
+type EngineV4State = Omit<EngineState, "ascension">
+type EngineV2State = Omit<EngineState, keyof EngineV3ProgressionState | "highestStage" | "ascension"> & {
   readonly manaStone?: number
 }
-type EngineV3State = Omit<EngineState, "highestStage"> & {
+type EngineV3State = Omit<EngineState, "highestStage" | "ascension"> & {
   readonly manaStone: number
 }
-type EngineV3PreManaStoneState = Omit<EngineState, "highestStage">
+type EngineV3PreManaStoneState = Omit<EngineState, "highestStage" | "ascension">
 
 export type SaveToken = {
   readonly token: string
@@ -89,16 +94,19 @@ function readVersionedSave(value: unknown): EngineState | null {
         return value.state
       }
     }
+    if (value.version === 4 && isV4EngineState(value.state)) {
+      return migrateV4State(value.state)
+    }
     if (value.version === 3) {
       if (isV3EngineState(value.state)) {
-        return migrateV3State(value.state)
+        return migrateV4State(migrateV3State(value.state))
       }
       if (isV3PreManaStoneState(value.state)) {
-        return migrateV3PreManaStoneState(value.state)
+        return migrateV4State(migrateV3PreManaStoneState(value.state))
       }
     }
     if (value.version === 2 && isV2EngineState(value.state)) {
-      return migrateV2State(value.state)
+      return migrateV4State(migrateV2State(value.state))
     }
   }
   return null
@@ -176,6 +184,10 @@ function createToken(): string {
 }
 
 function isEngineState(value: unknown): value is EngineState {
+  return isV4EngineState(value) && isAscensionState((value as Record<string, unknown>)["ascension"])
+}
+
+function isV4EngineState(value: unknown): value is EngineV4State {
   if (!isRecord(value)) {
     return false
   }
@@ -196,6 +208,22 @@ function isEngineState(value: unknown): value is EngineState {
     isMineState(record["mine"]) &&
     isDailyMissionState(record["dailyMissions"]) &&
     isSkinState(record["skins"])
+  )
+}
+
+function isAscensionState(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false
+  }
+  const rank = value["rank"]
+  const school = value["school"]
+  return (
+    (rank === 0 || rank === 1 || rank === 2) &&
+    (school === null || school === "fire" || school === "frost" || school === "holy") &&
+    // 견습(rank0)은 학파가 없고, 정식/대마법사(rank1·2)는 학파가 반드시 있다. rank>0·school=null 같은
+    // 불가능 상태가 손상 세이브로 새어 들어와 비전 각인·승계를 우회하지 못하게 막는다.
+    (rank === 0 ? school === null : school !== null) &&
+    typeof value["schoolRespecs"] === "number"
   )
 }
 
@@ -230,7 +258,7 @@ function isV3PreManaStoneState(value: unknown): value is EngineV3PreManaStoneSta
   )
 }
 
-function migrateV2State(state: EngineV2State): EngineState {
+function migrateV2State(state: EngineV2State): EngineV4State {
   const { manaStone = 0, ...withoutManaStone } = state
   return {
     ...withoutManaStone,
@@ -240,7 +268,7 @@ function migrateV2State(state: EngineV2State): EngineState {
   }
 }
 
-function migrateV3State(state: EngineV3State): EngineState {
+function migrateV3State(state: EngineV3State): EngineV4State {
   const { manaStone, ...withoutManaStone } = state
   return {
     ...withoutManaStone,
@@ -249,8 +277,35 @@ function migrateV3State(state: EngineV3State): EngineState {
   }
 }
 
-function migrateV3PreManaStoneState(state: EngineV3PreManaStoneState): EngineState {
+function migrateV3PreManaStoneState(state: EngineV3PreManaStoneState): EngineV4State {
   return { ...state, highestStage: deriveHighestStage(state) }
+}
+
+/**
+ * v4→v5: R5 전직·유파 도입. ascension을 견습 기본값으로 초기화하고, 기존 traits.picks에서
+ * 공용 특성만 비전 각인 슬롯으로 이관한다(원소 특성 폐기, school 자동추론 금지).
+ * 스킨 owned는 그대로 보존 — 정규화는 로드 이후 normalizeSkinState가 처리한다.
+ */
+function migrateV4State(state: EngineV4State): EngineState {
+  return {
+    ...state,
+    ascension: DEFAULT_ASCENSION,
+    traits: { picks: foldTraitsToArcane(state.traits.picks) },
+  }
+}
+
+/** 옛 슬롯(lv8/lv16/lv24)의 픽 중 공용 특성만 새 비전 각인 슬롯으로 재배치. 나머지는 폐기. */
+function foldTraitsToArcane(picks: Record<string, string>): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const value of Object.values(picks)) {
+    if (isTraitId(value)) {
+      const definition = TRAITS.find((trait) => trait.id === value)
+      if (definition !== undefined) {
+        result[definition.slot] = value
+      }
+    }
+  }
+  return result
 }
 
 function deriveHighestStage(state: { readonly stage: number; readonly highestStage?: number; readonly achievements?: AchievementState }): number {

@@ -12,6 +12,7 @@ import {
   XP_PER_KILL,
 } from "./constants.js"
 import { getRegularMobCount, getWizardGoldMultiplier } from "./balance.js"
+import { getJudgmentGoldMultiplier } from "./school.js"
 import { getEquippedRelicEffects } from "./relics.js"
 import { incrementAchievementCounter, refreshAchievementCounters } from "./achievements.js"
 import { addPetXp, recordDailyProgress, setAchievementCounterMax } from "./camp.js"
@@ -179,7 +180,7 @@ function getKillReward(state: EngineState, boss: boolean): number {
       riftMultiplier,
   )
   return boss
-    ? Math.ceil(reward * BOSS_REWARD_MULTIPLIER * relicEffects.bossGoldMultiplier)
+    ? Math.ceil(reward * BOSS_REWARD_MULTIPLIER * relicEffects.bossGoldMultiplier * getJudgmentGoldMultiplier(state))
     : Math.ceil((reward * REGULAR_MOB_BASE_COUNT) / getRegularMobCount(state.stage))
 }
 

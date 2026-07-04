@@ -5,10 +5,12 @@ import {
   InsufficientManaCrystalsError,
   InventoryFullError,
   PrestigeRequirementError,
+  PromotionError,
   RelicLevelCapError,
   RelicNotOwnedError,
   RelicSlotIndexError,
   RiftEntryError,
+  SchoolRespecError,
   SlotIndexError,
 } from "../engine/actions"
 import { MergeLevelMismatchError } from "../engine/merge"
@@ -40,10 +42,12 @@ export function isExpectedEngineError(error: unknown): error is Error {
     error instanceof InventoryFullError ||
     error instanceof MergeLevelMismatchError ||
     error instanceof PrestigeRequirementError ||
+    error instanceof PromotionError ||
     error instanceof RelicLevelCapError ||
     error instanceof RelicNotOwnedError ||
     error instanceof RelicSlotIndexError ||
     error instanceof RiftEntryError ||
+    error instanceof SchoolRespecError ||
     error instanceof SlotIndexError
   )
 }

@@ -87,17 +87,28 @@ describe("Wave D progression", () => {
     expect(getResonance(base).fire.targetCap).toBe(4)
   })
 
-  it("selects unlocked traits, applies elemental-cycle resonance, and allows one post-rebirth respec", () => {
-    const picked = selectTrait({ ...createInitialState(9), wizardLevel: 8 }, "lv8", "elementalCycle")
+  it("selects arcane inscriptions, applies school resonance, and allows one post-rebirth inscription respec", () => {
+    const promoted = {
+      ...createInitialState(9),
+      wizardLevel: 50,
+      prestigeCount: 4,
+      ascension: { rank: 1, school: "holy", schoolRespecs: 0 },
+    } satisfies EngineState
+    const picked = selectTrait(promoted, "arcane1", "goldenLibrary")
     const resonant = {
       ...picked,
       equipped: [book("a", 1, "holy"), book("b", 1, "holy"), null, null, null, null],
     } satisfies EngineState
+    const offSchool = {
+      ...picked,
+      equipped: [book("a", 1, "fire"), book("b", 1, "fire"), null, null, null, null],
+    } satisfies EngineState
     const reborn = prestige({ ...picked, stage: 12 })
-    const respecced = selectTrait(reborn, "lv8", "goldenLibrary")
+    const respecced = selectTrait(reborn, "arcane1", "chainCast")
 
     expect(getResonance(resonant).holy.active).toBe(true)
-    expect(respecced.traits.picks["lv8"]).toBe("goldenLibrary")
-    expect(() => selectTrait(respecced, "lv8", "chainCast")).toThrow()
+    expect(getResonance(offSchool).fire.active).toBe(false)
+    expect(respecced.traits.picks["arcane1"]).toBe("chainCast")
+    expect(() => selectTrait(respecced, "arcane1", "goldenLibrary")).toThrow()
   })
 })

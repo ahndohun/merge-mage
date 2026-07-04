@@ -10,6 +10,7 @@ import {
 } from "./constants.js"
 import { getBossHp, getRegularMobCount } from "./balance.js"
 import { DEFAULT_SKIN_STATE } from "./camp.js"
+import { DEFAULT_ASCENSION } from "./school.js"
 import { createRandomState } from "./rng.js"
 import { assertNever, type EngineState, type EquippedBooks, type SkillAllocations, type SlotIndex, type SlotTiers, type SlotTimers } from "./types.js"
 
@@ -48,6 +49,7 @@ export function createInitialState(seed: number): EngineState {
     rngSeed: seed,
     rngState: createRandomState(seed),
     nextBookId: 1,
+    ascension: DEFAULT_ASCENSION,
     ...createInitialV3ProgressionState(),
   }
 }

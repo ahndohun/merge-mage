@@ -66,7 +66,16 @@ export {
   SkillPointError,
   SlotIndexError,
 } from "./errors.js"
-export { claimQuestReward, selectTrait } from "./progressionActions.js"
+export { PromotionError, SchoolRespecError } from "./errors.js"
+export {
+  claimQuestReward,
+  getPromotionStatus,
+  getSchoolRespecCost,
+  promoteClass,
+  respecSchool,
+  selectTrait,
+  type PromotionStatus,
+} from "./progressionActions.js"
 
 export function summonBook(state: EngineState): EngineState {
   const emptySlot = SLOT_INDEXES.find((slot) => state.equipped[slot] === null)
@@ -291,6 +300,7 @@ export function prestige(state: EngineState): EngineState {
     mine: state.mine,
     dailyMissions: state.dailyMissions,
     skins: state.skins,
+    ascension: state.ascension,
   }))
 }
 

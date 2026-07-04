@@ -1,16 +1,26 @@
-import { equipBook, mergeBooks } from "./actions.js"
+import { equipBook, getPromotionStatus, mergeBooks, promoteClass, selectTrait } from "./actions.js"
 import { addPetXp } from "./camp.js"
 import * as C from "./constants.js"
 import { getCodexBonusMultiplier, recordBookCodex } from "./codex.js"
 import { getEquippedRelicEffects, getElementDamageMultiplier, RELIC_IDS, type RelicId } from "./relics.js"
 import { getFireTargetCap, getFrostSlow, getHolyBossMultiplier } from "./resonance.js"
+import {
+  DEFAULT_ASCENSION,
+  getAbsoluteZeroExecute,
+  getChainIgnitionSplash,
+  getFrostBuildupMultiplier,
+  getInfernoMultiplier,
+  getJudgmentGoldMultiplier,
+  getSanctuaryMultiplier,
+  getSchoolElementDamageMultiplier,
+} from "./school.js"
 import { createRandomState, nextRandomState } from "./rng.js"
 import { createInitialV3ProgressionState, setEquippedSlot, setSlotTier, setSlotTimer, sumHp } from "./state.js"
 import {
   applyTraitCastInterval,
   getTraitCodexBonusPerTier,
-  getTraitElementDamageMultiplier,
   getTraitSkillGoldPoints,
+  getUnlockedTraitSlots,
   type TraitId,
   type TraitSlot,
 } from "./traits.js"
@@ -118,6 +128,8 @@ export type StageBreakthrough = {
 export type SimulationSummary = {
   readonly firstPrestigeMinute: number | null
   readonly firstWallMinute: number | null
+  readonly maxStageEver: number
+  readonly maxBookLevelEver: number
   readonly stageBreakthroughs: readonly StageBreakthrough[]
 }
 
@@ -125,6 +137,8 @@ export type SimulationResult = {
   readonly rows: readonly SimulationRow[]
   readonly finalState: EngineState
   readonly summary: SimulationSummary
+  readonly maxStageEver: number
+  readonly maxBookLevelEver: number
   readonly overrides: SimulationOverrides
 }
 
@@ -171,11 +185,15 @@ export function runBalanceSimulation(options: SimulationOptions): SimulationResu
   let lastStage = state.stage
   let firstPrestigeMinute: number | null = null
   let firstWallMinute: number | null = null
+  let maxStageEver = state.stage
+  let maxBookLevelEver = getHighestBookLevel(state)
   let stageBreakthroughs: readonly StageBreakthrough[] = []
 
   for (let tick = 1; tick <= totalTicks; tick += POLICY_INTERVAL_TICKS) {
     const policy = applyGreedyPolicy(state, config)
     state = policy.state
+    maxStageEver = Math.max(maxStageEver, state.stage)
+    maxBookLevelEver = Math.max(maxBookLevelEver, getHighestBookLevel(state))
     tracker = policy.powerup ? recordPowerup(tracker, ((tick - 1) * config.TICK_MS) / 1_000) : tracker
     if (firstPrestigeMinute === null && policy.prestiged) {
       firstPrestigeMinute = Math.floor(((tick - 1) * config.TICK_MS) / 60_000)
@@ -183,6 +201,8 @@ export function runBalanceSimulation(options: SimulationOptions): SimulationResu
 
     const ticksThisStep = Math.min(POLICY_INTERVAL_TICKS, totalTicks - tick + 1)
     state = simulateTicksForBalance(state, ticksThisStep, config).state
+    maxStageEver = Math.max(maxStageEver, state.stage)
+    maxBookLevelEver = Math.max(maxBookLevelEver, getHighestBookLevel(state))
     const currentTick = tick + ticksThisStep - 1
     const minute = Math.floor((currentTick * config.TICK_MS) / 60_000)
 
@@ -215,7 +235,9 @@ export function runBalanceSimulation(options: SimulationOptions): SimulationResu
   return {
     rows,
     finalState: state,
-    summary: { firstPrestigeMinute, firstWallMinute, stageBreakthroughs },
+    summary: { firstPrestigeMinute, firstWallMinute, maxStageEver, maxBookLevelEver, stageBreakthroughs },
+    maxStageEver,
+    maxBookLevelEver,
     overrides: options.overrides ?? {},
   }
 }
@@ -329,8 +351,8 @@ function applyGreedyPolicy(state: EngineState, config: SimulationConfig): Policy
 }
 
 function applyMetaPolicy(state: EngineState, config: SimulationConfig): PolicyResult {
-  const withTraits = selectGreedyTraits(state)
-  const withRelics = summonAndEquipRelics(withTraits)
+  const promoted = promoteGreedy(state)
+  const withRelics = summonAndEquipRelics(promoted)
   const previewCrystals = getPrestigeCrystalReward(withRelics.stage, getEquippedRelicEffects(withRelics.relics).crystalGainMultiplier, config)
 
   if (previewCrystals >= getPrestigeTarget(withRelics.prestigeCount)) {
@@ -429,25 +451,26 @@ function upgradeCheapestSlot(state: EngineState, config: SimulationConfig): Poli
   return { state, powerup: false, prestiged: false }
 }
 
-function selectGreedyTraits(state: EngineState): EngineState {
-  return selectTraitIfOpen(
-    selectTraitIfOpen(
-      selectTraitIfOpen(state, "lv8", "elementalCycle", 8),
-      "lv16",
-      "pyroGlyphs",
-      16,
-    ),
-    "lv24",
-    "quickHands",
-    24,
-  )
+// R5: 전직·유파(화염 기본) 정책. 게이트 충족 시 승급하고, 열린 비전 각인 슬롯을 골드·속도·도감
+// 위주로 채운다. 학파 화염이라 화염 공명 요구 하향·화염 배수·연쇄발화가 곡선에 반영된다.
+function promoteGreedy(state: EngineState): EngineState {
+  let current = state
+  const status = getPromotionStatus(current)
+  if (status.eligible) {
+    current = current.ascension.rank === 0 ? promoteClass(current, "fire") : promoteClass(current)
+  }
+  current = selectArcaneIfOpen(current, "arcane1", "goldenLibrary")
+  current = selectArcaneIfOpen(current, "arcane2", "quickHands")
+  current = selectArcaneIfOpen(current, "arcane3", "archmageFocus")
+  return current
 }
 
-function selectTraitIfOpen(state: EngineState, slot: TraitSlot, traitId: TraitId, requiredLevel: number): EngineState {
-  if (state.wizardLevel < requiredLevel || state.traits.picks[slot] !== undefined) {
+function selectArcaneIfOpen(state: EngineState, slot: TraitSlot, traitId: TraitId): EngineState {
+  const unlocked = getUnlockedTraitSlots(state.ascension.rank).some((openSlot) => openSlot === slot)
+  if (!unlocked || state.traits.picks[slot] !== undefined) {
     return state
   }
-  return { ...state, traits: { picks: { ...state.traits.picks, [slot]: traitId } } }
+  return selectTrait(state, slot, traitId)
 }
 
 function summonAndEquipRelics(state: EngineState): EngineState {
@@ -487,6 +510,9 @@ function equipPreferredRelics(state: EngineState): EngineState {
 }
 
 function getPrestigeTarget(prestigeCount: number): number {
+  if (prestigeCount === 0) {
+    return 1
+  }
   return Math.floor(3 * 1.45 ** prestigeCount)
 }
 
@@ -615,7 +641,15 @@ function applyCastDamage(state: EngineState, slot: SlotIndex, book: Spellbook, b
 
   const targetsHit = getTargetsHit(book.element, state.enemiesHp.length, state)
   const damage = getElementDamage(book.element, baseDamage, state.wave, state, config)
-  const damaged = state.enemiesHp.map((hp, index) => (index < targetsHit ? hp - damage : hp))
+  const splash = book.element === "fire" ? getChainIgnitionSplash(state) : 0
+  const executeFrac = book.element === "frost" ? getAbsoluteZeroExecute(state) : 0
+  const damaged = state.enemiesHp.map((hp, index) => {
+    if (index < targetsHit) {
+      const executed = index === 0 && executeFrac > 0 ? hp * executeFrac : 0
+      return hp - damage - executed
+    }
+    return splash > 0 ? hp - damage * splash : hp
+  })
   const frostSlow = getFrostSlow(state)
   const frostSlowMs = frostSlow.durationMs + getEquippedRelicEffects(state.relics).frostSlowBonusMs
   const slowedState = book.element === "frost" ? { ...state, frostSlowMs: Math.max(state.frostSlowMs, frostSlowMs) } : state
@@ -691,6 +725,7 @@ function createInitialSimulationState(seed: number, config: SimulationConfig): E
     rngSeed: seed,
     rngState: createRandomState(seed),
     nextBookId: 1,
+    ascension: DEFAULT_ASCENSION,
     ...createInitialV3ProgressionState(),
   }
 }
@@ -854,13 +889,16 @@ function getTargetsHit(element: Element, enemyCount: number, state: EngineState)
 }
 
 function getElementDamage(element: Element, damage: number, wave: number, state: EngineState, config: SimulationConfig): number {
+  const buildup = getFrostBuildupMultiplier(state)
   switch (element) {
     case "fire":
-      return damage
+      return damage * buildup * getInfernoMultiplier(state)
     case "frost":
-      return damage
+      return damage * buildup
     case "holy":
-      return wave === config.BOSS_WAVE ? damage * getHolyBossMultiplier(state) : damage
+      return wave === config.BOSS_WAVE
+        ? damage * buildup * getHolyBossMultiplier(state) * getSanctuaryMultiplier(state)
+        : damage * buildup
     default:
       return assertNever(element)
   }
@@ -892,7 +930,7 @@ function getKillReward(state: EngineState, boss: boolean, config: SimulationConf
       relicEffects.goldMultiplier,
   )
   return boss
-    ? Math.ceil(reward * config.BOSS_REWARD_MULTIPLIER * relicEffects.bossGoldMultiplier)
+    ? Math.ceil(reward * config.BOSS_REWARD_MULTIPLIER * relicEffects.bossGoldMultiplier * getJudgmentGoldMultiplier(state))
     : Math.ceil((reward * config.REGULAR_MOB_BASE_COUNT) / getRegularMobCount(state.stage, config))
 }
 
@@ -958,7 +996,7 @@ function getExpectedBookDamage(state: EngineState, book: Spellbook, slotTier: nu
 
 function getElementProgressionMultiplier(state: EngineState, element: Element): number {
   const codexTiers = state.codex.tiers[element] ?? 0
-  return getCodexBonusMultiplier(state, element) * (1 + getTraitCodexBonusPerTier(state) * codexTiers) * getTraitElementDamageMultiplier(state, element)
+  return getCodexBonusMultiplier(state, element) * (1 + getTraitCodexBonusPerTier(state) * codexTiers) * getSchoolElementDamageMultiplier(state, element)
 }
 
 function getTomeMilestoneDamageMultiplier(highestLevelEver: number, config: SimulationConfig): number {

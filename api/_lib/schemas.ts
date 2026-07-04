@@ -3,8 +3,10 @@ import { EQUIPMENT_SLOT_COUNT, INVENTORY_LIMIT } from "../../src/engine/constant
 import { convertLegacyManaStonesToCrystals } from "../../src/engine/currency.js"
 import {
   ELEMENTS,
+  SCHOOLS,
   type ActiveRiftState,
   type AchievementState,
+  type AscensionState,
   type BattleSnapshot,
   type CodexState,
   type DailyMissionState,
@@ -33,6 +35,7 @@ import {
   defaultQuestState,
   defaultRelicState,
   defaultRiftRunsState,
+  defaultAscensionState,
   defaultSkinState,
   defaultTraitState,
 } from "./stateDefaults.js"
@@ -100,6 +103,16 @@ const codexSchema = z.object({
 const traitSchema = z.object({
   picks: stringRecordSchema,
 }) satisfies ZodType<TraitState>
+const ascensionSchema = z
+  .object({
+    rank: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+    school: z.enum(SCHOOLS).nullable(),
+    schoolRespecs: slotNumberSchema,
+  })
+  // rank0은 학파 없음, rank1+는 학파 필수 — 불가능 상태(rank>0·school=null)를 서버에서도 거부한다.
+  .refine((ascension) => (ascension.rank === 0 ? ascension.school === null : ascension.school !== null), {
+    message: "rank 0 must have no school; rank 1+ must have a school",
+  }) satisfies ZodType<AscensionState>
 const relicEquipmentSchema = z.tuple([idSchema.nullable(), idSchema.nullable(), idSchema.nullable()]) satisfies ZodType<RelicEquipment>
 const relicSchema = z.object({
   owned: counterRecordSchema,
@@ -190,6 +203,7 @@ export const engineStateSchema: ZodType<EngineState> = z
     mine: mineSchema.default(defaultMineState),
     dailyMissions: dailyMissionSchema.default(defaultDailyMissionState),
     skins: skinSchema.default(defaultSkinState),
+    ascension: ascensionSchema.default(defaultAscensionState),
   })
   .superRefine((state, context) => {
     const equippedCount = state.equipped.filter((book) => book !== null).length

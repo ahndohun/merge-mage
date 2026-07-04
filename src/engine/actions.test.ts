@@ -334,6 +334,7 @@ describe("prestige", () => {
       manaCrystals: 2,
       relics: { owned: { crystalVial: 2, apprenticePurse: 1 }, equipped: ["crystalVial", "apprenticePurse", null] },
       riftRuns: { date: "2026-07-03", golden: 1, trial: 0 },
+      ascension: { rank: 1, school: "fire", schoolRespecs: 1 },
     } satisfies EngineState
 
     const next = prestige(state)
@@ -351,6 +352,7 @@ describe("prestige", () => {
     expect(next.skills.castSpeed).toBe(2)
     expect(next.relics).toEqual(state.relics)
     expect(next.riftRuns).toEqual(state.riftRuns)
+    expect(next.ascension).toEqual(state.ascension)
   })
 
   it("requires stage 10 or higher", () => {

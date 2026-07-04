@@ -63,6 +63,9 @@ const enMessages = {
   skinEmber: "EMBER",
   skinFrost: "FROST",
   skinGilded: "GILDED",
+  skinArchmagePyro: "ARCHMAGE PYRO",
+  skinArchmageCryo: "ARCHMAGE CRYO",
+  skinArchmageLumen: "ARCHMAGE LUMEN",
   missionMerge20: "MERGE 20 BOOKS",
   missionBoss3: "KILL 3 BOSSES",
   missionSummon30: "BUY 30 BOOKS",
@@ -147,6 +150,28 @@ const enMessages = {
   battleWaveClear: "WAVE CLEAR",
   battleBoss: "BOSS",
   battleLevelUp: "LEVEL UP",
+  toastPromoted: "Class ascended!",
+  rankApprentice: "Apprentice",
+  rankAdept: "Adept",
+  rankArchmage: "Archmage",
+  schoolFire: "Fire School",
+  schoolFrost: "Frost School",
+  schoolHoly: "School of Light",
+  identityNoSchool: "No school yet",
+  promoteMaxRank: "MAX CLASS",
+  promoteCta: "Ascend to Adept ▸",
+  promoteCtaArchmage: "Ascend to Archmage ▸",
+  promoteLocked: "Not yet eligible",
+  schoolModalTitleChoose: "Choose Your School",
+  schoolModalTitleRespec: "Change School",
+  schoolModalRespecNotice: "Changing schools costs mana crystals (first change free).",
+  schoolRespecCostFree: "FREE",
+  schoolRespecBtn: "CHANGE SCHOOL",
+  arcaneSlotLocked: "Sealed until Adept",
+  arcaneSlotArchmageLocked: "Sealed until Archmage",
+  arcaneSlot1: "Adept Slot",
+  arcaneSlot2: "Adept Slot",
+  arcaneSlot3: "Archmage Slot",
 } as const
 
 export type MessageKey = keyof typeof enMessages
@@ -213,6 +238,9 @@ const ko: Record<MessageKey, string> = {
   skinEmber: "잿불",
   skinFrost: "서리",
   skinGilded: "금빛",
+  skinArchmagePyro: "화염 대마법사",
+  skinArchmageCryo: "냉기 대마법사",
+  skinArchmageLumen: "신성 대마법사",
   missionMerge20: "마법서 20회 합성",
   missionBoss3: "보스 3회 처치",
   missionSummon30: "마법서 30회 구매",
@@ -297,6 +325,28 @@ const ko: Record<MessageKey, string> = {
   battleWaveClear: "웨이브 클리어",
   battleBoss: "보스",
   battleLevelUp: "레벨 업",
+  toastPromoted: "클래스가 승급했습니다!",
+  rankApprentice: "견습",
+  rankAdept: "정식",
+  rankArchmage: "대마법사",
+  schoolFire: "화염 학파",
+  schoolFrost: "냉기 학파",
+  schoolHoly: "신성 학파",
+  identityNoSchool: "학파 없음",
+  promoteMaxRank: "최고 클래스",
+  promoteCta: "정식 클래스로 승급 ▸",
+  promoteCtaArchmage: "대마법사로 승급 ▸",
+  promoteLocked: "아직 조건 미충족",
+  schoolModalTitleChoose: "학파를 택하라",
+  schoolModalTitleRespec: "학파 변경",
+  schoolModalRespecNotice: "학파를 바꾸면 마나수정이 듭니다(첫 변경은 무료).",
+  schoolRespecCostFree: "무료",
+  schoolRespecBtn: "학파 변경",
+  arcaneSlotLocked: "정식부터 열림",
+  arcaneSlotArchmageLocked: "대마법사부터 열림",
+  arcaneSlot1: "정식 슬롯",
+  arcaneSlot2: "정식 슬롯",
+  arcaneSlot3: "대마법사 슬롯",
 }
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { en, ko }
@@ -344,6 +394,21 @@ type TemplateSet = {
   readonly traitDescription: (id: string) => string
   readonly traitUnlock: (level: number) => string
   readonly resonanceBadge: (element: string, count: number, requirement: number) => string
+  readonly rankTitle: (rank: 0 | 1 | 2) => string
+  readonly schoolTitle: (school: "fire" | "frost" | "holy") => string
+  readonly identityLine: (rank: 0 | 1 | 2, school: "fire" | "frost" | "holy" | null) => string
+  readonly promotionProgress: (prestigeCurrent: number, prestigeRequired: number, levelCurrent: number, levelRequired: number) => string
+  readonly promotionProgressWithStage: (
+    prestigeCurrent: number,
+    prestigeRequired: number,
+    levelCurrent: number,
+    levelRequired: number,
+    stageCurrent: number,
+    stageRequired: number,
+  ) => string
+  readonly schoolEffectSummary: (school: "fire" | "frost" | "holy") => readonly string[]
+  readonly schoolRespecCost: (cost: number) => string
+  readonly arcaneSlotLabel: (slot: "arcane1" | "arcane2" | "arcane3") => string
 }
 
 export type Translator = ((key: MessageKey) => string) & TemplateSet & {
@@ -395,6 +460,17 @@ const templates: Record<Locale, TemplateSet> = {
     traitDescription: (id) => enTraitText[id]?.description ?? "A sealed arcane path.",
     traitUnlock: (level) => `Wizard Lv${level}`,
     resonanceBadge: (element, count, requirement) => `${element.toUpperCase()} ${count}/${requirement}`,
+    rankTitle: (rank) => enRankTitle[rank],
+    schoolTitle: (school) => enSchoolTitle[school],
+    identityLine: (rank, school) =>
+      school === null ? enRankTitle[rank] : `${enRankTitle[rank]} of the ${enSchoolTitle[school]}`,
+    promotionProgress: (prestigeCurrent, prestigeRequired, levelCurrent, levelRequired) =>
+      `Rebirth ${Math.min(prestigeCurrent, prestigeRequired)}/${prestigeRequired} · Lv ${Math.min(levelCurrent, levelRequired)}/${levelRequired}`,
+    promotionProgressWithStage: (prestigeCurrent, prestigeRequired, levelCurrent, levelRequired, stageCurrent, stageRequired) =>
+      `Rebirth ${Math.min(prestigeCurrent, prestigeRequired)}/${prestigeRequired} · Lv ${Math.min(levelCurrent, levelRequired)}/${levelRequired} · Stage ${Math.min(stageCurrent, stageRequired)}/${stageRequired}`,
+    schoolEffectSummary: (school) => enSchoolEffectSummary[school],
+    schoolRespecCost: (cost) => (cost === 0 ? en.schoolRespecCostFree : `${cost} crystals`),
+    arcaneSlotLabel: (slot) => enArcaneSlotLabel[slot],
   },
   ko: {
     mergedLv: (level) => `합성! Lv ${level}`,
@@ -440,7 +516,97 @@ const templates: Record<Locale, TemplateSet> = {
     traitDescription: (id) => koTraitText[id]?.description ?? "봉인된 비전 특성입니다.",
     traitUnlock: (level) => `마법사 Lv${level}`,
     resonanceBadge: (element, count, requirement) => `${element} ${count}/${requirement}`,
+    rankTitle: (rank) => koRankTitle[rank],
+    schoolTitle: (school) => koSchoolTitle[school],
+    identityLine: (rank, school) => (school === null ? koRankTitle[rank] : `${koSchoolTitle[school]}의 ${koRankTitle[rank]}`),
+    promotionProgress: (prestigeCurrent, prestigeRequired, levelCurrent, levelRequired) =>
+      `환생 ${Math.min(prestigeCurrent, prestigeRequired)}/${prestigeRequired} · 레벨 ${Math.min(levelCurrent, levelRequired)}/${levelRequired}`,
+    promotionProgressWithStage: (prestigeCurrent, prestigeRequired, levelCurrent, levelRequired, stageCurrent, stageRequired) =>
+      `환생 ${Math.min(prestigeCurrent, prestigeRequired)}/${prestigeRequired} · 레벨 ${Math.min(levelCurrent, levelRequired)}/${levelRequired} · 스테이지 ${Math.min(stageCurrent, stageRequired)}/${stageRequired}`,
+    schoolEffectSummary: (school) => koSchoolEffectSummary[school],
+    schoolRespecCost: (cost) => (cost === 0 ? ko.schoolRespecCostFree : `크리스탈 ${cost}`),
+    arcaneSlotLabel: (slot) => koArcaneSlotLabel[slot],
   },
+}
+
+const enRankTitle: Record<0 | 1 | 2, string> = {
+  0: en.rankApprentice,
+  1: en.rankAdept,
+  2: en.rankArchmage,
+}
+
+const koRankTitle: Record<0 | 1 | 2, string> = {
+  0: ko.rankApprentice,
+  1: ko.rankAdept,
+  2: ko.rankArchmage,
+}
+
+const enSchoolTitle: Record<"fire" | "frost" | "holy", string> = {
+  fire: en.schoolFire,
+  frost: en.schoolFrost,
+  holy: en.schoolHoly,
+}
+
+const koSchoolTitle: Record<"fire" | "frost" | "holy", string> = {
+  fire: ko.schoolFire,
+  frost: ko.schoolFrost,
+  holy: ko.schoolHoly,
+}
+
+const enArcaneSlotLabel: Record<"arcane1" | "arcane2" | "arcane3", string> = {
+  arcane1: en.arcaneSlot1,
+  arcane2: en.arcaneSlot2,
+  arcane3: en.arcaneSlot3,
+}
+
+const koArcaneSlotLabel: Record<"arcane1" | "arcane2" | "arcane3", string> = {
+  arcane1: ko.arcaneSlot1,
+  arcane2: ko.arcaneSlot2,
+  arcane3: ko.arcaneSlot3,
+}
+
+// R5 학파 모달 카드 효과 요약(목업 4수치 기준). 정식(rank1) 기준 카피 — 대마법사 심화분은
+// 유파 패널에 별도 표기하지 않고(스펙 F 범위=기본 동작), 확정 전 프리뷰는 정식 수치로 통일한다.
+const enSchoolEffectSummary: Record<"fire" | "frost" | "holy", readonly string[]> = {
+  fire: [
+    "Fire resonance requirement 3 → 2",
+    "Fire multi-hit cap +1",
+    "Fire damage ×1.2 (innate)",
+    "NEW — Chain Ignition: 20% splash to overflow targets",
+  ],
+  frost: [
+    "Frost resonance requirement 3 → 2",
+    "Slow factor +0.25 · duration +1.5s",
+    "Deep Freeze (innate)",
+    "NEW — Frost Buildup: +15% damage to slowed enemies",
+  ],
+  holy: [
+    "Holy resonance requirement 3 → 2",
+    "Boss damage multiplier +0.75",
+    "Sanctified Aim (innate)",
+    "NEW — Judgment Light: +25% gold on boss kill",
+  ],
+}
+
+const koSchoolEffectSummary: Record<"fire" | "frost" | "holy", readonly string[]> = {
+  fire: [
+    "화염 공명 요구 3 → 2",
+    "화염 다중타격 상한 +1",
+    "화염 피해 ×1.2 (자동 각인)",
+    "신규 — 연쇄 발화: 초과 대상에 20% 스플래시",
+  ],
+  frost: [
+    "냉기 공명 요구 3 → 2",
+    "둔화 +0.25 · 지속 +1.5초",
+    "심층 빙결 (자동 각인)",
+    "신규 — 빙결 축적: 둔화된 적에게 피해 +15%",
+  ],
+  holy: [
+    "신성 공명 요구 3 → 2",
+    "보스 배율 +0.75",
+    "성화 조준 (자동 각인)",
+    "신규 — 심판의 빛: 보스 처치 시 골드 +25%",
+  ],
 }
 
 const enCounterText: Record<string, string> = {

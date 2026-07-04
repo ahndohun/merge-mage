@@ -1,44 +1,49 @@
 import { GOLD_GAIN_PER_POINT, MIN_CAST_INTERVAL_MS } from "./constants.js"
-import { assertNever, type EngineState } from "./types.js"
+import type { AscensionRank, EngineState } from "./types.js"
 
-export const TRAIT_SLOTS = ["lv8", "lv16", "lv24"] as const
+// R5 비전 각인(Arcane Inscriptions). 범용 특성 5종을 컷 없이 보존하되, 언락 기준을
+// 마법사 레벨이 아니라 전직 클래스(rank)로 바꿨다. 원소 특성(공명/원소 피해)은 traits에서
+// 빠져 학파(school.ts)로 흡수됐다. 슬롯 후보는 겹치지 않게 배분한다.
+export const TRAIT_SLOTS = ["arcane1", "arcane2", "arcane3"] as const
 export type TraitSlot = (typeof TRAIT_SLOTS)[number]
 
 export const TRAIT_IDS = [
   "chainCast",
   "goldenLibrary",
-  "elementalCycle",
-  "pyroGlyphs",
-  "deepFreeze",
-  "sanctifiedAim",
-  "archmageFocus",
   "quickHands",
   "treasureOath",
+  "archmageFocus",
 ] as const
 export type TraitId = (typeof TRAIT_IDS)[number]
 
 export type TraitDefinition = {
   readonly id: TraitId
   readonly slot: TraitSlot
-  readonly requiredLevel: number
+  /** 이 슬롯을 여는 최소 클래스: 정식(1) 2슬롯, 대마법사(2) 3슬롯. */
+  readonly requiredRank: AscensionRank
 }
 
 const RESPEC_KEY = "__respecPrestige"
 
 export const TRAITS: readonly TraitDefinition[] = [
-  { id: "chainCast", slot: "lv8", requiredLevel: 8 },
-  { id: "goldenLibrary", slot: "lv8", requiredLevel: 8 },
-  { id: "elementalCycle", slot: "lv8", requiredLevel: 8 },
-  { id: "pyroGlyphs", slot: "lv16", requiredLevel: 16 },
-  { id: "deepFreeze", slot: "lv16", requiredLevel: 16 },
-  { id: "sanctifiedAim", slot: "lv16", requiredLevel: 16 },
-  { id: "archmageFocus", slot: "lv24", requiredLevel: 24 },
-  { id: "quickHands", slot: "lv24", requiredLevel: 24 },
-  { id: "treasureOath", slot: "lv24", requiredLevel: 24 },
+  { id: "chainCast", slot: "arcane1", requiredRank: 1 },
+  { id: "goldenLibrary", slot: "arcane1", requiredRank: 1 },
+  { id: "quickHands", slot: "arcane2", requiredRank: 1 },
+  { id: "treasureOath", slot: "arcane2", requiredRank: 1 },
+  { id: "archmageFocus", slot: "arcane3", requiredRank: 2 },
 ] as const
 
 export function getTraitsForSlot(slot: TraitSlot): readonly TraitDefinition[] {
   return TRAITS.filter((trait) => trait.slot === slot)
+}
+
+/** rank에서 실제로 열려 있는 비전 각인 슬롯(정식 2 / 대마법사 3 / 견습 0). */
+export function getUnlockedTraitSlots(rank: AscensionRank): readonly TraitSlot[] {
+  return TRAIT_SLOTS.filter((slot) => getSlotRequiredRank(slot) <= rank && rank >= 1)
+}
+
+export function getSlotRequiredRank(slot: TraitSlot): AscensionRank {
+  return getTraitsForSlot(slot)[0]?.requiredRank ?? 1
 }
 
 export function isTraitId(value: string): value is TraitId {
@@ -54,12 +59,14 @@ export function getTraitDefinition(slot: TraitSlot, traitId: TraitId): TraitDefi
 }
 
 export function hasTrait(state: EngineState, traitId: TraitId): boolean {
-  return Object.values(state.traits.picks).some((value) => value === traitId)
+  // 실제 열린 슬롯의 픽만 유효. v4→v5로 이관된 픽도 클래스에 도달해야 발동한다(견습=무효).
+  const unlocked = getUnlockedTraitSlots(state.ascension.rank)
+  return unlocked.some((slot) => state.traits.picks[slot] === traitId)
 }
 
 export function canSelectTrait(state: EngineState, slot: TraitSlot, traitId: TraitId): boolean {
   const definition = getTraitDefinition(slot, traitId)
-  if (state.wizardLevel < definition.requiredLevel) {
+  if (state.ascension.rank < definition.requiredRank) {
     return false
   }
 
@@ -69,7 +76,7 @@ export function canSelectTrait(state: EngineState, slot: TraitSlot, traitId: Tra
 
 export function selectTraitPick(state: EngineState, slot: TraitSlot, traitId: TraitId): EngineState {
   const definition = getTraitDefinition(slot, traitId)
-  if (state.wizardLevel < definition.requiredLevel) {
+  if (state.ascension.rank < definition.requiredRank) {
     throw new TraitSelectionError(slot, traitId, "locked")
   }
 
@@ -93,8 +100,12 @@ export function grantTraitRespecAfterPrestige(state: EngineState): EngineState {
   return { ...state, traits: { picks: { ...state.traits.picks, [RESPEC_KEY]: String(state.prestigeCount) } } }
 }
 
-export function getResonanceRequirement(state: EngineState): number {
-  return hasTrait(state, "elementalCycle") ? 2 : 3
+/**
+ * 공명 기본 요구값(3). 원소 요구 하향(3→2)은 이제 학파(school.ts)가 선택 원소에 한정해
+ * 적용한다 — resonance.ts가 학파 오버레이를 얹는다.
+ */
+export function getResonanceRequirement(_state: EngineState): number {
+  return 3
 }
 
 export function getTraitCastIntervalMultiplier(state: EngineState): number {
@@ -127,29 +138,8 @@ export function getTraitSkillGoldPoints(state: EngineState): number {
   return state.skills.goldGain + (getTraitGoldMultiplier(state) - 1) / GOLD_GAIN_PER_POINT
 }
 
-export function getTraitElementDamageMultiplier(state: EngineState, element: "fire" | "frost" | "holy"): number {
-  switch (element) {
-    case "fire":
-      return hasTrait(state, "pyroGlyphs") ? 1.2 : 1
-    case "frost":
-      return 1
-    case "holy":
-      return 1
-    default:
-      return assertNever(element)
-  }
-}
-
 export function getTraitCodexBonusPerTier(state: EngineState): number {
   return hasTrait(state, "archmageFocus") ? 0.01 : 0
-}
-
-export function getTraitFrostSlowBonus(state: EngineState): { readonly factor: number; readonly durationMs: number } {
-  return hasTrait(state, "deepFreeze") ? { factor: 0.1, durationMs: 500 } : { factor: 0, durationMs: 0 }
-}
-
-export function getTraitHolyBossBonus(state: EngineState): number {
-  return hasTrait(state, "sanctifiedAim") ? 0.25 : 0
 }
 
 function hasRespecCredit(state: EngineState): boolean {

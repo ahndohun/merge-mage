@@ -26,6 +26,7 @@ describe("createInitialState", () => {
     expect(state.mine).toEqual({ floor: 1, lastClaimAt: null })
     expect(state.dailyMissions).toEqual({ date: "", progress: {}, claimed: [] })
     expect(state.skins).toEqual({ owned: ["apprentice"], equipped: "apprentice" })
+    expect(state.ascension).toEqual({ rank: 0, school: null, schoolRespecs: 0 })
   })
 
   it("derives wave-one mob HP from the tuning constants", () => {

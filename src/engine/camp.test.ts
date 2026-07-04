@@ -10,12 +10,15 @@ import {
   getMineClaimPreview,
   getMinePetMultiplier,
   getPetDamagePercent,
+  getAscensionSkinId,
   getPetEvolutionForLevel,
   getUnlockedMineFloor,
   getUnlockedSkins,
   getWizardTotalDps,
+  applyAscensionSkin,
   recordDailyProgress,
   syncDailyMissions,
+  isSkinUnlocked,
 } from "./camp.js"
 import { createInitialState, type EngineState } from "./state.js"
 import type { Spellbook } from "./types.js"
@@ -135,29 +138,34 @@ describe("daily missions", () => {
 })
 
 describe("wizard skins", () => {
-  it("unlocks skins from counters and equips only owned skins", () => {
+  it("unlocks and equips skins from deterministic class and school rewards", () => {
     const state = {
       ...createInitialState(4),
-      prestigeCount: 3,
-      achievements: { counters: { bossKills: 25, achievementMilestones: 15 }, claimed: [] },
+      ascension: { rank: 1, school: "holy", schoolRespecs: 0 },
     } satisfies EngineState
 
-    const unlocked = getUnlockedSkins(state)
-    const equipped = equipSkin(state, "gilded")
-    const blocked = equipSkin(state, "missing")
+    const rewarded = applyAscensionSkin(state)
+    const equipped = equipSkin(rewarded, "gilded")
+    const blocked = equipSkin(rewarded, "ember")
 
-    expect(unlocked.map((skin) => skin.id)).toEqual(["apprentice", "ember", "frost", "gilded"])
+    expect(getAscensionSkinId(1, "holy")).toBe("gilded")
+    expect(getUnlockedSkins(state).map((skin) => skin.id)).toEqual(["apprentice", "gilded"])
+    expect(isSkinUnlocked(state, "ember")).toBe(false)
+    expect(rewarded.skins).toEqual({ owned: ["apprentice", "gilded"], equipped: "gilded" })
     expect(equipped.skins.equipped).toBe("gilded")
-    expect(blocked.skins.equipped).toBe("apprentice")
+    expect(blocked.skins.equipped).toBe("gilded")
   })
 
-  it("falls back to stage and prestige milestones when achievement counters are absent", () => {
+  it("promotes the deterministic skin mapping at archmage rank", () => {
     const state = {
       ...createInitialState(5),
-      stage: 50,
-      prestigeCount: 3,
+      ascension: { rank: 2, school: "fire", schoolRespecs: 0 },
     } satisfies EngineState
 
-    expect(getUnlockedSkins(state).map((skin) => skin.id)).toContain("gilded")
+    const rewarded = applyAscensionSkin(state)
+
+    expect(getAscensionSkinId(2, "fire")).toBe("archmagePyro")
+    expect(getUnlockedSkins(state).map((skin) => skin.id)).toEqual(["apprentice", "ember", "archmagePyro"])
+    expect(rewarded.skins.equipped).toBe("archmagePyro")
   })
 })

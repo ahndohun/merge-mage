@@ -109,6 +109,18 @@ export type SkinState = {
   readonly equipped: string | null
 }
 
+// R5 전직·유파. school = 학파(fire/frost/holy), rank = 클래스(0 견습·1 정식·2 대마법사).
+// 코드 키는 school/rank를 유지하고 UI 카피만 학파/클래스로 표기한다.
+export const SCHOOLS = ["fire", "frost", "holy"] as const
+export type School = (typeof SCHOOLS)[number]
+export type AscensionRank = 0 | 1 | 2
+
+export type AscensionState = {
+  readonly rank: AscensionRank
+  readonly school: School | null
+  readonly schoolRespecs: number
+}
+
 export type EngineState = {
   readonly gold: number
   readonly books: readonly Spellbook[]
@@ -146,6 +158,7 @@ export type EngineState = {
   readonly mine: MineState
   readonly dailyMissions: DailyMissionState
   readonly skins: SkinState
+  readonly ascension: AscensionState
 }
 
 export type EngineEvent =

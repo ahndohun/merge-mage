@@ -8,6 +8,7 @@ type PetDefault = { level: number; xp: number; evolution: number }
 type MineDefault = { floor: number; lastClaimAt: number | null }
 type DailyMissionDefault = { date: string; progress: Record<string, number>; claimed: string[] }
 type SkinDefault = { owned: string[]; equipped: string | null }
+type AscensionDefault = { rank: 0 | 1 | 2; school: "fire" | "frost" | "holy" | null; schoolRespecs: number }
 
 export function defaultQuestState(): QuestDefault {
   return { completed: [], claimed: [] }
@@ -47,4 +48,8 @@ export function defaultDailyMissionState(): DailyMissionDefault {
 
 export function defaultSkinState(): SkinDefault {
   return { owned: ["apprentice"], equipped: "apprentice" }
+}
+
+export function defaultAscensionState(): AscensionDefault {
+  return { rank: 0, school: null, schoolRespecs: 0 }
 }
