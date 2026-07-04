@@ -75,3 +75,7 @@
 - 유닛테스트 갱신+신규(탭 매핑·랭킹 모달·여정 통합), `npm run test`+`npm run build` 그린.
 - data-testid: 기존 것 유지 최우선. 탭 리네임으로 불가피한 변경(tab-skills→tab-wizard, tab-quests→tab-journey)은 보고서에 목록화 — E2E 재작성 시 반영.
 - 커밋은 redesign 브랜치에만. main·배포·원격 테스트 접근 금지.
+
+**R3 결과 (2026-07-04, 오케스트레이터 검수 완료)**: 탭 6→5(마법서/마법사/여정/캠프/환생). 랭킹은 탭에서 빠져 HUD 트로피 버튼→모달(rebirth 언락 시 등장). 웨이브 정보는 캔버스 상시 배너에서 HUD "STAGE X · W Y/10"로 통합(BattleBanner는 이벤트 연출 전용). 데스크톱 3열(좌 여정 요약·중 캔버스·우 마법서). 테스트 179 그린·빌드 그린. 프리뷰 실측(모바일 375+데스크톱 1280): 5탭·마법사(스킬+특성+공명+도감)·여정(퀘스트+일일미션)·랭킹 모달·데미지 숫자 정상, 캔버스 겹침 없음.
+- **data-testid 변경** (E2E 재작성 시 반영): `tab-skills→tab-wizard`, `tab-quests→tab-journey`, `tab-ranks` 제거(→`ranks-btn`·`ranks-modal`·`ranks-close`). 신규 `journey-summary`. `books-subview-*` 제거. `skills-badge`·`camp-daily-card`·`daily-*`·`resonance-row`·`codex-grid` 유지.
+- **Phaser 정식화 (감사 파생)**: 데스크톱 3열을 CSS로 캔버스를 강제하던 방식(`.phaser-host canvas { width !important }`, scale Gotcha 3 위반)을 걷어내고 ScaleManager가 host를 FIT + GameShell `ResizeObserver`→`game.scale.refresh()`로 재구현. 전체 Phaser 감사(src/game 24파일, 높음3/중간6/낮음10)에서 canvas 직접 스타일·`game.destroy` 누락·오디오 window 이벤트 우회(→EventBus)·데미지 숫자 Image 조합(→RetroFont BitmapText)·banner/wizard destroy 경로·audio unlock 리스너 해제까지 수정. 보류: 오디오 ogg 폴백(에셋 추가 필요). 재발방지: `src/game/phaser-conventions.test.ts`(CI) + AGENTS.md 스케일 규칙.

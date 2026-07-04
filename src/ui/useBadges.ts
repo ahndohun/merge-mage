@@ -7,8 +7,8 @@ import type { EngineState } from "../engine/types"
 
 export type BadgeFlags = {
   readonly books: boolean
-  readonly skills: boolean
-  readonly quests: boolean
+  readonly wizard: boolean
+  readonly journey: boolean
   readonly camp: boolean
   readonly rebirth: boolean
 }
@@ -32,8 +32,8 @@ export function useBadges(state: EngineState): BadgeFlags {
 
   return {
     books: false,
-    skills: unlocked.skills && state.skillPoints > 0,
-    quests: unlocked.quests && getClaimableQuests(state).length > 0,
+    wizard: unlocked.wizard && state.skillPoints > 0,
+    journey: unlocked.journey && getClaimableQuests(state).length > 0,
     camp: unlocked.camp && (getMineClaimPreview(state, Date.now()).claimable || hasDailyMissionClaim(state, new Date())),
     rebirth:
       unlocked.rebirth &&

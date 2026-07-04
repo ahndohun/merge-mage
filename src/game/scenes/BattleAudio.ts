@@ -1,6 +1,7 @@
 import Phaser from "phaser"
 import { assertNever, type EngineState } from "../../engine/types"
-import { AUDIO_MUTED_EVENT, GAME_SFX_EVENT, readAudioMutedPreference, type GameSfx } from "../GameAudio"
+import { EventBus } from "../../bridge/EventBus"
+import { readAudioMutedPreference, type GameSfx } from "../GameAudio"
 import { TextureKeys } from "../TextureKeys"
 import { isBossWave } from "./BattleLayout"
 
@@ -16,7 +17,7 @@ export class BattleAudio {
   private nextGoldSfxAt = 0
   private state: EngineState | null = null
   private removeAudioGestureListeners: (() => void) | null = null
-  private removeAudioEventListeners: (() => void) | null = null
+  private removeAudioBusListeners: (() => void) | null = null
 
   constructor(private readonly scene: Phaser.Scene) {
     this.audioMuted = readAudioMutedPreference()
@@ -24,7 +25,7 @@ export class BattleAudio {
     this.dungeonMusic = this.scene.sound.add(TextureKeys.bgm.dungeon, { loop: true, volume: 0.4 })
     this.bossMusic = this.scene.sound.add(TextureKeys.bgm.boss, { loop: true, volume: 0.42 })
     this.installGestureStart()
-    this.installWindowEvents()
+    this.installAudioBusEvents()
   }
 
   syncMusic(state: EngineState): void {
@@ -42,11 +43,14 @@ export class BattleAudio {
 
   destroy(): void {
     this.removeAudioGestureListeners?.()
-    this.removeAudioEventListeners?.()
+    this.removeAudioBusListeners?.()
+    // once("unlocked") auto-clears when it fires, but a scene torn down before
+    // the audio gesture would leave it dangling on the shared SoundManager.
+    this.scene.sound.off("unlocked", this.onAudioUnlocked, this)
     this.dungeonMusic.destroy()
     this.bossMusic.destroy()
     this.removeAudioGestureListeners = null
-    this.removeAudioEventListeners = null
+    this.removeAudioBusListeners = null
   }
 
   private installGestureStart(): void {
@@ -59,29 +63,18 @@ export class BattleAudio {
     }
   }
 
-  private installWindowEvents(): void {
-    const onMuted = (event: Event) => {
-      if (!(event instanceof CustomEvent) || typeof event.detail !== "boolean") {
-        return
-      }
-
-      this.audioMuted = event.detail
+  private installAudioBusEvents(): void {
+    const removeMuted = EventBus.on("audio:muted", (muted) => {
+      this.audioMuted = muted
       this.scene.sound.setMute(this.audioMuted)
       this.updateMusic()
-    }
-    const onSfx = (event: Event) => {
-      if (!(event instanceof CustomEvent) || !isGameSfx(event.detail)) {
-        return
-      }
-
-      this.playUiSfx(event.detail)
-    }
-
-    window.addEventListener(AUDIO_MUTED_EVENT, onMuted)
-    window.addEventListener(GAME_SFX_EVENT, onSfx)
-    this.removeAudioEventListeners = () => {
-      window.removeEventListener(AUDIO_MUTED_EVENT, onMuted)
-      window.removeEventListener(GAME_SFX_EVENT, onSfx)
+    })
+    const removeSfx = EventBus.on("audio:sfx", (sfx) => {
+      this.playUiSfx(sfx)
+    })
+    this.removeAudioBusListeners = () => {
+      removeMuted()
+      removeSfx()
     }
   }
 
@@ -92,10 +85,14 @@ export class BattleAudio {
 
     this.audioStarted = true
     if (this.scene.sound.locked) {
-      this.scene.sound.once("unlocked", () => this.updateMusic())
+      this.scene.sound.once("unlocked", this.onAudioUnlocked, this)
       return
     }
 
+    this.updateMusic()
+  }
+
+  private readonly onAudioUnlocked = (): void => {
     this.updateMusic()
   }
 
@@ -175,8 +172,4 @@ export class BattleAudio {
         return assertNever(throttle)
     }
   }
-}
-
-function isGameSfx(value: unknown): value is GameSfx {
-  return value === "merge" || value === "confirm"
 }

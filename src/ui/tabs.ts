@@ -3,7 +3,7 @@ import type { EngineState } from "../engine/types"
 import type { MessageKey } from "./i18n"
 import type { BadgeFlags } from "./useBadges"
 
-export type TabId = "books" | "skills" | "quests" | "camp" | "rebirth" | "ranks"
+export type TabId = "books" | "wizard" | "journey" | "camp" | "rebirth"
 
 export type TabDefinition = {
   readonly id: TabId
@@ -14,11 +14,10 @@ export type TabDefinition = {
 
 export const TABS: readonly TabDefinition[] = [
   { id: "books", labelKey: "tabBooks", testId: "tab-books", feature: "books" },
-  { id: "skills", labelKey: "tabSkills", testId: "tab-skills", feature: "skills" },
-  { id: "quests", labelKey: "tabQuests", testId: "tab-quests", feature: "quests" },
+  { id: "wizard", labelKey: "tabWizard", testId: "tab-wizard", feature: "wizard" },
+  { id: "journey", labelKey: "tabJourney", testId: "tab-journey", feature: "journey" },
   { id: "camp", labelKey: "tabCamp", testId: "tab-camp", feature: "camp" },
   { id: "rebirth", labelKey: "tabRebirth", testId: "tab-rebirth", feature: "rebirth" },
-  { id: "ranks", labelKey: "tabRanks", testId: "tab-ranks", feature: "rebirth" },
 ] as const
 
 export function getVisibleTabs(state: EngineState): readonly TabDefinition[] {
@@ -34,16 +33,14 @@ export function tabShowsDot(tabId: TabId, state: EngineState, badges: BadgeFlags
   switch (tabId) {
     case "books":
       return false
-    case "skills":
-      return badges.skills
-    case "quests":
-      return badges.quests
+    case "wizard":
+      return badges.wizard
+    case "journey":
+      return badges.journey
     case "camp":
       return badges.camp
     case "rebirth":
       return badges.rebirth
-    case "ranks":
-      return false
   }
 }
 

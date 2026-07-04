@@ -7,12 +7,16 @@ export type GameBootedPayload = {
   readonly height: number
 }
 
+export type GameSfx = "merge" | "confirm"
+
 export type GameEvents = {
   readonly "current-scene-ready": Phaser.Scene
   readonly "engine:events": readonly EngineEvent[]
   readonly "engine:state": EngineState
   readonly "game-booted": GameBootedPayload
   readonly "locale:changed": Locale
+  readonly "audio:muted": boolean
+  readonly "audio:sfx": GameSfx
 }
 
 type GameEventName = keyof GameEvents
@@ -27,6 +31,8 @@ const listeners: ListenerMap = {
   "engine:state": new Set<Listener<"engine:state">>(),
   "game-booted": new Set<Listener<"game-booted">>(),
   "locale:changed": new Set<Listener<"locale:changed">>(),
+  "audio:muted": new Set<Listener<"audio:muted">>(),
+  "audio:sfx": new Set<Listener<"audio:sfx">>(),
 }
 
 export type Unsubscribe = () => void

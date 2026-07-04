@@ -8,6 +8,7 @@ import {
 } from "../engine/constants"
 import { getTraitsForSlot, TRAIT_SLOTS, type TraitId, type TraitSlot } from "../engine/traits"
 import type { EngineState, SkillName } from "../engine/types"
+import { CodexGrid, ResonanceBadges, TomeIcon } from "./BooksPanelViews"
 import type { MessageKey, Translator } from "./i18n"
 import { useLocale } from "./useLocale"
 
@@ -18,7 +19,7 @@ const SKILL_ROWS: readonly { readonly name: SkillName; readonly labelKey: Messag
   { name: "critChance", labelKey: "skillCritChance" },
 ] as const
 
-type SkillsPanelProps = {
+type WizardPanelProps = {
   readonly state: EngineState
   readonly onAllocateSkill: (skill: SkillName) => void
   readonly onResetSkills: () => void
@@ -47,11 +48,15 @@ function getSkillEffectCopy(skill: SkillName, state: EngineState, t: Translator)
   }
 }
 
-export function SkillsPanel(props: SkillsPanelProps) {
+// The Wizard tab answers "how strong am I": active skill points, arcane traits,
+// elemental resonance (equipped synergy), and the grimoire codex (collection
+// bonus). Resonance + codex moved here from the Books tab so Books stays focused
+// on equip/inventory/buy.
+export function WizardPanel(props: WizardPanelProps) {
   const { t } = useLocale()
 
   return (
-    <section className="panel tab-panel" aria-label="Skills">
+    <section className="panel tab-panel wizard-panel" aria-label="Wizard">
       <div className="panel-header">
         <span>{t("skillPoints")}</span>
         <strong>{props.state.skillPoints}</strong>
@@ -84,6 +89,14 @@ export function SkillsPanel(props: SkillsPanelProps) {
         {t("reset")}
       </button>
       <TraitsSection state={props.state} onSelectTrait={props.onSelectTrait} t={t} />
+      <div className="panel-header">
+        <span>{t("resonance")}</span>
+      </div>
+      <ResonanceBadges state={props.state} t={t} />
+      <div className="panel-header">
+        <span>{t("subCodex")}</span>
+      </div>
+      <CodexGrid state={props.state} t={t} renderTomeIcon={(element) => <TomeIcon element={element} />} />
     </section>
   )
 }

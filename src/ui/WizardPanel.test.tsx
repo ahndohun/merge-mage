@@ -2,11 +2,11 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { createInitialState } from "../engine/state"
 import type { EngineState } from "../engine/types"
-import { SkillsPanel } from "./SkillsPanel"
+import { WizardPanel } from "./WizardPanel"
 
-function renderSkillsPanel(state: EngineState): string {
+function renderWizardPanel(state: EngineState): string {
   return renderToStaticMarkup(
-    <SkillsPanel
+    <WizardPanel
       onAllocateSkill={() => undefined}
       onResetSkills={() => undefined}
       onSelectTrait={() => false}
@@ -15,11 +15,11 @@ function renderSkillsPanel(state: EngineState): string {
   )
 }
 
-describe("SkillsPanel", () => {
+describe("WizardPanel", () => {
   it("shows the per-point effect and base values when no points are allocated", () => {
     const state = createInitialState(1)
 
-    const markup = renderSkillsPanel(state)
+    const markup = renderWizardPanel(state)
 
     expect(markup).toContain("+1 buy level / pt (+0)")
     expect(markup).toContain("-40ms cast / pt (now 1000ms)")
@@ -33,7 +33,7 @@ describe("SkillsPanel", () => {
       skills: { summonBonus: 2, castSpeed: 3, goldGain: 4, critChance: 5 },
     } satisfies EngineState
 
-    const markup = renderSkillsPanel(state)
+    const markup = renderWizardPanel(state)
 
     expect(markup).toContain("(+2)")
     expect(markup).toContain("now 880ms")
@@ -47,18 +47,25 @@ describe("SkillsPanel", () => {
       skills: { summonBonus: 0, castSpeed: 50, goldGain: 0, critChance: 0 },
     } satisfies EngineState
 
-    const markup = renderSkillsPanel(state)
+    const markup = renderWizardPanel(state)
 
     expect(markup).toContain("now 300ms")
   })
 
   it("renders locked and unlocked trait cards", () => {
-    const locked = renderSkillsPanel(createInitialState(1))
-    const unlocked = renderSkillsPanel({ ...createInitialState(1), wizardLevel: 8 })
+    const locked = renderWizardPanel(createInitialState(1))
+    const unlocked = renderWizardPanel({ ...createInitialState(1), wizardLevel: 8 })
 
     expect(locked).toContain("Wizard Lv8")
     expect(locked).toContain("LOCKED")
     expect(unlocked).toContain("Chain Cast")
     expect(unlocked).toContain("Golden Library")
+  })
+
+  it("includes the resonance summary and codex moved from the books tab", () => {
+    const markup = renderWizardPanel(createInitialState(1))
+
+    expect(markup).toContain('data-testid="resonance-row"')
+    expect(markup).toContain('data-testid="codex-grid"')
   })
 })

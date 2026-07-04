@@ -13,14 +13,14 @@ describe("useBadges", () => {
     expect(useBadges(state).books).toBe(false)
   })
 
-  it("flags skills when skill points are available", () => {
+  it("flags wizard when skill points are available", () => {
     const state = {
       ...createInitialState(1),
       skillPoints: 2,
       wizardLevel: 3,
     } satisfies EngineState
 
-    expect(useBadges(state).skills).toBe(true)
+    expect(useBadges(state).wizard).toBe(true)
   })
 
   it("flags rebirth when preview crystals reach half of current holdings", () => {

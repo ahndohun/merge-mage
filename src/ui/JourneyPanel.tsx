@@ -1,23 +1,38 @@
 import { ACHIEVEMENTS, getAchievementProgress, isAchievementUnlocked } from "../engine/achievements"
+import { DAILY_MISSIONS, getDailyMissionStatus, type DailyMissionId } from "../engine/camp"
 import { getVisibleQuests, refreshQuests } from "../engine/quests"
 import type { EngineState } from "../engine/types"
-import type { Translator } from "./i18n"
+import { formatNumber } from "./formatNumber"
+import type { MessageKey, Translator } from "./i18n"
 import { useLocale } from "./useLocale"
 
-type QuestsPanelProps = {
+type JourneyPanelProps = {
   readonly state: EngineState
   readonly onClaimQuest: (questId: string) => boolean
+  readonly onClaimDailyMission: (missionId: DailyMissionId) => boolean
 }
 
-export function QuestsPanel(props: QuestsPanelProps) {
+const missionLabelKeys: Record<DailyMissionId, MessageKey> = {
+  merge20: "missionMerge20",
+  boss3: "missionBoss3",
+  summon30: "missionSummon30",
+  mineClaim1: "missionMineClaim1",
+  stage3: "missionStage3",
+}
+
+// The Journey tab is the player's roadmap: the main chain, long oaths, daily
+// missions (moved here from Camp), and achievements. The NEXT GOAL strip opens
+// this tab.
+export function JourneyPanel(props: JourneyPanelProps) {
   const { t } = useLocale()
+  const now = new Date()
   const state = refreshQuests(props.state)
   const quests = getVisibleQuests(state)
   const chainQuest = quests.find((quest) => quest.chainIndex !== null && !state.quests.claimed.includes(quest.id)) ?? null
   const longQuests = quests.filter((quest) => quest.chainIndex === null)
 
   return (
-    <section className="panel tab-panel quests-panel" aria-label="Quests">
+    <section className="panel tab-panel journey-panel" aria-label="Journey">
       <div className="panel-header">
         <span>{t("mainQuest")}</span>
         <strong>{state.quests.claimed.filter((id) => id.startsWith("chain-")).length}/20</strong>
@@ -31,6 +46,34 @@ export function QuestsPanel(props: QuestsPanelProps) {
           <QuestCard key={quest.id} questId={quest.id} state={state} t={t} featured={false} onClaimQuest={props.onClaimQuest} />
         ))}
       </div>
+      <section className="camp-card camp-daily-card" data-testid="camp-daily-card">
+        <div className="camp-card-title">{t("dailyTitle")}</div>
+        <div className="daily-list">
+          {DAILY_MISSIONS.map((mission) => {
+            const status = getDailyMissionStatus(props.state, mission, now)
+            return (
+              <div className="daily-row" data-testid={`daily-${mission.id}`} key={mission.id}>
+                <div className="daily-copy">
+                  <span>{t(missionLabelKeys[mission.id])}</span>
+                  <small>
+                    {formatNumber(status.progress)}/{formatNumber(status.goal)} +{formatNumber(status.rewardManaCrystals)}{" "}
+                    {t("manaCrystals")}
+                  </small>
+                </div>
+                <button
+                  className="btn btn-mini"
+                  disabled={!status.claimable}
+                  onClick={() => props.onClaimDailyMission(mission.id)}
+                  type="button"
+                >
+                  {status.claimed ? t("claimed") : t("claim")}
+                  {status.claimable ? <span aria-hidden="true" className="badge-dot" /> : null}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      </section>
       <div className="achievement-block">
         <div className="quest-section-label">{t("achievements")}</div>
         <div className="achievement-grid">

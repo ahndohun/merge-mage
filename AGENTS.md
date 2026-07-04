@@ -131,6 +131,13 @@ Read `docs/specs/2026-07-02-merge-mage-design.md` before any work. Section 0 (Di
 ## Phaser knowledge
 Official Phaser 4 agent skills live at `~/projects/phaser-skills/` (28 SKILL.md bundles from github.com/phaserjs/phaser). Before writing Phaser code, read the relevant skill: `v4-new-features`, `scenes`, `sprites-and-images`, `loading-assets`, `tweens`, `particles`, `input-keyboard-mouse-touch`, `audio-and-sound`, `scale-and-responsive`, `text-and-bitmaptext`. Phaser 4.2 is NOT Phaser 3 — check `v3-to-v4-migration` when unsure about an API.
 
+### Scale / canvas rules — non-negotiable (2026-07-04 audit)
+The Phaser ScaleManager owns the canvas. Never fight it with CSS/JS. Enforced by `src/game/phaser-conventions.test.ts` (fails CI on regression).
+- **Never set `width`/`height`/`margin` on the canvas in CSS** (e.g. `.phaser-host canvas { width: … }`). The ScaleManager controls `canvas.style` (scale-and-responsive Gotcha 3). Size `.phaser-host` (the parent) and let FIT scale the canvas inside it.
+- **Size the parent, not the canvas.** Desktop 3-column layout sizes `.phaser-host` via CSS grid; the canvas FITs inside. No padding on `.phaser-host` (Gotcha 2). Keep `expandParent` at its default `true` (Gotcha 1).
+- **On host resize, call `game.scale.refresh()`.** GameShell runs a `ResizeObserver` on the host so media-query/layout changes re-FIT the canvas. Don't reach for `!important` CSS on the canvas — that's the smell that means you're bypassing the ScaleManager.
+- **Destroy on unmount.** GameShell's effect cleanup calls `gameRef.current?.destroy(true)` then resets the ref (frees the WebGL context; keeps the StrictMode double-invoke clean).
+
 ## Loop protocol (hackathon requirement)
 After each feature: deploy (`vercel --yes --prod`), run TestSprite tests against https://merge-mage.vercel.app, fix what the checker catches, rerun, then append ONE line to LOOP.md: `| n | date | maker | what ran | what broke | what got fixed |`. Never fabricate LOOP.md entries.
 

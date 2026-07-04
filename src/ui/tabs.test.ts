@@ -21,7 +21,7 @@ describe("R1 tab visibility", () => {
       prestigeCount: 1,
     } satisfies EngineState
 
-    expect(getVisibleTabs(state).map((tab) => tab.id)).toEqual(["books", "skills", "quests", "camp", "rebirth", "ranks"])
+    expect(getVisibleTabs(state).map((tab) => tab.id)).toEqual(["books", "wizard", "journey", "camp", "rebirth"])
   })
 
   it("does not show dots for hidden features", () => {
@@ -32,6 +32,6 @@ describe("R1 tab visibility", () => {
     } satisfies EngineState
 
     expect(getVisibleTabs(state).map((tab) => tab.id)).toEqual(["books"])
-    expect(tabShowsDot("skills", state, useBadges(state))).toBe(false)
+    expect(tabShowsDot("wizard", state, useBadges(state))).toBe(false)
   })
 })

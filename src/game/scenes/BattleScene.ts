@@ -4,11 +4,11 @@ import { assertNever, type EngineEvent, type EngineState } from "../../engine/ty
 import { createTranslator, getInitialLocale, type Translator } from "../../ui/i18n"
 import { EngineEventBridge } from "../GameEventBridge"
 import { createBattleAnimations, preloadBattleAssets } from "../TextureKeys"
-import { registerUtilityTextures } from "../UtilityTextures"
+import { registerDamageFont, registerUtilityTextures } from "../UtilityTextures"
 import { BattleAudio } from "./BattleAudio"
 import { BattleCastController } from "./BattleCastController"
 import { BattleEffects } from "./BattleEffects"
-import { BOSS_ENRAGE_MS, BOSS_WAVE_NUMBER, BattleLayout, getWaveIndicator, isBossWave } from "./BattleLayout"
+import { BOSS_ENRAGE_MS, BattleLayout, isBossWave } from "./BattleLayout"
 import { BattleBanner } from "./BattleBanner"
 import { mirrorBattleState } from "./BattleDataMirror"
 import { drawBattleFrame } from "./BattleFrame"
@@ -49,6 +49,7 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     EngineEventBridge.install()
     registerUtilityTextures(this)
+    registerDamageFont(this)
     createBattleAnimations(this)
     this.cameras.main.setBackgroundColor("#05060a")
     drawBattleFrame(this)
@@ -60,15 +61,10 @@ export class BattleScene extends Phaser.Scene {
     this.audio = new BattleAudio(this)
     this.t = createTranslator(getInitialLocale())
     prewarmBattleMobs(this, this.mobPool)
-    this.banner.show(this.t.battleStageWave(1, 1, BOSS_WAVE_NUMBER), 0xfff0a8)
     this.unsubscribeState = EngineEventBridge.onState((state) => this.handleState(state))
     this.unsubscribeEvents = EngineEventBridge.onEvents((events) => this.handleEvents(events))
     this.unsubscribeLocale = EventBus.on("locale:changed", (locale) => {
-      const state = this.currentState
       this.t = createTranslator(locale)
-      if (state !== null) {
-        this.banner?.show(this.t.battleStageWave(state.stage, state.wave, BOSS_WAVE_NUMBER), 0xfff0a8)
-      }
     })
     this.events.once("shutdown", () => this.cleanup())
 
@@ -99,8 +95,6 @@ export class BattleScene extends Phaser.Scene {
       if (stageChanged) {
         this.effects?.stageFlash()
         this.banner?.showSlide(this.t.battleStage(state.stage), 0xe6b450)
-      } else {
-        this.banner?.show(this.t.battleStageWave(state.stage, state.wave, BOSS_WAVE_NUMBER), 0xfff0a8)
       }
       this.lastStage = state.stage
       this.lastWave = state.wave
@@ -288,6 +282,10 @@ export class BattleScene extends Phaser.Scene {
     this.effects?.clear()
     this.castController?.destroy()
     this.castController = null
+    this.banner?.destroy()
+    this.banner = null
+    this.wizard?.destroy()
+    this.wizard = null
     this.activeMobs.splice(0).forEach((mob) => mob.hide())
     this.mobPool.splice(0)
   }

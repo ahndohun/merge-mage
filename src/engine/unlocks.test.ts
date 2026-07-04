@@ -9,8 +9,8 @@ describe("getUnlockedFeatures", () => {
 
     expect(unlocked).toEqual({
       books: true,
-      skills: false,
-      quests: false,
+      wizard: false,
+      journey: false,
       rifts: false,
       rebirth: false,
       camp: false,
@@ -19,22 +19,22 @@ describe("getUnlockedFeatures", () => {
 
   it("unlocks features at their exact R1 thresholds", () => {
     const below = { ...createInitialState(1), wizardLevel: 2, highestStage: 4 } satisfies EngineState
-    const quests = { ...below, highestStage: 5 } satisfies EngineState
-    const rifts = { ...quests, highestStage: 7 } satisfies EngineState
+    const journey = { ...below, highestStage: 5 } satisfies EngineState
+    const rifts = { ...journey, highestStage: 7 } satisfies EngineState
     const rebirth = { ...rifts, highestStage: 10 } satisfies EngineState
-    const skills = { ...below, wizardLevel: 3 } satisfies EngineState
+    const wizard = { ...below, wizardLevel: 3 } satisfies EngineState
     const camp = { ...below, prestigeCount: 1 } satisfies EngineState
 
     expect(getUnlockedFeatures(below)).toEqual({
       books: true,
-      skills: false,
-      quests: false,
+      wizard: false,
+      journey: false,
       rifts: false,
       rebirth: false,
       camp: false,
     })
-    expect(getUnlockedFeatures(skills).skills).toBe(true)
-    expect(getUnlockedFeatures(quests).quests).toBe(true)
+    expect(getUnlockedFeatures(wizard).wizard).toBe(true)
+    expect(getUnlockedFeatures(journey).journey).toBe(true)
     expect(getUnlockedFeatures(rifts).rifts).toBe(true)
     expect(getUnlockedFeatures(rebirth).rebirth).toBe(true)
     expect(getUnlockedFeatures(camp).camp).toBe(true)

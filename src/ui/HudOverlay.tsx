@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { WIZARD_XP_PER_LEVEL } from "../engine/constants"
+import { BOSS_WAVE, WIZARD_XP_PER_LEVEL } from "../engine/constants"
 import type { EngineState } from "../engine/types"
 import { formatNumber } from "./formatNumber"
 import { LOCALES } from "./i18n"
@@ -12,6 +12,8 @@ type HudOverlayProps = {
   readonly onToggleMute: () => void
   readonly onNewGame: () => void
   readonly onOpenHelp: () => void
+  readonly onOpenRanks: () => void
+  readonly showRanks: boolean
   readonly saveIndicator: SaveIndicatorState
 }
 
@@ -73,15 +75,16 @@ export function HudOverlay(props: HudOverlayProps) {
         <span>{t("gold")}</span>
         <strong>{formatNumber(props.state.gold)}</strong>
       </div>
-      <div className="hud-stat">
+      <div className="hud-stat hud-stage-stat">
         <span>{t("stage")}</span>
         <strong>
-          {props.state.stage}-{props.state.wave}
+          {props.state.stage}
+          <span className="hud-wave">{t.battleWaveIndicator(props.state.wave, BOSS_WAVE)}</span>
         </strong>
       </div>
       {showCrystals ? (
         <div className="hud-stat">
-          <span>{t("manaCrystals")}</span>
+          <span>{t("hudCrystals")}</span>
           <strong>{formatNumber(props.state.manaCrystals)}</strong>
         </div>
       ) : null}
@@ -99,6 +102,20 @@ export function HudOverlay(props: HudOverlayProps) {
         >
           {getSaveIndicatorLabel(props.saveIndicator, t)}
         </div>
+        {props.showRanks ? (
+          <button
+            aria-label={t("openRanks")}
+            className="ranks-btn"
+            data-testid="ranks-btn"
+            onClick={() => {
+              setSettingsOpen(false)
+              props.onOpenRanks()
+            }}
+            type="button"
+          >
+            <span aria-hidden="true" className="ranks-glyph" />
+          </button>
+        ) : null}
         <button
           aria-label={t("howToPlay")}
           className="help-btn"

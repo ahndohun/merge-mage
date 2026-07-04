@@ -1,20 +1,22 @@
-export const AUDIO_MUTED_STORAGE_KEY = "merge-mage:audio-muted"
-export const AUDIO_MUTED_EVENT = "merge-mage:audio-muted"
-export const GAME_SFX_EVENT = "merge-mage:sfx"
+import { EventBus, type GameSfx } from "../bridge/EventBus"
 
-export type GameSfx = "merge" | "confirm"
+export type { GameSfx }
+
+export const AUDIO_MUTED_STORAGE_KEY = "merge-mage:audio-muted"
 
 export function readAudioMutedPreference(): boolean {
   return getStorage()?.getItem(AUDIO_MUTED_STORAGE_KEY) === "true"
 }
 
+// UI → Phaser audio signals ride the same typed EventBus as engine state, so
+// there is a single React↔Phaser channel (no ad-hoc window CustomEvent bus).
 export function writeAudioMutedPreference(muted: boolean): void {
   getStorage()?.setItem(AUDIO_MUTED_STORAGE_KEY, muted ? "true" : "false")
-  window.dispatchEvent(new CustomEvent(AUDIO_MUTED_EVENT, { detail: muted }))
+  EventBus.emit("audio:muted", muted)
 }
 
 export function emitGameSfx(sfx: GameSfx): void {
-  window.dispatchEvent(new CustomEvent(GAME_SFX_EVENT, { detail: sfx }))
+  EventBus.emit("audio:sfx", sfx)
 }
 
 function getStorage(): Storage | null {

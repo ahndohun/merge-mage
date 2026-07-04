@@ -1,13 +1,10 @@
 import {
-  DAILY_MISSIONS,
   SKINS,
-  getDailyMissionStatus,
   getEquippedSkin,
   getMineClaimPreview,
   getPetDps,
   getPetXpThreshold,
   getUnlockedSkins,
-  type DailyMissionId,
   type SkinId,
 } from "../engine/camp"
 import type { EngineState } from "../engine/types"
@@ -18,16 +15,7 @@ import { useLocale } from "./useLocale"
 type CampPanelProps = {
   readonly state: EngineState
   readonly onClaimMine: () => boolean
-  readonly onClaimDailyMission: (missionId: DailyMissionId) => boolean
   readonly onEquipSkin: (skinId: string) => boolean
-}
-
-const missionLabelKeys: Record<DailyMissionId, MessageKey> = {
-  merge20: "missionMerge20",
-  boss3: "missionBoss3",
-  summon30: "missionSummon30",
-  mineClaim1: "missionMineClaim1",
-  stage3: "missionStage3",
 }
 
 const skinLabelKeys: Record<SkinId, MessageKey> = {
@@ -37,6 +25,8 @@ const skinLabelKeys: Record<SkinId, MessageKey> = {
   gilded: "skinGilded",
 }
 
+// Daily missions moved to the Journey tab (R3 IA). Camp keeps the persistent
+// homestead systems: familiar, mana mine, and skins.
 export function CampPanel(props: CampPanelProps) {
   const { t } = useLocale()
   const now = new Date()
@@ -112,35 +102,6 @@ export function CampPanel(props: CampPanelProps) {
                 <span>{t(skinLabelKeys[skin.id])}</span>
                 <small>{active ? t("equipped") : unlocked ? t("equip") : t("locked")}</small>
               </button>
-            )
-          })}
-        </div>
-      </section>
-
-      <section className="camp-card camp-daily-card" data-testid="camp-daily-card">
-        <div className="camp-card-title">{t("dailyTitle")}</div>
-        <div className="daily-list">
-          {DAILY_MISSIONS.map((mission) => {
-            const status = getDailyMissionStatus(props.state, mission, now)
-            return (
-              <div className="daily-row" data-testid={`daily-${mission.id}`} key={mission.id}>
-                <div className="daily-copy">
-                  <span>{t(missionLabelKeys[mission.id])}</span>
-                  <small>
-                    {formatNumber(status.progress)}/{formatNumber(status.goal)} +{formatNumber(status.rewardManaCrystals)}{" "}
-                    {t("manaCrystals")}
-                  </small>
-                </div>
-                <button
-                  className="btn btn-mini"
-                  disabled={!status.claimable}
-                  onClick={() => props.onClaimDailyMission(mission.id)}
-                  type="button"
-                >
-                  {status.claimed ? t("claimed") : t("claim")}
-                  {status.claimable ? <span aria-hidden="true" className="badge-dot" /> : null}
-                </button>
-              </div>
             )
           })}
         </div>

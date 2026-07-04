@@ -133,4 +133,11 @@ export class BattleWizardView {
     }
     this.sprite.setTint(this.baseTint).setTintMode(Phaser.TintModes.MULTIPLY)
   }
+
+  destroy(): void {
+    this.tintTimer?.remove()
+    this.tintTimer = null
+    this.scene.tweens.killTweensOf(this.sprite)
+    this.sprite.destroy()
+  }
 }

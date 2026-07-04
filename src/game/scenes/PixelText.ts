@@ -1,5 +1,6 @@
 import Phaser from "phaser"
 import { TextureKeys } from "../TextureKeys"
+import { DAMAGE_FONT_KEY } from "../UtilityTextures"
 import { getPixelGlyphPatternWidth, isPixelGlyph, toPixelGlyph } from "../PixelGlyphs"
 
 const GLYPH_HEIGHT = 5
@@ -86,6 +87,11 @@ export class PixelTextLine {
   hide(): void {
     this.container.setVisible(false)
   }
+
+  destroy(): void {
+    // Container.destroy() cascades to its glyph images and the fallback text.
+    this.container.destroy()
+  }
 }
 
 function canRenderWithPixelGlyphs(value: string): boolean {
@@ -118,20 +124,24 @@ type DamageTextRequest = {
 }
 
 export class DamageTextPool {
-  private readonly available: PixelTextLine[]
-  private readonly active = new Set<PixelTextLine>()
+  private readonly available: Phaser.GameObjects.BitmapText[]
+  private readonly active = new Set<Phaser.GameObjects.BitmapText>()
 
   constructor(
     private readonly scene: Phaser.Scene,
     size: number,
     depth: number,
   ) {
-    this.available = Array.from({ length: size }, () => new PixelTextLine(scene, 8, depth))
+    // BitmapText (batched vertex updates) instead of per-glyph Images — damage
+    // numbers change every hit (text-and-bitmaptext Gotcha 14).
+    this.available = Array.from({ length: size }, () =>
+      this.scene.add.bitmapText(0, 0, DAMAGE_FONT_KEY, "", GLYPH_HEIGHT).setOrigin(0.5).setDepth(depth).setVisible(false),
+    )
   }
 
   show(request: DamageTextRequest): void {
-    const line = this.available.pop()
-    if (line === undefined) {
+    const text = this.available.pop()
+    if (text === undefined) {
       return
     }
 
@@ -139,35 +149,41 @@ export class DamageTextPool {
     const scale = request.critical ? 4 : 3
     const value = `${Math.max(1, Math.round(request.damage))}`
 
-    this.active.add(line)
-    line.setText(value, { tint, scale })
-    line.show(request.x, request.y)
+    this.active.add(text)
+    text
+      .setText(value)
+      .setFontSize(GLYPH_HEIGHT * scale)
+      .setLetterSpacing(scale)
+      .setTint(tint)
+      .setPosition(request.x, request.y)
+      .setAlpha(1)
+      .setVisible(true)
 
     this.scene.tweens.add({
-      targets: line.container,
+      targets: text,
       y: request.y - 30,
       alpha: 0,
       duration: request.critical ? 720 : 560,
       ease: "Cubic.easeOut",
       onComplete: () => {
-        this.release(line)
+        this.release(text)
       },
     })
   }
 
   clear(): void {
-    for (const line of this.active) {
-      this.scene.tweens.killTweensOf(line.container)
-      line.hide()
-      this.available.push(line)
+    for (const text of this.active) {
+      this.scene.tweens.killTweensOf(text)
+      text.setVisible(false)
+      this.available.push(text)
     }
 
     this.active.clear()
   }
 
-  private release(line: PixelTextLine): void {
-    line.hide()
-    this.active.delete(line)
-    this.available.push(line)
+  private release(text: Phaser.GameObjects.BitmapText): void {
+    text.setVisible(false)
+    this.active.delete(text)
+    this.available.push(text)
   }
 }

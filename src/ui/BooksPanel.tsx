@@ -1,10 +1,10 @@
-import { useState, type KeyboardEvent } from "react"
+import { type KeyboardEvent } from "react"
 import { INVENTORY_LIMIT, SLOT_MULTIPLIER_PER_TIER } from "../engine/constants"
 import { getSlotMultiplier, getSlotUpgradeCost } from "../engine/actions"
 import type { EngineState, Spellbook } from "../engine/types"
 import { canAffordSlotUpgrade } from "./useBadges"
 import { canUpgradeSlotWhileSelected, type BookSource, type DragPreview } from "./bookInteractions"
-import { CodexGrid, InventoryView, ResonanceBadges, TomeIcon, type InventoryCellRenderProps } from "./BooksPanelViews"
+import { InventoryView, TomeIcon, type InventoryCellRenderProps } from "./BooksPanelViews"
 import { formatNumber } from "./formatNumber"
 import type { Translator } from "./i18n"
 import { NextGoalStrip } from "./NextGoalStrip"
@@ -34,16 +34,13 @@ type BooksPanelProps = {
   readonly onUpgradeSlot: (slotIdx: number) => boolean
 }
 
+// R3 IA: the Books tab is now equip + inventory + buy only. The TOMES/CODEX
+// subview toggle and the resonance row moved to the Wizard tab.
 export function BooksPanel(props: BooksPanelProps) {
   const { t } = useLocale()
-  const [subview, setSubview] = useState<"books" | "codex">("books")
   const cells = Array.from({ length: INVENTORY_LIMIT }, (_, index) => props.state.books[index] ?? null)
-  // Collapsing the inventory-grid row only makes sense for the TOMES subview —
-  // it shrinks the row that would otherwise hold the merge grid. Applying it
-  // while CODEX is open squeezed the (unrelated) codex grid into the same
-  // shrunk row, collapsing it to an 8px sliver of grey stripes.
   const inventoryCollapsed =
-    subview === "books" && props.state.books.length === 0 && props.state.equipped.some((book) => book === null)
+    props.state.books.length === 0 && props.state.equipped.some((book) => book === null)
 
   return (
     <section
@@ -51,29 +48,6 @@ export function BooksPanel(props: BooksPanelProps) {
       aria-label="Books"
       data-testid="tutorial-books-target"
     >
-      <div className="subview-toggle" role="tablist" aria-label="Books view">
-        <button
-          aria-selected={subview === "books"}
-          className={`btn btn-mini${subview === "books" ? " is-active" : ""}`}
-          data-testid="books-subview-books"
-          onClick={() => setSubview("books")}
-          role="tab"
-          type="button"
-        >
-          {t("subBooks")}
-        </button>
-        <button
-          aria-selected={subview === "codex"}
-          className={`btn btn-mini${subview === "codex" ? " is-active" : ""}`}
-          data-testid="books-subview-codex"
-          onClick={() => setSubview("codex")}
-          role="tab"
-          type="button"
-        >
-          {t("subCodex")}
-        </button>
-      </div>
-      <ResonanceBadges state={props.state} t={t} />
       <div className="equip-row" aria-label="Equipped books" data-testid="tutorial-equip-target">
         {props.state.equipped.map((book, index) => (
           <EquipSlot
@@ -96,23 +70,19 @@ export function BooksPanel(props: BooksPanelProps) {
         ))}
       </div>
 
-      {subview === "codex" ? (
-        <CodexGrid state={props.state} t={t} renderTomeIcon={(element) => <TomeIcon element={element} />} />
-      ) : (
-        <InventoryView
-          cells={cells}
-          dragActive={props.dragActive}
-          dragPreview={props.dragPreview}
-          draggingBookId={props.draggingBookId}
-          inventoryCollapsed={inventoryCollapsed}
-          onBookClick={props.onBookClick}
-          onBookDrop={props.onBookDrop}
-          onBookPointerDown={props.onBookPointerDown}
-          selected={props.selected}
-          t={t}
-          renderCell={(cellProps) => <InventoryCell {...cellProps} key={`cell-${cellProps.index}`} />}
-        />
-      )}
+      <InventoryView
+        cells={cells}
+        dragActive={props.dragActive}
+        dragPreview={props.dragPreview}
+        draggingBookId={props.draggingBookId}
+        inventoryCollapsed={inventoryCollapsed}
+        onBookClick={props.onBookClick}
+        onBookDrop={props.onBookDrop}
+        onBookPointerDown={props.onBookPointerDown}
+        selected={props.selected}
+        t={t}
+        renderCell={(cellProps) => <InventoryCell {...cellProps} key={`cell-${cellProps.index}`} />}
+      />
       <NextGoalStrip hint={props.nextGoalHint} />
     </section>
   )

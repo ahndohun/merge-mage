@@ -25,7 +25,9 @@ import { canMerge } from "./engineActionHelpers"
 import { clearSavedRun } from "./engineStorage"
 import { HelpModal } from "./HelpModal"
 import { HudOverlay } from "./HudOverlay"
+import { JourneySummary } from "./JourneySummary"
 import { OfflineClaimModal } from "./OfflineClaimModal"
+import { RanksModal } from "./RanksModal"
 import { renderTab } from "./renderTab"
 import { RiftsOverlay } from "./RiftsOverlay"
 import { getContextHint } from "./hints"
@@ -62,6 +64,7 @@ export function GameShell() {
   dragGhostRef.current = dragGhost
   const [soundMuted, setSoundMuted] = useState(readAudioMutedPreference)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [ranksOpen, setRanksOpen] = useState(false)
   const [pulsingTabs, setPulsingTabs] = useState<readonly TabId[]>([])
   const engine = useEngine()
   const engineStateRef = useRef(engine.state)
@@ -117,8 +120,22 @@ export function GameShell() {
       gameRef.current = createGame(host)
     }
 
+    // Phaser owns the canvas. When CSS (media queries, the journey-unlock column)
+    // resizes the host, tell the ScaleManager to re-FIT rather than styling the
+    // canvas directly. The 500ms resizeInterval poll is only a fallback.
+    const observer = new ResizeObserver(() => {
+      gameRef.current?.scale.refresh()
+    })
+    observer.observe(host)
+
     return () => {
       unsubscribe()
+      observer.disconnect()
+      // Tear down the Phaser instance on unmount to release the canvas, WebGL
+      // context, and scene resources. Reset the ref so a remount (React
+      // StrictMode's double-invoke included) re-creates it cleanly.
+      gameRef.current?.destroy(true)
+      gameRef.current = null
     }
   }, [])
 
@@ -531,7 +548,7 @@ export function GameShell() {
       data-rift-kind={engine.state.activeRift?.kind ?? "none"}
       data-rift-runs-golden={engine.state.riftRuns.golden}
       data-rift-runs-trial={engine.state.riftRuns.trial}
-      data-quests-claimable={badges.quests ? "true" : "false"}
+      data-quests-claimable={badges.journey ? "true" : "false"}
       data-mana-crystals={Math.floor(engine.state.manaCrystals)}
       data-mine-floor={engine.state.mine.floor}
       data-pet-level={engine.state.pet.level}
@@ -539,6 +556,7 @@ export function GameShell() {
       data-summon-level={engine.summonLevel}
       data-save-status={engine.saveIndicator}
       data-wave={engine.state.wave}
+      data-journey-unlocked={unlockedFeatures.journey}
     >
       <div ref={hostRef} className="phaser-host" />
       {activeSceneKey !== "booting" ? null : (
@@ -554,8 +572,10 @@ export function GameShell() {
           muted={soundMuted}
           onNewGame={handleNewGame}
           onOpenHelp={() => setHelpOpen(true)}
+          onOpenRanks={() => setRanksOpen(true)}
           onToggleMute={toggleSoundMuted}
           saveIndicator={engine.saveIndicator}
+          showRanks={unlockedFeatures.rebirth}
           state={engine.state}
         />
         {unlockedFeatures.rifts || engine.state.activeRift !== null ? (
@@ -577,6 +597,16 @@ export function GameShell() {
               }
               return exited
             }}
+          />
+        ) : null}
+        {unlockedFeatures.journey ? (
+          <JourneySummary
+            contextHint={contextHint}
+            onOpenJourney={() => {
+              setActiveTab("journey")
+              emitGameSfx("confirm")
+            }}
+            state={engine.state}
           />
         ) : null}
         <div className="bottom-overlay">
@@ -648,7 +678,7 @@ export function GameShell() {
                 type="button"
               >
                 {t(tab.labelKey)}
-                {tab.id === "skills" && engine.state.skillPoints > 0 ? (
+                {tab.id === "wizard" && engine.state.skillPoints > 0 ? (
                   <span className="tab-badge" data-testid="skills-badge">
                     {engine.state.skillPoints}
                   </span>
@@ -668,19 +698,31 @@ export function GameShell() {
         <OfflineClaimModal claim={engine.offlineClaim} onClose={engine.closeOfflineClaim} />
         <Tutorial state={tutorial.state} onSkip={tutorial.skip} />
         {helpOpen ? <HelpModal onClose={() => setHelpOpen(false)} onReplayTutorial={handleReplayTutorial} /> : null}
+        {ranksOpen && unlockedFeatures.rebirth ? (
+          <RanksModal
+            entries={engine.leaderboard}
+            nickname={engine.nickname}
+            nicknameSaved={engine.nicknameSaved}
+            onClose={() => setRanksOpen(false)}
+            onNickname={engine.setNickname}
+            onRefresh={engine.refreshLeaderboard}
+            onSubmit={engine.submitLeaderboard}
+            status={engine.leaderboardStatus}
+          />
+        ) : null}
       </div>
     </main>
   )
 }
 
-function featureLabelKey(feature: UnlockFeatureId): "tabBooks" | "tabSkills" | "tabQuests" | "rifts" | "tabRebirth" | "tabCamp" {
+function featureLabelKey(feature: UnlockFeatureId): "tabBooks" | "tabWizard" | "tabJourney" | "rifts" | "tabRebirth" | "tabCamp" {
   switch (feature) {
     case "books":
       return "tabBooks"
-    case "skills":
-      return "tabSkills"
-    case "quests":
-      return "tabQuests"
+    case "wizard":
+      return "tabWizard"
+    case "journey":
+      return "tabJourney"
     case "rifts":
       return "rifts"
     case "rebirth":

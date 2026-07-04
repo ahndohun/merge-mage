@@ -61,4 +61,11 @@ export class BattleBanner {
       onComplete: () => this.popLine.hide(),
     })
   }
+
+  destroy(): void {
+    this.scene.tweens.killTweensOf(this.line.container)
+    this.scene.tweens.killTweensOf(this.popLine.container)
+    this.line.destroy()
+    this.popLine.destroy()
+  }
 }

@@ -2,10 +2,9 @@ import { assertNever, type Spellbook } from "../engine/types"
 import { BooksPanel } from "./BooksPanel"
 import type { BookSource, DragPreview } from "./bookInteractions"
 import { CampPanel } from "./CampPanel"
-import { QuestsPanel } from "./QuestsPanel"
-import { RanksPanel } from "./RanksPanel"
+import { JourneyPanel } from "./JourneyPanel"
 import { RebirthPanel } from "./RebirthPanel"
-import { SkillsPanel } from "./SkillsPanel"
+import { WizardPanel } from "./WizardPanel"
 import type { TabId } from "./tabs"
 import type { UseEngineResult } from "./useEngine"
 
@@ -43,21 +42,26 @@ export function renderTab(
           state={engine.state}
         />
       )
-    case "skills":
+    case "wizard":
       return (
-        <SkillsPanel
+        <WizardPanel
           onAllocateSkill={engine.allocateSkill}
           onResetSkills={engine.resetSkills}
           onSelectTrait={engine.selectTrait}
           state={engine.state}
         />
       )
-    case "quests":
-      return <QuestsPanel onClaimQuest={onClaimQuest} state={engine.state} />
+    case "journey":
+      return (
+        <JourneyPanel
+          onClaimDailyMission={engine.claimDailyMission}
+          onClaimQuest={onClaimQuest}
+          state={engine.state}
+        />
+      )
     case "camp":
       return (
         <CampPanel
-          onClaimDailyMission={engine.claimDailyMission}
           onClaimMine={engine.claimMine}
           onEquipSkin={engine.equipSkin}
           state={engine.state}
@@ -70,18 +74,6 @@ export function renderTab(
           onPrestige={engine.prestige}
           onSummonRelic={engine.summonRelic}
           state={engine.state}
-        />
-      )
-    case "ranks":
-      return (
-        <RanksPanel
-          entries={engine.leaderboard}
-          nickname={engine.nickname}
-          nicknameSaved={engine.nicknameSaved}
-          onNickname={engine.setNickname}
-          onRefresh={engine.refreshLeaderboard}
-          onSubmit={engine.submitLeaderboard}
-          status={engine.leaderboardStatus}
         />
       )
     default:
