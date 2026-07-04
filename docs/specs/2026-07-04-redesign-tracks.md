@@ -79,3 +79,30 @@
 **R3 결과 (2026-07-04, 오케스트레이터 검수 완료)**: 탭 6→5(마법서/마법사/여정/캠프/환생). 랭킹은 탭에서 빠져 HUD 트로피 버튼→모달(rebirth 언락 시 등장). 웨이브 정보는 캔버스 상시 배너에서 HUD "STAGE X · W Y/10"로 통합(BattleBanner는 이벤트 연출 전용). 데스크톱 3열(좌 여정 요약·중 캔버스·우 마법서). 테스트 179 그린·빌드 그린. 프리뷰 실측(모바일 375+데스크톱 1280): 5탭·마법사(스킬+특성+공명+도감)·여정(퀘스트+일일미션)·랭킹 모달·데미지 숫자 정상, 캔버스 겹침 없음.
 - **data-testid 변경** (E2E 재작성 시 반영): `tab-skills→tab-wizard`, `tab-quests→tab-journey`, `tab-ranks` 제거(→`ranks-btn`·`ranks-modal`·`ranks-close`). 신규 `journey-summary`. `books-subview-*` 제거. `skills-badge`·`camp-daily-card`·`daily-*`·`resonance-row`·`codex-grid` 유지.
 - **Phaser 정식화 (감사 파생)**: 데스크톱 3열을 CSS로 캔버스를 강제하던 방식(`.phaser-host canvas { width !important }`, scale Gotcha 3 위반)을 걷어내고 ScaleManager가 host를 FIT + GameShell `ResizeObserver`→`game.scale.refresh()`로 재구현. 전체 Phaser 감사(src/game 24파일, 높음3/중간6/낮음10)에서 canvas 직접 스타일·`game.destroy` 누락·오디오 window 이벤트 우회(→EventBus)·데미지 숫자 Image 조합(→RetroFont BitmapText)·banner/wizard destroy 경로·audio unlock 리스너 해제까지 수정. 보류: 오디오 ogg 폴백(에셋 추가 필요). 재발방지: `src/game/phaser-conventions.test.ts`(CI) + AGENTS.md 스케일 규칙.
+
+## R4 스펙 — 균열→전장 포탈 (여정·캠프는 R3/선행 커밋으로 완료)
+
+원안(제안서 v2): "균열 → 재배치 → 전투 화면의 이벤트 문(門)으로 — 탭이 아니라 전장에 나타나는 포탈". 언락 폭포 "~15분 첫 균열 포탈 / 전투 화면에 처음으로 '누를 것'이 생김". 현재 균열은 `.ui-overlay` 안 `RiftsOverlay`(`rift-entry-btn` 떠있는 버튼→`.rift-modal`(golden/trial 카드)→진입→`rift-active-hud`). 데이터·전투 연결(`activeRift`·`riftRuns`·`riftMultiplier`·`riftComplete`)은 이미 있음 — **R4는 진입점의 위치·시각·연출을 "전장 포탈"로 재구성한다. 엔진(actions/battle/state) 신규 로직 없음.**
+
+### A. 포탈 진입점 (`rift-entry-btn` → 전장 포탈)
+- 균열 진입점을 전투 캔버스(`.phaser-host`) 위에 자리잡는 **포탈 요소**로 재구성. `.ui-overlay` 내 전장 영역에 겹쳐 배치 — HUD(상단)·여정 스트립·탭바(하단)와 겹치거나 클리핑되지 않게. 모바일은 전투 존 하단부, 데스크톱(1280+)은 중앙 전투열에.
+- 시각: 새 외부 레퍼런스 없이 **게임 자체 아트를 기준**으로 일관(레트로 픽셀, `--mm-gold`/`--mm-frost`, `clip-path` 각진 모서리, 오프셋 `box-shadow`). 포탈 = 열린 문/소용돌이 은유.
+- 남은 총횟수(golden+trial) 배지 유지. 횟수 0이면 "닫힌 포탈"(비활성 시각)·클릭 시 microToast.
+
+### B. 등장·워프 연출
+- rifts 언락(`highestStage≥7`) 순간: 포탈 **등장 연출**(스케일-업/페이드/펄스 1회) + 토스트. 언락 폭포의 "전투 화면에 처음 누를 것이 생김"을 실현. 최초 1회만 등장 연출, 이후 상시 표시.
+- 포탈 클릭 → 기존 golden/trial 선택 모달(`.rift-modal`) 유지(횟수·설명이 필요). 진입 확정 → 짧은 **워프 전환**(포탈 플래시/줌) 후 `activeRift` 세팅.
+- 균열 전장 분위기 전환은 **EventBus로 BattleScene에 일시 연출 신호**(배경 틴트 등). 캔버스 직접 스타일 금지(R3 Gotcha3). 과하면 생략 가능 — 필수는 포탈 등장 + 워프.
+- 나가기(`rift-exit-btn`) → 복귀. active 중엔 진입 포탈 숨김(기존 `rift-active-hud` 전환 로직 유지).
+
+### C. 상태·정합
+- 엔진 신규 로직 없음 — 기존 `enterRift`/`exitRift`/`activeRift`/`riftRuns` 재사용. 변경 범위 = UI(`RiftsOverlay`·`GameShell`·`overlay.css`) + 선택적 `BattleScene` EventBus 연출 + i18n 카피.
+- 포탈은 rifts 언락 전 숨김(`GameShell` 581 조건 유지).
+- 신규 카피(등장 토스트 등)는 `i18n.ts` ko/en 양쪽.
+
+### D. 검증 (R4 완료 조건)
+- 언락 전 포탈 숨김 / 언락 시 등장 연출 / golden·trial 진입·나가기 / 횟수 0 비활성.
+- 데스크톱(1280)·모바일(375) 렌더: 포탈이 전장 영역에 위치, HUD·탭바·여정 스트립과 겹침·클리핑 없음.
+- data-testid: 기존 `rifts-open-btn`·`rift-modal`·`rifts-close-btn`·`rift-active-hud`·`rift-exit-btn` 최대 유지. 포탈화로 불가피한 변경은 보고서에 목록화(E2E 재작성 반영).
+- 컴포넌트/유닛 테스트 갱신+신규(포탈 등장 조건·진입·비활성). `npm run test`+`npm run build` 그린.
+- 커밋은 redesign 브랜치에만. main·배포·원격 테스트 접근 금지.
